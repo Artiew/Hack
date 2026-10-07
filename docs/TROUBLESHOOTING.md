@@ -123,3 +123,19 @@ Requisito afetado: RS1 (gestão de usuários) · Impacto: bloqueia (não dava pa
 - **Por que os testes não pegaram:** o teste de ponta a ponta excluía, mas não criava depois. Novo teste refaz o caminho do Vitor usando o endereço que o próprio formulário indica.
 - **Verificação:** criar → excluir → criar → criar com a confirmação aberta → login inválido: todos certos ✔.
 - **Aprendizado:** formulário sem destino explícito vai para o endereço atual, e ele pode mudar depois de outra ação. Sempre dizer o destino (`asp-page` / `asp-page-handler`).
+
+## P-015 · PC da faculdade: "Your Windows doesn't fully support CET" (não compila nem testa)
+Requisito afetado: nenhum (ambiente) · Impacto: bloqueia o trabalho na faculdade
+- **Sintoma × Esperado:** `rodar.cmd` → `Fatal error. Your Windows doesn't fully support CET. Please install all available Windows updates.` na compilação × compilar, testar e subir.
+- **Ambiente:** Windows 10 22H2 build 19045.2193 (sem atualizações desde 2022), sem administrador; .NET 10.0.401 instalado só para o usuário.
+- **Isolamento:** infraestrutura (o código não chegou a rodar). Só falham os **.exe próprios** do .NET (apphost: `csc.exe`, `Piersec.Tests.exe`); o mesmo programa chamado por `dotnet exec arquivo.dll` funciona (`csc.exe -version` falha, `dotnet exec csc.dll -version` funciona).
+- **Hipóteses:** (1) os .exe novos do .NET pedem a proteção CET do processador, que esse Windows sem atualização não suporta por completo, e o `dotnet.exe` não pede: confirmada pela comparação acima. (2) `UseSharedCompilation=false` sozinho resolveria: descartada (o `csc.exe` continua sendo chamado).
+- **Contorno (sem mudar o projeto, só naquela janela do PowerShell):**
+  1. criar `csc.cmd` fora do projeto com `@"<dotnet>\dotnet.exe" exec "<dotnet>\sdk\10.0.401\Roslyn\bincore\csc.dll" %*`;
+  2. `$env:CscToolPath='<pasta do csc.cmd>'; $env:CscToolExe='csc.cmd'; $env:UseSharedCompilation='false'; $env:UseAppHost='false'`;
+  3. `dotnet build Piersec.slnx -c Release`;
+  4. testes: `dotnet exec tests\Piersec.Tests\bin\Release\net10.0\Piersec.Tests.dll` (o `dotnet test` usa o `Piersec.Tests.exe`, que o xUnit v3 gera mesmo com `UseAppHost=false`);
+  5. site: o mesmo `dotnet run` do `rodar.ps1` (com `UseAppHost=false` o site roda por `dotnet`).
+- **Verificação:** build ✔ · 251/251 testes ✔ · site no ar em https://localhost:5001 ✔.
+- **Correção de verdade:** instalar as atualizações do Windows (precisa de administrador, não é nosso PC). Em casa o problema não aparece.
+- **Aprendizado:** quando só o `.exe` falha e o `.dll` funciona, o problema é a "casca" do programa e o Windows, não o código.
