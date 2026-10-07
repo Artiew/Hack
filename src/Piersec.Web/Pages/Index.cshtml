@@ -45,7 +45,7 @@ else
             @foreach (var lote in Model.Lotes)
             {
                 <tr>
-                    <td>@Formatar.DataHora(lote.CriadoEmUtc, fuso)</td>
+                    <td>@Formatar.DataHora(lote.CriadoEmUtc, fuso)@if (lote.RevisaoDe is not null) { <div class="meta">revisão de @lote.RevisaoDe[..8] (@Formatar.Qtd(lote.Ajustes, "ajuste humano", "ajustes humanos"))</div> }</td>
                     <td class="num">@(lote.Score is { } sc ? Math.Round(sc).ToString("0") : "—")</td>
                     <td>@(lote.VerificacoesTotal is null ? "—" : lote.Validado ? $"✔ {lote.VerificacoesAprovadas}/{lote.VerificacoesTotal}" : $"✖ {lote.VerificacoesAprovadas}/{lote.VerificacoesTotal}")</td>
                     <td class="num">@lote.Arquivos</td>

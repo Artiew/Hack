@@ -69,6 +69,12 @@ public sealed record Lote
     /// <summary>O que a operação automática fez (ou faria, no ensaio) com este lote.</summary>
     public Operacao.ResultadoOperacao? Operacao { get; init; }
 
+    /// <summary>Quando este lote é uma revisão (severidades ajustadas por pessoas): o id do lote original.</summary>
+    public string? RevisaoDe { get; init; }
+
+    /// <summary>Ajustes de severidade feitos por pessoas nesta revisão (vazio no lote original).</summary>
+    public IReadOnlyList<AjusteSeveridade> Ajustes { get; init; } = [];
+
     /// <summary>Quantos eventos têm a severidade informada (null = sem severidade).</summary>
     public int ContarPorSeveridade(Severidade? severidade) =>
         Eventos.Count(e => e.Severidade == severidade);
@@ -86,7 +92,9 @@ public sealed record ResumoLote(
     string? Faixa = null,
     IReadOnlyDictionary<string, double?>? Fatores = null,
     int? VerificacoesAprovadas = null,
-    int? VerificacoesTotal = null)
+    int? VerificacoesTotal = null,
+    string? RevisaoDe = null,
+    int Ajustes = 0)
 {
     public bool Validado => VerificacoesTotal > 0 && VerificacoesAprovadas == VerificacoesTotal;
 
@@ -96,5 +104,20 @@ public sealed record ResumoLote(
         lote.Avaliacao?.Score.Faixa,
         lote.Avaliacao?.Score.Fatores.ToDictionary(f => f.Id, f => f.Valor),
         lote.Validacao?.Aprovadas,
-        lote.Validacao?.Total);
+        lote.Validacao?.Total,
+        lote.RevisaoDe,
+        lote.Ajustes.Count);
 }
+
+/// <summary>
+/// Uma pessoa discordou da severidade de um evento (RF4: "botão discordar da severidade com motivo registrado e recálculo").
+/// Fica registrado quem, quando, de quê para quê e por quê; a plataforma nunca troca severidade sem isso.
+/// </summary>
+public sealed record AjusteSeveridade(
+    string EventoId,
+    Severidade? De,
+    Severidade Para,
+    string Motivo,
+    string Usuario,
+    DateTimeOffset QuandoUtc,
+    string JustificativaOriginal);

@@ -14,6 +14,16 @@
 <p><a href="/">← Enviar outro lote</a></p>
 <h1>Lote @(lote.Id[..8])</h1>
 <p class="meta">Processado em @Formatar.DataHora(lote.CriadoEmUtc, fuso) (horário de Brasília).</p>
+@if (GeradorRelatorioHtml.AvisoRevisao(lote) is { } avisoRevisao)
+{
+    <p class="aviso-forte" role="note">⚠ @avisoRevisao <a href="/Lote/@lote.RevisaoDe">Abrir o lote original →</a></p>
+}
+@if (Model.Revisoes.Count > 0)
+{
+    <p class="meta">Revisões deste lote (severidades ajustadas por pessoas):
+        @foreach (var r in Model.Revisoes) { <a href="/Lote/@r.Id">@r.Id[..8]</a><span> (@Formatar.Qtd(r.Ajustes, "ajuste", "ajustes"), score @(r.Score is { } sr ? Math.Round(sr).ToString("0") : "—")) </span> }
+    </p>
+}
 
 @if (lote.Validacao is { } val)
 {

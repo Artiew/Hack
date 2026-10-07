@@ -161,3 +161,7 @@ table.estreita-media { max-width: 900px; }
 .paginas { display: flex; gap: 24px; align-items: center; margin: 20px 0; }
 .origem h2 { margin-top: 0; }
 .origem { display: block; }
+.discordar { margin: 24px 0; }
+.discordar summary { cursor: pointer; font-weight: 600; color: var(--destaque); font-size: 18px; }
+.discordar textarea { font: inherit; padding: 8px 10px; border: 1px solid var(--linha); border-radius: 8px; background: var(--fundo); color: var(--tinta); }
+.discordar .formulario { display: flex; flex-direction: column; gap: 8px; max-width: 720px; }

@@ -16,7 +16,7 @@ public class ValidacaoTests
         var resultado = Fabrica.Validador().Validar(LoteExemplos());
 
         Assert.True(resultado.TudoCerto, string.Join("; ", resultado.Verificacoes.Where(v => !v.Aprovada).Select(v => $"{v.Id} {v.Detalhe}")));
-        Assert.Equal(12, resultado.Total); // V01–V11 + V14 (V12 e V13 entram no ciclo)
+        Assert.Equal(13, resultado.Total); // V01–V11 + V14 + V15 (V12 e V13 entram no ciclo)
     }
 
     [Fact]
@@ -121,7 +121,7 @@ public class ValidacaoTests
         var lote = LoteExemplos();
         var html = Fabrica.Gerador().Gerar(lote with { Validacao = Fabrica.Validador().Validar(lote) });
 
-        Assert.Contains("✔ 12 verificações de consistência, 12 aprovadas", html);
+        Assert.Contains("✔ 13 verificações de consistência, 13 aprovadas", html);
         Assert.Contains("H. Verificações de consistência", html);
         Assert.DoesNotContain("NÃO VALIDADO", html);
     }
@@ -134,7 +134,7 @@ public class ValidacaoTests
 
         Assert.Contains("RELATÓRIO NÃO VALIDADO", html);
         Assert.Contains("NÃO devem ser usados para decisão", html);
-        Assert.DoesNotContain("verificações de consistência, 12 aprovadas", html);
+        Assert.DoesNotContain("verificações de consistência, 13 aprovadas", html);
     }
 
     [Fact]

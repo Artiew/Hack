@@ -9,6 +9,9 @@ namespace Piersec.Core.Pipeline;
 
 public sealed record ResultadoCiclo(Lote Lote, bool PdfGerado, string MensagemPdf);
 
+/// <summary>Resposta a um pedido de "discordar da severidade": a revisão criada, ou por que não foi criada.</summary>
+public sealed record ResultadoRevisao(bool Ok, string Mensagem, ResultadoCiclo? Ciclo = null);
+
 /// <summary>
 /// O ciclo completo, sem depender da tela: processa o lote, compara com o lote anterior, VALIDA, salva e gera o
 /// relatório (HTML + PDF). Se a validação reprovar, o relatório sai marcado como "não validado"; se o relatório
@@ -20,12 +23,46 @@ public sealed class CicloAnalise(
     GeradorRelatorioHtml gerador,
     ConversorPdf conversorPdf,
     ValidadorLote validador,
-    ServicoOperacao? operacao = null)
+    ServicoOperacao? operacao = null,
+    TimeProvider? relogio = null)
 {
+    public const int TamanhoMinimoMotivo = 10;
+
     public async Task<ResultadoCiclo> ExecutarAsync(IReadOnlyList<ArquivoEnviado> arquivos, CancellationToken ct = default)
     {
         var lote = processador.Processar(arquivos);
         var anterior = repositorio.Listar().FirstOrDefault(r => r.Score is not null);
+        return await FinalizarAsync(lote, anterior, ct);
+    }
+
+    /// <summary>
+    /// "Discordar da severidade": cria uma REVISÃO do lote com o ajuste (o original fica como está), refaz tudo e
+    /// compara com o original, para mostrar o efeito do ajuste. Motivo obrigatório; sem ele, nada muda.
+    /// </summary>
+    public async Task<ResultadoRevisao> RevisarAsync(Lote original, string eventoId, Severidade para, string? motivo, string usuario,
+        CancellationToken ct = default)
+    {
+        if (original.Eventos.FirstOrDefault(e => e.Id == eventoId) is not { } evento)
+            return new(false, "Evento não encontrado neste lote.");
+        if (evento.Severidade == para)
+            return new(false, $"O evento já está como {para.Nome()}: nada a ajustar.");
+        var texto = ServicoOperacao.LimparMotivo(motivo);
+        if (texto.Length < TamanhoMinimoMotivo)
+            return new(false, $"Explique o motivo (pelo menos {TamanhoMinimoMotivo} caracteres): ele fica registrado e aparece no relatório.");
+
+        // Se o evento já tinha sido ajustado numa revisão anterior, guarda a justificativa ORIGINAL da plataforma.
+        var anteriorDoEvento = original.Ajustes.LastOrDefault(a => a.EventoId == eventoId);
+        var ajuste = new AjusteSeveridade(eventoId, evento.Severidade, para, texto, usuario, (relogio ?? TimeProvider.System).GetUtcNow(),
+            anteriorDoEvento?.JustificativaOriginal ?? evento.Justificativa ?? "");
+        var ajustes = original.Ajustes.Where(a => a.EventoId != eventoId).Append(ajuste).ToList();
+
+        var revisao = processador.Revisar(original, ajustes);
+        var ciclo = await FinalizarAsync(revisao, ResumoLote.De(original), ct);
+        return new(true, $"Revisão criada com {ajustes.Count} ajuste(s) de severidade.", ciclo);
+    }
+
+    private async Task<ResultadoCiclo> FinalizarAsync(Lote lote, ResumoLote? anterior, CancellationToken ct)
+    {
         lote = lote with { Comparacao = Comparar(lote, anterior) };
         lote = lote with { Validacao = validador.Validar(lote) };
 

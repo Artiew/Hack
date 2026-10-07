@@ -35,6 +35,7 @@ public sealed class ValidadorLote(ConjuntoRegras regras, TimeProvider relogio)
         }
         v.Add(SemCredenciais(lote));
         v.Add(ServicosConferem(lote));
+        v.Add(AjustesRegistrados(lote));
         return new ResultadoValidacao(v);
     }
 
@@ -177,6 +178,37 @@ public sealed class ValidadorLote(ConjuntoRegras regras, TimeProvider relogio)
         var soma = a.MaquinasPorTipo.Values.Sum();
         return new("V10", "As máquinas por tipo somam o total de máquinas",
             soma == distintas, $"soma {Formatar.Numero(soma)} · total {Formatar.Numero(distintas)}");
+    }
+
+    /// <summary>
+    /// Severidade só muda com registro: todo ajuste humano tem autor e motivo, aponta para um evento que existe e o
+    /// evento está mesmo com a severidade do ajuste; e nenhum evento aparece "ajustado" sem ajuste registrado.
+    /// </summary>
+    private static Verificacao AjustesRegistrados(Lote lote)
+    {
+        const string Descricao = "Toda severidade mudada por uma pessoa tem autor, motivo e registro";
+        var porId = lote.Eventos.ToDictionary(e => e.Id, StringComparer.Ordinal);
+        var problemas = new List<string>();
+        foreach (var a in lote.Ajustes)
+        {
+            if (!porId.TryGetValue(a.EventoId, out var e))
+                problemas.Add($"{a.EventoId}: evento não existe");
+            else if (e.Severidade != a.Para)
+                problemas.Add($"{a.EventoId}: severidade do evento difere do ajuste");
+            if (string.IsNullOrWhiteSpace(a.Usuario) || a.Motivo.Trim().Length < Pipeline.CicloAnalise.TamanhoMinimoMotivo)
+                problemas.Add($"{a.EventoId}: ajuste sem autor ou sem motivo");
+        }
+        var ajustados = lote.Ajustes.Select(a => a.EventoId).ToHashSet(StringComparer.Ordinal);
+        var semRegistro = lote.Eventos.Count(e => e.Justificativa?.StartsWith("Ajustada por ", StringComparison.Ordinal) == true && !ajustados.Contains(e.Id));
+        if (semRegistro > 0)
+            problemas.Add($"{semRegistro} evento(s) marcados como ajustados sem registro");
+        if (lote.Ajustes.Count > 0 && lote.RevisaoDe is null)
+            problemas.Add("ajustes em um lote que não é revisão");
+
+        return new("V15", Descricao, problemas.Count == 0,
+            problemas.Count > 0 ? string.Join("; ", problemas.Take(5))
+            : lote.Ajustes.Count == 0 ? "nenhuma severidade foi mudada por pessoas neste lote"
+            : $"{Formatar.Qtd(lote.Ajustes.Count, "ajuste conferido", "ajustes conferidos")}, todos com autor e motivo");
     }
 
     /// <summary>

@@ -68,6 +68,7 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
         AnexoMetodologia(sb);
         AnexoGlossario(sb);
         AnexoValidacao(sb, lote.Validacao);
+        AnexoAjustes(sb, lote);
 
         sb.Append($"""
             <footer>
@@ -116,6 +117,38 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
                "Os números abaixo NÃO devem ser usados para decisão até a correção. Detalhes no anexo H.</div>";
     }
 
+    /// <summary>
+    /// Revisão com severidades ajustadas por pessoas: dito com todas as letras na página 1, com o score de antes,
+    /// para ninguém confundir o número revisado com o calculado pela plataforma. Null no lote original.
+    /// </summary>
+    public static string? AvisoRevisao(Lote lote)
+    {
+        if (lote.RevisaoDe is null || lote.Ajustes.Count == 0)
+            return null;
+        var antes = lote.Comparacao is { } c ? $" Antes dos ajustes, o score era {Inteiro(c.ScoreAnterior)}." : "";
+        return $"Esta é uma REVISÃO do lote {lote.RevisaoDe[..8]}: " +
+               $"{Formatar.Qtd(lote.Ajustes.Count, "severidade foi ajustada", "severidades foram ajustadas")} por pessoas que discordaram da plataforma, " +
+               $"cada uma com motivo registrado (anexo I).{antes}";
+    }
+
+    private void AnexoAjustes(StringBuilder sb, Lote lote)
+    {
+        if (lote.Ajustes.Count == 0)
+            return;
+        sb.Append($"""
+            <section>
+            <h2>I. Severidades ajustadas por pessoas</h2>
+            <p>Revisão do lote {H(lote.RevisaoDe?[..8] ?? "")}. A plataforma não muda severidade sozinha: cada linha abaixo é uma pessoa
+            discordando, com o motivo dela. O lote original continua guardado como foi calculado.</p>
+            <table><thead><tr><th>Evento</th><th>De</th><th>Para</th><th>Quem e quando</th><th>Motivo</th><th>O que a plataforma tinha dito</th></tr></thead><tbody>
+            """);
+        foreach (var a in lote.Ajustes.OrderBy(a => a.QuandoUtc))
+            sb.Append($"<tr><td class=\"id\"><code>{H(a.EventoId)}</code></td><td>{Selo(a.De)}</td><td>{Selo(a.Para)}</td>" +
+                      $"<td>{H(a.Usuario)}<br><span class=\"pequeno\">{H(Formatar.DataHora(a.QuandoUtc, fusoExibicao))} (Brasília)</span></td>" +
+                      $"<td>{H(a.Motivo)}</td><td class=\"pequeno\">{H(a.JustificativaOriginal)}</td></tr>");
+        sb.Append("</tbody></table></section>");
+    }
+
     private static void AnexoValidacao(StringBuilder sb, ResultadoValidacao? v)
     {
         if (v is null)
@@ -161,6 +194,8 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
               </div>
             </div>
             """);
+        if (AvisoRevisao(lote) is { } revisao)
+            sb.Append($"<p class=\"aviso-forte\">⚠ {H(revisao)}</p>");
         foreach (var avisoAmbiente in lote.FontesAusentes.Concat(lote.AvisosAmbiente))
             sb.Append($"<p class=\"aviso-forte\">⚠ {H(avisoAmbiente)}</p>");
 

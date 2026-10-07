@@ -19,6 +19,9 @@ public sealed class LoteModel(RepositorioLotes repositorio, LotesEmMemoria lotes
     /// <summary>"Três problemas respondem por…" ou "O risco está espalhado…" (null quando não se aplica).</summary>
     public string? FraseAchados { get; private set; }
 
+    /// <summary>Revisões feitas a partir deste lote (quando alguém discordou de severidades).</summary>
+    public IReadOnlyList<ResumoLote> Revisoes { get; private set; } = [];
+
     public IActionResult OnGet(string id)
     {
         var lote = lotes.Obter(id); // id inválido → null → 404
@@ -28,6 +31,7 @@ public sealed class LoteModel(RepositorioLotes repositorio, LotesEmMemoria lotes
         PdfDisponivel = repositorio.ExisteRelatorio(id, "pdf");
         AvisoConfianca = lote.Avaliacao is { } a ? gerador.AvisoConfianca(a.Score) : null;
         FraseAchados = lote.Avaliacao is { } av ? gerador.FraseAchados(av) : null;
+        Revisoes = repositorio.Listar().Where(r => r.RevisaoDe == lote.Id).ToList();
         return Page();
     }
 }

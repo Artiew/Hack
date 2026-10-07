@@ -59,20 +59,49 @@ public sealed class ProcessadorLote(
                 lacunas.Add(lacuna);
         }
 
+        return Analisar(coletado.Arquivos, eventos, lacunas);
+    }
+
+    /// <summary>
+    /// Revisão por discordância humana (RF4): aplica os ajustes de severidade aos eventos de um lote já analisado e
+    /// refaz correlação, score, plano e serviços. O lote original NÃO muda: a revisão é um lote novo, ligado a ele,
+    /// com cada ajuste registrado (quem, de quê para quê, por quê). Os CSVs não são guardados; por isso a revisão
+    /// parte dos eventos já padronizados.
+    /// </summary>
+    public Lote Revisar(Lote original, IReadOnlyList<AjusteSeveridade> ajustes)
+    {
+        var porEvento = ajustes.GroupBy(a => a.EventoId, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.Last(), StringComparer.Ordinal);
+        var eventos = original.Eventos
+            .Select(e => porEvento.TryGetValue(e.Id, out var a)
+                ? e with { Severidade = a.Para, Justificativa = $"Ajustada por {a.Usuario}: {a.Motivo}" }
+                : e)
+            .ToList();
+        // Lacunas do lote (ambiente, fonte ausente) são recalculadas; as de arquivo e linha continuam valendo.
+        var lacunas = original.Lacunas.Where(l => !(l.Arquivo == ArquivoDoLote && l.Campo is "ambiente" or "fonte")).ToList();
+        return Analisar(original.Arquivos, eventos, lacunas) with
+        {
+            RevisaoDe = original.RevisaoDe ?? original.Id,
+            Ajustes = ajustes,
+        };
+    }
+
+    /// <summary>Etapas que valem para o lote inteiro: correlação → score, riscos e plano → ambientes → serviços → fontes ausentes.</summary>
+    private Lote Analisar(IReadOnlyList<ResultadoArquivo> arquivos, List<EventoSeguranca> eventos, List<Lacuna> lacunas)
+    {
         var (correlacoes, avaliadas) = _motor.Correlacionar(eventos, regras.Correlacoes);
-        var tiposMedidos = coletado.Arquivos.Where(a => a.TipoEvento is not null).Select(a => a.TipoEvento!).ToHashSet();
+        var tiposMedidos = arquivos.Where(a => a.TipoEvento is not null).Select(a => a.TipoEvento!).ToHashSet();
         var avaliacao = _planejador.Avaliar(eventos, correlacoes, tiposMedidos);
-        var avisosAmbiente = VerificadorAmbientes.Verificar(eventos, coletado.Arquivos);
+        var avisosAmbiente = VerificadorAmbientes.Verificar(eventos, arquivos);
         lacunas.AddRange(avisosAmbiente.Select(a => new Lacuna(ArquivoDoLote, null, "ambiente", a)));
         var (riscoServicos, impacto) = _analisadorServicos.Analisar(eventos);
-        var fontesAusentes = FontesAusentes(coletado.Arquivos);
+        var fontesAusentes = FontesAusentes(arquivos);
         lacunas.AddRange(fontesAusentes.Select(f => new Lacuna(ArquivoDoLote, null, "fonte", f)));
 
         return new Lote
         {
             Id = Guid.NewGuid().ToString("N"),
             CriadoEmUtc = relogio.GetUtcNow(),
-            Arquivos = coletado.Arquivos,
+            Arquivos = arquivos,
             Eventos = eventos,
             Lacunas = lacunas,
             Correlacoes = correlacoes,

@@ -25,6 +25,35 @@
 <h2>Por que esta severidade</h2>
 <p>@(e.Justificativa ?? "Sem justificativa.")</p>
 <p class="meta">Como veio na fonte: @(e.SeveridadeOrigem ?? "não informada")@(e.Cvss is { } cvss ? $" · nota CVSS {cvss.ToString("0.0", Formatar.PtBr)}" : "")@(e.NivelOrigem is { } nivel ? $" · nível {nivel}" : "")</p>
+@if (Model.Ajuste is { } aj)
+{
+    <p class="aviso-forte">Severidade ajustada por @aj.Usuario (de @aj.De.Nome() para @aj.Para.Nome()). A plataforma tinha dito: “@aj.JustificativaOriginal”</p>
+}
+
+<details class="cartao discordar" open="@(Model.Erro is not null)">
+    <summary>Discordar da severidade</summary>
+    <p class="meta">Se você sabe algo que os dados não mostram (ex.: a máquina está desligada, isolada ou o serviço não usa esse programa),
+        escolha a severidade correta e explique. A plataforma cria uma <strong>revisão</strong> do lote com o score, o plano e o relatório
+        recalculados. O lote original não muda, e o seu motivo aparece no relatório (anexo I) e na auditoria.</p>
+    @if (Model.Erro is not null)
+    {
+        <p class="erro" role="alert">@Model.Erro</p>
+    }
+    <form method="post" asp-page-handler="Discordar" class="formulario">
+        <label for="nova">Severidade correta</label>
+        <select id="nova" name="NovaSeveridade" required>
+            <option value="">escolha…</option>
+            @foreach (var sev in SeveridadeExtensoes.DoMaisGrave.Where(s => s != e.Severidade))
+            {
+                Severidade? s = sev;
+                <option value="@sev">@s.Nome()</option>
+            }
+        </select>
+        <label for="motivo">Por quê? (obrigatório, fica registrado)</label>
+        <textarea id="motivo" name="Motivo" required minlength="@CicloAnalise.TamanhoMinimoMotivo" maxlength="@Piersec.Core.Operacao.ServicoOperacao.TamanhoMaximoMotivo" rows="3">@Model.Motivo</textarea>
+        <button type="submit">Criar revisão com esta severidade</button>
+    </form>
+</details>
 
 <h2>O que a plataforma leu</h2>
 <table class="estreita-media">
