@@ -33,6 +33,10 @@
             <div><strong>Risco @s.Faixa.ToLowerInvariant()</strong> <span class="meta">(100 = risco máximo · confiança @s.Confianca)</span></div>
         </div>
         <div>
+            @if (Model.AvisoConfianca is not null)
+            {
+                <p class="aviso-forte" role="alert">⚠ @Model.AvisoConfianca</p>
+            }
             <p><strong>@av.FraseSituacao</strong></p>
             @if (lote.Comparacao is { } c)
             {
@@ -44,6 +48,11 @@
             }
         </div>
     </section>
+
+    @foreach (var avisoAmbiente in lote.AvisosAmbiente)
+    {
+        <p class="aviso-forte" role="alert">⚠ @avisoAmbiente</p>
+    }
 
     <h2>O que é mais grave</h2>
     <ol>

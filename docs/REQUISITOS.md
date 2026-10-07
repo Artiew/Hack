@@ -33,7 +33,7 @@ Atualizado ao fim da **Fase 3** (score, priorização, plano de ação, relatór
 |---|---|---|---|
 | RG1 | Gerado pela plataforma | `CicloAnalise` gera HTML e PDF a partir do lote; metodologia lida dos mesmos JSON usados na análise | ✅ |
 | RG2 | Todo número rastreável à fonte | Evento → `arquivo:linha` + SHA-256; correlação → lista de eventos e máquinas. Números do resumo ainda não são clicáveis | ⚠️ |
-| RG3 | Declarar limites e incertezas | Lacunas agrupadas, limites da fonte, ajustes de leitura, premissas (fuso, ambiente = arquivo), possível corte em 10.000 linhas | ⚠️ |
+| RG3 | Declarar limites e incertezas | Lacunas agrupadas, limites da fonte, ajustes de leitura, premissas (fuso, ambiente = arquivo), possível corte em 10.000 linhas; seção "O que esta análise não consegue dizer"; aviso de confiança baixa junto do score e aviso de empresas/ambientes possivelmente diferentes na página 1 (`AvisosTests`; dados reais: SIEM-1 × SIEM-2) | ✅ |
 | RG4 | Justificativa legível de severidade | 29.564/29.564 eventos reais com justificativa em português (≤ 200 caracteres, teste), inclusive "por que não é Crítica"; correlações com "por que importa" | ✅ |
 | RG5 | Português simples, jargão explicado | Página 1 sem códigos técnicos (teste `Primeira_pagina_responde_as_tres_perguntas_sem_codigos_tecnicos`), cada risco com "o que é / por que importa / como resolver", glossário com 14 termos, plurais corretos. Revisão de linguagem pela equipe ainda pendente | ⚠️ |
 | RG6 | Exportável (PDF/HTML) | HTML e PDF pela tela; PDF dos exemplos conferido visualmente | ✅ |

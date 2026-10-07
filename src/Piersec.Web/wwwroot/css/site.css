@@ -90,6 +90,8 @@ button, .botao {
 
 .acoes { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 16px 0; }
 
+.aviso-forte { border: 2px solid var(--alta); border-radius: 8px; padding: 8px 12px; font-weight: 600; background: var(--superficie); }
+
 .resumo { align-items: flex-start; gap: 24px; }
 .resumo .score { min-width: 160px; }
 .resumo .grande { font-size: 56px; font-weight: 800; line-height: 1; }

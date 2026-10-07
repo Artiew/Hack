@@ -7,10 +7,13 @@ using Piersec.Core.Relatorio;
 namespace Piersec.Web.Pages;
 
 /// <summary>Resultado de um lote: o que aconteceu com cada arquivo e links do relatório.</summary>
-public sealed class LoteModel(RepositorioLotes repositorio) : PageModel
+public sealed class LoteModel(RepositorioLotes repositorio, GeradorRelatorioHtml gerador) : PageModel
 {
     public Lote Lote { get; private set; } = null!;
     public bool PdfDisponivel { get; private set; }
+
+    /// <summary>Mesmo aviso de confiança baixa da página 1 do relatório (null quando a confiança não é baixa).</summary>
+    public string? AvisoConfianca { get; private set; }
 
     public IActionResult OnGet(string id)
     {
@@ -19,6 +22,7 @@ public sealed class LoteModel(RepositorioLotes repositorio) : PageModel
             return NotFound();
         Lote = lote;
         PdfDisponivel = ConversorPdf.ArquivoEhPdf(repositorio.CaminhoRelatorio(id, "pdf"));
+        AvisoConfianca = lote.Avaliacao is { } a ? gerador.AvisoConfianca(a.Score) : null;
         return Page();
     }
 }

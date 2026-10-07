@@ -59,6 +59,8 @@ public sealed class ProcessadorLote(
         var (correlacoes, avaliadas) = _motor.Correlacionar(eventos, regras.Correlacoes);
         var tiposMedidos = coletado.Arquivos.Where(a => a.TipoEvento is not null).Select(a => a.TipoEvento!).ToHashSet();
         var avaliacao = _planejador.Avaliar(eventos, correlacoes, tiposMedidos);
+        var avisosAmbiente = VerificadorAmbientes.Verificar(eventos, coletado.Arquivos);
+        lacunas.AddRange(avisosAmbiente.Select(a => new Lacuna(ArquivoDoLote, null, "ambiente", a)));
 
         return new Lote
         {
@@ -70,6 +72,7 @@ public sealed class ProcessadorLote(
             Correlacoes = correlacoes,
             RegrasAvaliadas = avaliadas,
             Avaliacao = avaliacao,
+            AvisosAmbiente = avisosAmbiente,
         };
     }
 

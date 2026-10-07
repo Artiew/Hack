@@ -86,6 +86,7 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
             ? $"{(c.Diferenca > 0 ? "Piorou" : c.Diferenca < 0 ? "Melhorou" : "Igual")}: {Inteiro(Math.Abs(c.Diferenca))} ponto(s) em relação à análise de " +
               $"{Formatar.DataHora(c.DataAnterior, fusoExibicao)} ({Inteiro(c.ScoreAnterior)} de 100) — principal motivo: {c.Motivo}."
             : "Primeira análise: ainda não há uma anterior para comparar.";
+        var avisoConfianca = AvisoConfianca(s) is { } aviso ? $"<p class=\"aviso-forte\">⚠ {H(aviso)}</p>" : "";
 
         sb.Append($"""
             <section class="diretoria">
@@ -94,12 +95,15 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
               <div class="score-numero"><span class="grande">{numero}</span><span class="de"> de 100</span></div>
               <div class="score-texto">
                 <p class="rotulo">COMO ESTAMOS: <strong>risco {H(s.Faixa.ToLowerInvariant())}</strong> <span class="meta">(0 = sem risco · 100 = risco máximo)</span></p>
+                {avisoConfianca}
                 <p class="frase">{H(a.FraseSituacao)}</p>
                 <p>{H(s.FraseFaixa)}</p>
                 <p class="meta">{H(comparacao)}<br>Confiança {H(s.Confianca)}: o score usa {s.PercentualMedido:0}% do que deveria medir ({s.Fatores.Count(f => f.Valor is not null)} de {s.Fatores.Count} fatores) — ver seção 2.</p>
               </div>
             </div>
             """);
+        foreach (var avisoAmbiente in lote.AvisosAmbiente)
+            sb.Append($"<p class=\"aviso-forte\">⚠ {H(avisoAmbiente)}</p>");
 
         sb.Append("<h3>O que é mais grave</h3><div class=\"riscos\">");
         var n = 1;
@@ -147,6 +151,9 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
             <section class="quebra">
             <h2>2. Entendendo o score</h2>
             <p>{H(regras.Score.Descricao)}</p>
+            <p><strong>Por que o score pode mudar quando chegam mais fontes:</strong> ele é a média dos fatores medidos.
+            Uma fonte nova acrescenta um fator à conta: se esse fator estiver bom, o score cai; se estiver ruim, sobe.
+            Nos dois casos a confiança aumenta, porque mais do risco passa a ser medido.</p>
             <h3>O que mais pesa no score</h3>
             <table><thead><tr><th>Fator (pergunta que responde)</th><th>Situação (0 a 100)</th><th class="num">Peso</th><th class="num">Pontos no score</th></tr></thead><tbody>
             """);
@@ -207,7 +214,7 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
 
     private void SecaoLimites(StringBuilder sb, Lote lote)
     {
-        var itens = new List<string>();
+        var itens = new List<string>(lote.AvisosAmbiente);
         if (lote.Avaliacao is { } a)
             foreach (var f in a.Score.Fatores.Where(f => f.Valor is null))
                 itens.Add($"\"{f.Nome}\" não foi medido: {f.Explicacao.Replace("Não medido: ", "")}");
@@ -453,6 +460,21 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
 
     // ================= apoio =================
 
+    /// <summary>
+    /// Com confiança baixa, o aviso fica junto do número: "risco baixo" medido em 20% não é "ambiente seguro".
+    /// Nível "baixa" = o menor nível de confiança definido em regras/score.json.
+    /// </summary>
+    public string? AvisoConfianca(ScoreRisco s)
+    {
+        var menor = regras.Score.Confianca.OrderBy(c => c.MinimoPercentualMedido).First().Nome;
+        if (s.Valor is null || s.Confianca != menor)
+            return null;
+        var conclusao = s.Valor < 40
+            ? "não dá para afirmar que o ambiente está seguro"
+            : "o risco real pode ser maior ou menor";
+        return $"Atenção: só {s.PercentualMedido:0}% do que deveria ser medido foi medido — {conclusao}.";
+    }
+
     private static string Inteiro(double valor) => Math.Round(valor, MidpointRounding.AwayFromZero).ToString("0", Formatar.PtBr);
 
     private static string NomeNivel(Nivel nivel) => nivel switch { Nivel.Alto => "alto", Nivel.Medio => "médio", _ => "baixo" };
@@ -509,6 +531,7 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
         .risco.sev-critica{border-left-color:var(--critica);color:inherit}.risco.sev-alta{border-left-color:var(--alta);color:inherit}
         .risco.sev-media{border-left-color:var(--media);color:inherit}.risco.sev-baixa{border-left-color:var(--baixa);color:inherit}
         .ordem{display:inline-block;min-width:20px;height:20px;border-radius:10px;background:var(--tinta);color:#fff;text-align:center;font-size:12px;line-height:20px;margin-right:4px}
+        .aviso-forte{border:2px solid var(--alta);border-radius:6px;padding:6px 10px;margin:8px 0;font-weight:600}
         .uma-coisa{border:2px dashed var(--tinta);background:var(--fundo-claro);padding:8px 12px;margin:10px 0;font-size:14px}
         .barra{display:inline-block;width:120px;height:10px;border:1px solid var(--tinta);vertical-align:middle;margin-right:6px}
         .barra span{display:block;height:100%;background:var(--tinta)}

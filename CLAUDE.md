@@ -26,10 +26,15 @@ O briefing completo está em **`docs/PROMPT.md`** — leia antes de qualquer tar
 > o próximo passo e as pendências, e inclua no commit. É assim que a sessão no outro computador fica sabendo.
 
 - **Fases 1, 2 e 3 concluídas** (esqueleto, fontes reais + correlação, score + plano + relatório para leigo).
-- **Próximo passo aprovado pelo Vitor:** quando a confiança do score for baixa, mostrar o aviso **junto do número**
-  na página 1 (ex.: "8 de 100 — risco baixo, mas só 20% foi medido") e explicar no relatório que enviar mais fontes pode
-  mudar o score (fatores medidos entram na média). Depois: **Fase 4** (validação RF8, login RS1, segurança do site).
-- Perguntas ao mentor ainda abertas: fim de `docs/FONTES.md`.
+- **Feito depois da Fase 3 (07/10/2026):**
+  - aviso de **confiança baixa junto do número** na página 1 e na tela do lote; seção 2 explica por que mais fontes mudam o score;
+  - aviso de **empresas/ambientes possivelmente diferentes** quando dois arquivos do mesmo tipo não têm nenhuma máquina em
+    comum (`VerificadorAmbientes`). É aviso, não erro. Nos dados reais aparece para SIEM-1 × SIEM-2.
+  - 144 testes passando.
+- **Próximo passo:** **Fase 4** (validação RF8 com selo "N verificações, N aprovadas", login RS1 com troca de senha
+  obrigatória, cabeçalhos de segurança/CSP, auditoria RS4, dados cifrados em repouso RS3).
+- Ideia aprovada para a Fase 6: filtro por ambiente (cada arquivo separado) sem precisar reenviar.
+- Perguntas ao mentor ainda abertas: fim de `docs/FONTES.md` (inclui: SIEM-1 e SIEM-2 são empresas diferentes?).
 
 ## Como rodar e testar
 - Tudo a partir da raiz do projeto (o `global.json` daqui define o SDK 10 e o runner de testes).

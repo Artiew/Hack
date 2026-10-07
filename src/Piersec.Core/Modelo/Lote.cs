@@ -48,6 +48,9 @@ public sealed record Lote
     public Avaliacao? Avaliacao { get; init; }
     public ComparacaoLote? Comparacao { get; init; }
 
+    /// <summary>Indícios de que o lote mistura empresas ou ambientes diferentes (aviso, não erro).</summary>
+    public IReadOnlyList<string> AvisosAmbiente { get; init; } = [];
+
     /// <summary>Quantos eventos têm a severidade informada (null = sem severidade).</summary>
     public int ContarPorSeveridade(Severidade? severidade) =>
         Eventos.Count(e => e.Severidade == severidade);
