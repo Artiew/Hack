@@ -100,6 +100,9 @@
     </table>
 }
 
+@if (!User.IsInRole(Papeis.Executivo))
+{
+<div class="tecnico">
 <h2>Eventos por severidade</h2>
 <table class="estreita">
     <tbody>
@@ -196,4 +199,6 @@ else
             }
         </tbody>
     </table>
+}
+</div>
 }

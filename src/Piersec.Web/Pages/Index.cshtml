@@ -5,22 +5,30 @@
     var fuso = Piersec.Core.Padronizacao.NormalizadorDatas.FusoBrasilia;
 }
 
-<h1>Enviar arquivos (.csv)</h1>
-<p class="meta">
-    Os arquivos enviados juntos formam um <strong>lote</strong> e são analisados em conjunto, gerando um único relatório.
-    Até @ProcessadorLote.MaximoArquivos arquivos de no máximo @Formatar.Bytes(ProcessadorLote.TamanhoMaximoBytes) cada.
-</p>
-
-@if (Model.Erro is not null)
+@if (Sessao.PodeEnviar(User))
 {
-    <p class="erro" role="alert">@Model.Erro</p>
-}
+    <h1>Enviar arquivos (.csv)</h1>
+    <p class="meta">
+        Os arquivos enviados juntos formam um <strong>lote</strong> e são analisados em conjunto, gerando um único relatório.
+        Até @ProcessadorLote.MaximoArquivos arquivos de no máximo @Formatar.Bytes(ProcessadorLote.TamanhoMaximoBytes) cada.
+    </p>
 
-<form method="post" enctype="multipart/form-data" class="cartao">
-    <label for="arquivos">Escolha um ou mais arquivos CSV</label>
-    <input id="arquivos" name="arquivos" type="file" accept=".csv,text/csv" multiple required>
-    <button type="submit">Enviar e analisar</button>
-</form>
+    @if (Model.Erro is not null)
+    {
+        <p class="erro" role="alert">@Model.Erro</p>
+    }
+
+    <form method="post" enctype="multipart/form-data" class="cartao">
+        <label for="arquivos">Escolha um ou mais arquivos CSV</label>
+        <input id="arquivos" name="arquivos" type="file" accept=".csv,text/csv" multiple required>
+        <button type="submit">Enviar e analisar</button>
+    </form>
+}
+else
+{
+    <h1>Relatórios</h1>
+    <p class="meta">Escolha um lote para ver o resumo e abrir o relatório.</p>
+}
 
 <h2>Lotes anteriores</h2>
 @if (Model.Lotes.Count == 0)

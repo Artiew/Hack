@@ -1,4 +1,10 @@
 using System.Diagnostics;
+using System.Text.Encodings.Web;
+using System.Text.Unicode;
+using System.Threading.RateLimiting;
+using Microsoft.Extensions.WebEncoders;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.Features;
 using Piersec.Core.Analise;
 using Piersec.Core.Armazenamento;
@@ -6,21 +12,30 @@ using Piersec.Core.Coleta;
 using Piersec.Core.Padronizacao;
 using Piersec.Core.Pipeline;
 using Piersec.Core.Relatorio;
+using Piersec.Core.Seguranca;
 using Piersec.Core.Validacao;
+using Piersec.Web.Seguranca;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Pasta dos dados gerados (lotes, relatórios, chave). Fica em var/, que está no .gitignore.
+// Pasta dos dados gerados (lotes, relatórios, usuários, auditoria). Fica em var/, que está no .gitignore.
 var pastaDados = Path.GetFullPath(builder.Configuration["Piersec:PastaDados"]
     ?? Path.Combine(builder.Environment.ContentRootPath, "..", "..", "var"));
 Directory.CreateDirectory(pastaDados);
 
 // Limite do envio inteiro (vários arquivos). O limite por arquivo é checado no ProcessadorLote.
 const long LimiteRequisicaoBytes = 60L * 1024 * 1024;
-builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = LimiteRequisicaoBytes);
+builder.WebHost.ConfigureKestrel(o =>
+{
+    o.Limits.MaxRequestBodySize = LimiteRequisicaoBytes;
+    o.AddServerHeader = false; // não anunciar qual servidor é usado
+});
 builder.Services.Configure<FormOptions>(o => o.MultipartBodyLengthLimit = LimiteRequisicaoBytes);
 
-// Regras de severidade, correlação e frameworks (regras/*.json). Regra inválida impede a plataforma de subir.
+// Escape de HTML continua ligado (< > & aspas), mas acentos saem legíveis ("ã" em vez de "&#xE3;").
+builder.Services.Configure<WebEncoderOptions>(o => o.TextEncoderSettings = new TextEncoderSettings(UnicodeRanges.All));
+
+// Regras de severidade, correlação, score e plano (regras/*.json). Regra inválida impede a plataforma de subir.
 var pastaRegras = Path.GetFullPath(builder.Configuration["Piersec:PastaRegras"]
     ?? Path.Combine(builder.Environment.ContentRootPath, "..", "..", "regras"));
 var regras = ConjuntoRegras.Carregar(pastaRegras);
@@ -39,17 +54,83 @@ builder.Services.AddSingleton<ValidadorLote>();
 builder.Services.AddSingleton(new GeradorRelatorioHtml(fuso, regras));
 builder.Services.AddSingleton(new ConversorPdf());
 builder.Services.AddSingleton<CicloAnalise>();
-builder.Services.AddRazorPages();
+
+// Acesso (RS1): usuários, auditoria e sessão por cookie protegido que expira.
+builder.Services.AddSingleton(new RepositorioUsuarios(pastaDados));
+builder.Services.AddSingleton<ServicoAutenticacao>();
+builder.Services.AddSingleton(sp => new Auditoria(pastaDados, sp.GetRequiredService<TimeProvider>()));
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(o =>
+    {
+        o.LoginPath = "/Entrar";
+        o.LogoutPath = "/Sair";
+        o.AccessDeniedPath = "/Negado";
+        o.ExpireTimeSpan = TimeSpan.FromMinutes(30);
+        o.SlidingExpiration = true;
+        o.Cookie.Name = "__Host-piersec";          // __Host-: só HTTPS, só este site, sem subdomínios
+        o.Cookie.HttpOnly = true;                  // script nenhum consegue ler
+        o.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        o.Cookie.SameSite = SameSiteMode.Strict;   // outro site não consegue usar a sessão
+    });
+builder.Services.AddAuthorization(o =>
+{
+    // Nada abre sem autenticar, a não ser o que for liberado explicitamente.
+    o.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
+    o.AddPolicy("Admin", p => p.RequireRole(Papeis.Admin));
+});
+builder.Services.AddRazorPages(o =>
+{
+    o.Conventions.AllowAnonymousToPage("/Entrar");
+    o.Conventions.AllowAnonymousToPage("/Erro");
+    o.Conventions.AuthorizePage("/Usuarios", "Admin");
+    o.Conventions.AuthorizePage("/Auditoria", "Admin");
+});
+
+// Limite de tentativas de login: no máximo 10 por minuto vindas do mesmo endereço.
+builder.Services.AddRateLimiter(o =>
+{
+    o.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    o.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(ctx =>
+        HttpMethods.IsPost(ctx.Request.Method) && ctx.Request.Path.StartsWithSegments("/Entrar")
+            ? RateLimitPartition.GetFixedWindowLimiter(ctx.Connection.RemoteIpAddress?.ToString() ?? "?",
+                _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromMinutes(1) })
+            : RateLimitPartition.GetNoLimiter("livre"));
+});
 
 var app = builder.Build();
 
-if (!app.Environment.IsDevelopment())
-    app.UseExceptionHandler("/Erro"); // em produção, erro nunca mostra detalhes técnicos
+// Primeira execução: cria o "admin". Senha de ADMIN_SENHA_INICIAL (exatamente 8 caracteres) ou sorteada e mostrada UMA vez.
+var (adminCriado, senhaSorteada) = app.Services.GetRequiredService<ServicoAutenticacao>()
+    .GarantirAdmin(Environment.GetEnvironmentVariable(ServicoAutenticacao.VariavelSenhaInicial));
+if (adminCriado)
+{
+    app.Services.GetRequiredService<Auditoria>().Registrar("sistema", "admin_criado", "primeira execução");
+    Console.WriteLine(senhaSorteada is null
+        ? $"\n  Usuário 'admin' criado com a senha inicial de {ServicoAutenticacao.VariavelSenhaInicial}. Troca obrigatória no primeiro acesso.\n"
+        : $"\n  ====================================================================\n" +
+          $"   USUÁRIO: admin    SENHA INICIAL: {senhaSorteada}\n" +
+          $"   Anote agora: ela NÃO será mostrada de novo. Troca obrigatória no 1º acesso.\n" +
+          $"  ====================================================================\n");
+}
 
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Erro"); // em produção, erro nunca mostra detalhes técnicos
+    app.UseHsts();
+}
+
+app.UseMiddleware<CabecalhosSeguranca>();
 app.UseStaticFiles();
+app.UseRateLimiter();
+app.UseAuthentication();
+app.UseAuthorization();
+app.UseMiddleware<ExigirTrocaDeSenha>();
+
 app.MapRazorPages();
-app.MapGet("/lotes/{id}/relatorio.html", (string id, RepositorioLotes repo) => ArquivoRelatorio(repo, id, "html", "text/html; charset=utf-8"));
-app.MapGet("/lotes/{id}/relatorio.pdf", (string id, RepositorioLotes repo) => ArquivoRelatorio(repo, id, "pdf", "application/pdf"));
+app.MapGet("/lotes/{id}/relatorio.html", (string id, HttpContext ctx, RepositorioLotes repo, Auditoria auditoria) =>
+    ArquivoRelatorio(ctx, repo, auditoria, id, "html", "text/html; charset=utf-8"));
+app.MapGet("/lotes/{id}/relatorio.pdf", (string id, HttpContext ctx, RepositorioLotes repo, Auditoria auditoria) =>
+    ArquivoRelatorio(ctx, repo, auditoria, id, "pdf", "application/pdf"));
 
 // O rodar.ps1 liga esta variável para o navegador abrir sozinho quando o site estiver no ar.
 if (Environment.GetEnvironmentVariable("PIERSEC_ABRIR_NAVEGADOR") == "1")
@@ -66,12 +147,14 @@ app.Logger.LogInformation("Dados da plataforma em {Pasta}", pastaDados);
 app.Logger.LogInformation("Regras carregadas de {Pasta}: {Correlacoes} regra(s) de correlação", pastaRegras, regras.Correlacoes.Count);
 app.Run();
 
-static IResult ArquivoRelatorio(RepositorioLotes repo, string id, string extensao, string tipo)
+static IResult ArquivoRelatorio(HttpContext ctx, RepositorioLotes repo, Auditoria auditoria, string id, string extensao, string tipo)
 {
     if (!RepositorioLotes.IdValido(id))
         return Results.NotFound();
     var caminho = repo.CaminhoRelatorio(id, extensao);
     if (!File.Exists(caminho))
         return Results.NotFound();
+    auditoria.Registrar(ctx.User.Identity?.Name, "relatorio_aberto", $"lote {id[..8]} · {extensao}");
+    ctx.Response.Headers.ContentSecurityPolicy = CabecalhosSeguranca.CspRelatorio;
     return TypedResults.PhysicalFile(caminho, tipo);
 }

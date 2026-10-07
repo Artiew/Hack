@@ -20,10 +20,10 @@ Atualizado ao fim da **Fase 3** (score, priorização, plano de ação, relatór
 
 | Req. | O que o manual exige | Evidência | Status |
 |---|---|---|---|
-| RS1 | Autenticação | — (Fase 4) | ❌ |
-| RS2 | OWASP Top 10 | Provado: CSRF (POST sem token → 400), escape de HTML (testes + PDF), path traversal (→ 404), validação de upload. Falta: cabeçalhos/CSP no site, login, limites de tentativa | ⚠️ |
+| RS1 | Autenticação | Nada abre sem login (páginas e relatórios → 302 para /Entrar). `admin` criado na 1ª execução com senha de `ADMIN_SENHA_INICIAL` (exatamente 8) ou sorteada e mostrada uma vez; troca obrigatória (toda página leva a /TrocarSenha); PBKDF2-SHA256 600 mil iterações; bloqueio após 5 erros por 15 min; erro idêntico para usuário inexistente/senha errada/bloqueado; sessão de 30 min; papéis admin/analista/executivo (executivo não envia nem vê tabelas técnicas; /Usuarios → /Negado). `SegurancaTests` (24) + teste de ponta a ponta com curl | ✅ |
+| RS2 | OWASP Top 10 | CSRF (POST sem token → 400; sair só por POST), escape de HTML (testes + PDF), path traversal (→ 404), validação de upload, CSP restrita no site e no relatório, `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `Cache-Control: no-store`, sem cabeçalho `Server`, cookie `__Host-` Secure/HttpOnly/SameSite=Strict, limite de 10 logins/min por endereço (429), erro sem detalhe técnico em produção | ✅ |
 | RS3 | Proteger dados em trânsito e em repouso | HTTPS local em `https://localhost:5001` com certificado confiável (`dotnet dev-certs https --check --trust` → confiável, válido até 07/10/2027). Em repouso: `var/` ainda não cifrado | ⚠️ |
-| RS4 | Registrar atividades sem dados sensíveis | Log do lote só com números; falta auditoria de acesso/alterações | ⚠️ |
+| RS4 | Registrar atividades sem dados sensíveis | `var/auditoria.jsonl` (só acrescenta): entrada, falha, bloqueio, saída, troca de senha, usuário criado, lote processado, relatório aberto, envio negado; login inexistente vira "(desconhecido)". Página /Auditoria (admin). Teste: nenhuma senha usada aparece no log nem em `usuarios.json` | ✅ |
 | RS5 | Minimização / LGPD | Anonimização de usuário pronta (as fontes reais não trazem usuário); CSV bruto não é guardado | ⚠️ |
 | RS6 | Dependências confiáveis e atualizadas | Produção: **0 pacotes NuGet** (só .NET 10.0.401). Testes: xunit.v3 4.0.1, Test.Sdk 18.10.1, runner 4.0.0. `--vulnerable --include-transitive` = nenhum; `--outdated` = nenhum (07/10/2026, após a Fase 2) | ✅ |
 

@@ -3,11 +3,13 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Piersec.Core.Armazenamento;
 using Piersec.Core.Modelo;
 using Piersec.Core.Pipeline;
+using Piersec.Core.Seguranca;
+using Piersec.Web.Seguranca;
 
 namespace Piersec.Web.Pages;
 
 /// <summary>Tela "Enviar arquivos": recebe os CSVs, roda o ciclo e abre o resultado do lote.</summary>
-public sealed class IndexModel(CicloAnalise ciclo, RepositorioLotes repositorio, ILogger<IndexModel> log) : PageModel
+public sealed class IndexModel(CicloAnalise ciclo, RepositorioLotes repositorio, Auditoria auditoria, ILogger<IndexModel> log) : PageModel
 {
     public IReadOnlyList<ResumoLote> Lotes { get; private set; } = [];
     public string? Erro { get; private set; }
@@ -17,6 +19,11 @@ public sealed class IndexModel(CicloAnalise ciclo, RepositorioLotes repositorio,
     // Razor Pages valida o token anti-CSRF automaticamente em todo POST.
     public async Task<IActionResult> OnPostAsync(List<IFormFile>? arquivos, CancellationToken ct)
     {
+        if (!Sessao.PodeEnviar(User))
+        {
+            auditoria.Registrar(User.Identity?.Name, "envio_negado");
+            return Forbid(); // executivo só consulta
+        }
         if (arquivos is null || arquivos.Count == 0)
         {
             Erro = "Selecione ao menos um arquivo .csv.";
@@ -43,6 +50,9 @@ public sealed class IndexModel(CicloAnalise ciclo, RepositorioLotes repositorio,
         log.LogInformation("Lote {Id}: {Arquivos} arquivo(s), {Eventos} evento(s), {Lacunas} lacuna(s). PDF: {Pdf}",
             resultado.Lote.Id, resultado.Lote.Arquivos.Count, resultado.Lote.Eventos.Count,
             resultado.Lote.Lacunas.Count, resultado.MensagemPdf);
+        var validacao = resultado.Lote.Validacao;
+        auditoria.Registrar(User.Identity?.Name, "lote_processado",
+            $"lote {resultado.Lote.Id[..8]} · {resultado.Lote.Arquivos.Count} arquivo(s) · verificações {validacao?.Aprovadas}/{validacao?.Total}");
 
         return RedirectToPage("/Lote", new { id = resultado.Lote.Id });
     }

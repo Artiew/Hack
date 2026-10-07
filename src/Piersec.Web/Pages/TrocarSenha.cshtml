@@ -1,0 +1,32 @@
+@page
+@model TrocarSenhaModel
+@{
+    ViewData["Title"] = "Trocar senha";
+}
+
+<div class="estreito">
+    <h1>Trocar senha</h1>
+    @if (Model.Obrigatoria)
+    {
+        <p class="aviso-forte" role="alert">Primeiro acesso: troque a senha inicial antes de continuar.</p>
+    }
+    <p class="meta">
+        A nova senha precisa ter pelo menos @ServicoAutenticacao.TamanhoMinimoNovaSenha caracteres, com letras e também números ou símbolos,
+        ser diferente da atual e não conter o nome de usuário.
+    </p>
+
+    @if (Model.Erro is not null)
+    {
+        <p class="erro" role="alert">@Model.Erro</p>
+    }
+
+    <form method="post" class="cartao formulario">
+        <label for="atual">Senha atual</label>
+        <input id="atual" name="Atual" type="password" autocomplete="current-password" required maxlength="128">
+        <label for="nova">Nova senha</label>
+        <input id="nova" name="Nova" type="password" autocomplete="new-password" required minlength="@ServicoAutenticacao.TamanhoMinimoNovaSenha" maxlength="128">
+        <label for="confirmacao">Repita a nova senha</label>
+        <input id="confirmacao" name="Confirmacao" type="password" autocomplete="new-password" required maxlength="128">
+        <button type="submit">Trocar senha</button>
+    </form>
+</div>

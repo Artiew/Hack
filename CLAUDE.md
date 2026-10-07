@@ -35,10 +35,11 @@ O briefing completo está em **`docs/PROMPT.md`** — leia antes de qualquer tar
   - **Parte 1 feita:** validação RF8 (`Validacao/ValidadorLote`, 12 verificações, selo no relatório, "NÃO VALIDADO" se
     reprovar, relatório retido se sobrar credencial). Demo: `exemplos/alertas-corrompido-ficticio.csv` reprova a V04.
     Exemplos fictícios são gerados por `exemplos/gerar-exemplos.ps1`.
-  - **Próximo:** parte 2 — login RS1 (admin com senha inicial de 8 caracteres de `ADMIN_SENHA_INICIAL` ou aleatória
-    mostrada uma vez; troca obrigatória; PBKDF2; bloqueio após 5 tentativas; erro genérico; papéis admin/analista/executivo),
-    auditoria RS4 sem dados sensíveis, cabeçalhos de segurança/CSP, limite de tentativas. Depois parte 3 — cifrar
-    lotes e relatórios em repouso (RS3) com Data Protection + DPAPI.
+  - **Parte 2 feita:** login RS1 (`Core/Seguranca`: PBKDF2, bloqueio, troca obrigatória, papéis), auditoria RS4
+    (`var/auditoria.jsonl`, página /Auditoria), cabeçalhos/CSP/cookie `__Host-`, limite de 10 logins/min, páginas
+    Entrar/TrocarSenha/Sair/Usuarios/Auditoria/Negado. Executivo não envia e não vê tabelas técnicas.
+    Para testar com senha conhecida: `$env:ADMIN_SENHA_INICIAL='8chars!!'` antes do `rodar.cmd -DoZero`.
+  - **Próximo:** parte 3 — cifrar lotes e relatórios em repouso (RS3) com Data Protection + DPAPI (sem biblioteca nova).
 - Ideia aprovada para a Fase 6: filtro por ambiente (cada arquivo separado) sem precisar reenviar.
 - Perguntas ao mentor ainda abertas: fim de `docs/FONTES.md` (inclui: SIEM-1 e SIEM-2 são empresas diferentes?).
 

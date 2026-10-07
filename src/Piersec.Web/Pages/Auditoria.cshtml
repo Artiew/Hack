@@ -1,0 +1,27 @@
+@page
+@model AuditoriaModel
+@{
+    ViewData["Title"] = "Auditoria";
+    var fuso = Piersec.Core.Padronizacao.NormalizadorDatas.FusoBrasilia;
+}
+
+<h1>Auditoria</h1>
+<p class="meta">Os @AuditoriaModel.Quantidade registros mais recentes: acessos, envios, relatórios abertos e alterações.
+Nenhuma senha ou conteúdo de arquivo é gravado.</p>
+
+@if (Model.Registros.Count == 0)
+{
+    <p class="vazio">Nenhum registro ainda.</p>
+}
+else
+{
+    <table>
+        <thead><tr><th>Quando</th><th>Usuário</th><th>Ação</th><th>Detalhe</th></tr></thead>
+        <tbody>
+            @foreach (var r in Model.Registros)
+            {
+                <tr><td>@Formatar.DataHora(r.QuandoUtc, fuso)</td><td>@r.Usuario</td><td>@r.Acao</td><td>@r.Detalhe</td></tr>
+            }
+        </tbody>
+    </table>
+}

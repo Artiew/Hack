@@ -10,6 +10,22 @@
     <header class="topo">
         <a class="marca" href="/">Plataforma de risco</a>
         <span class="etiqueta">Protótipo · dados sintéticos</span>
+        @if (User.Identity?.IsAuthenticated == true)
+        {
+            <nav class="menu">
+                <a href="/">Lotes</a>
+                @if (User.IsInRole(Papeis.Admin))
+                {
+                    <a href="/Usuarios">Usuários</a>
+                    <a href="/Auditoria">Auditoria</a>
+                }
+                <a href="/TrocarSenha">Trocar senha</a>
+                <span class="meta">@User.Identity.Name (@(User.IsInRole(Papeis.Admin) ? Papeis.Admin : User.IsInRole(Papeis.Analista) ? Papeis.Analista : Papeis.Executivo))</span>
+                <form method="post" action="/Sair" class="em-linha">
+                    <button type="submit" class="botao-discreto">Sair</button>
+                </form>
+            </nav>
+        }
     </header>
     <main class="conteudo">
         @RenderBody()

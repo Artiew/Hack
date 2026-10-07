@@ -1,0 +1,50 @@
+@page
+@model UsuariosModel
+@{
+    ViewData["Title"] = "Usuários";
+    var fuso = Piersec.Core.Padronizacao.NormalizadorDatas.FusoBrasilia;
+}
+
+<h1>Usuários</h1>
+<p class="meta">admin: tudo, inclusive usuários · analista: envia arquivos e vê tudo · executivo: só a visão executiva.</p>
+
+@if (Model.Criado is { } criado)
+{
+    <div class="aviso-forte" role="alert">
+        Usuário <strong>@criado.Login</strong> criado. Senha inicial: <code class="senha">@criado.Senha</code><br>
+        Entregue à pessoa agora: esta senha NÃO será mostrada de novo. Ela será obrigada a trocá-la no primeiro acesso.
+    </div>
+}
+@if (Model.Erro is not null)
+{
+    <p class="erro" role="alert">@Model.Erro</p>
+}
+
+<form method="post" class="cartao">
+    <label for="login">Novo usuário (login)</label>
+    <input id="login" name="NovoLogin" value="@Model.NovoLogin" required pattern="[a-z0-9._\-]{3,32}" maxlength="32" placeholder="ex.: maria.silva">
+    <label for="papel">Papel</label>
+    <select id="papel" name="NovoPapel">
+        @foreach (var p in Piersec.Core.Seguranca.Papeis.Todos)
+        {
+            <option value="@p" selected="@(p == Model.NovoPapel)">@p</option>
+        }
+    </select>
+    <button type="submit">Criar usuário</button>
+</form>
+
+<h2>Cadastrados</h2>
+<table>
+    <thead><tr><th>Login</th><th>Papel</th><th>Situação</th><th>Criado em</th></tr></thead>
+    <tbody>
+        @foreach (var u in Model.Usuarios)
+        {
+            <tr>
+                <td>@u.Login</td>
+                <td>@u.Papel</td>
+                <td>@(u.BloqueadoAteUtc > Model.Agora ? "bloqueado (muitas tentativas)" : u.TrocarSenha ? "aguardando troca da senha inicial" : "ativo")</td>
+                <td>@Formatar.DataHora(u.CriadoEmUtc, fuso)</td>
+            </tr>
+        }
+    </tbody>
+</table>
