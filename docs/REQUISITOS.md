@@ -1,7 +1,7 @@
 # Matriz de requisitos
 
 Regra: ✅ só para o que foi **executado e provado**. ⚠️ parcial · ❌ não feito · ❓ depende de informação que ainda não temos.
-Atualizado ao fim da **Fase 5** (operação automatizada simulada). Números dos dados reais vêm de contagens (`docs/FONTES.md`).
+Atualizado ao fim da **Fase 6** (serviços e prejuízo, visão técnica com rastro até a linha, discordar da severidade). Números dos dados reais vêm de contagens (`docs/FONTES.md`).
 
 ## Requisitos funcionais (manual 4.1)
 
@@ -10,7 +10,7 @@ Atualizado ao fim da **Fase 5** (operação automatizada simulada). Números dos
 | RF1 | Ler ≥ 3 fontes diferentes | 3 arquivos reais lidos de ponta a ponta: 29.564 registros, 0 rejeitados (`AdaptadorVulnerabilidades`, `AdaptadorAlertasSiem`, `FontesReaisTests`). Por estrutura são **2 ferramentas** em 3 arquivos: contagem de "fontes" aguarda o mentor | ⚠️ |
 | RF2 | Converter para modelo comum | `EventoSeguranca` para as fontes reais: datas → UTC (10.000/10.000 alertas com data), ativos normalizados, CVSS com ponto ou vírgula, Windows-1252 tratado (P-007), linhas embrulhadas e data partida tratadas (P-005). Testes `FontesReaisTests`, `PadronizacaoTests`, `LeitorCsvTests` | ✅ |
 | RF3 | Correlacionar com regras claras e reproduzíveis | 5 regras em `regras/correlacao.json` (validadas na inicialização), com justificativa e frameworks; mesma entrada = mesma saída (`Mesma_entrada_gera_exatamente_a_mesma_saida`); regras sem resultado mostram o motivo. Dados reais: 548 correlações. Limite: **sem chave comum entre alertas e vulnerabilidades** (0 máquinas em comum); MITRE pendente | ⚠️ |
-| RF4 | Crítica/Alta/Média/Baixa com justificativa | `ClassificadorSeveridade` + `regras/severidade.json` (CVSS oficial, níveis do SIEM, textos). 100% dos eventos reais com justificativa, inclusive "por que não é Crítica" (`SeveridadeTests`). Falta o contexto (exposição, serviço) — Fase 3 | ⚠️ |
+| RF4 | Crítica/Alta/Média/Baixa com justificativa | `ClassificadorSeveridade` + `regras/severidade.json` (CVSS oficial, níveis do SIEM, textos). 100% dos eventos reais com justificativa, inclusive "por que não é Crítica" (`SeveridadeTests`). Falta o contexto (exposição, serviço) — Fase 3 ; **discordar da severidade**: o analista ajusta com motivo obrigatório, o que cria uma revisão do lote recalculada (o original não muda), com anexo I no relatório, V15 e auditoria (`RevisaoTests`). Ainda falta usar exposição/criticidade do serviço no cálculo da severidade | ⚠️ |
 | RF5 | Score 0–100 com fatores | `CalculadoraScore` + `regras/score.json`: direção escrita ("100 = risco máximo"), 5 fatores com contribuição (soma = score, teste), fator sem dados = "não medido" (não vira zero), confiança, faixas com nome, comparação com o lote anterior e motivo (`Comparacao_com_o_lote_anterior...`), sanidade: limpo → 0 "Baixo", caótico → ≥ 80 "Crítico"; **"3 achados explicam X% do risco"** recalculando o score sem cada achado, e dizendo "o risco está espalhado" quando explicam menos de 30% (`ScoreEPlanoTests`). Dados reais: 74 (Alto), confiança média (55% do peso medido) | ✅ |
 | RF6 | Relatório gerado automaticamente | Upload dos 3 arquivos reais → HTML + PDF em ~3,5 s, sem intervenção (ensaio do zero com `rodar.cmd -DoZero`). Página 1 para a diretoria (como estamos / mais grave / o que fazer / se fizer só uma coisa), seções de score, plano e limites, anexos técnicos e glossário. Falta validação antes de emitir (RF8) | ⚠️ |
 | RF7 | Sinalizar lacunas | Por campo, linha, arquivo, fonte ("não informa data/usuário/exposição") e lote; aviso de possível corte em 10.000 linhas; lacunas agrupadas no relatório; **fonte esperada ausente** ("faltou o arquivo de alertas…", na página 1, na tela e nos limites); **linhas repetidas** contadas uma vez e declaradas com o número da linha (`DuplicidadeEFontesTests`) | ✅ |
@@ -32,7 +32,7 @@ Atualizado ao fim da **Fase 5** (operação automatizada simulada). Números dos
 | Req. | O que o manual exige | Evidência | Status |
 |---|---|---|---|
 | RG1 | Gerado pela plataforma | `CicloAnalise` gera HTML e PDF a partir do lote; metodologia lida dos mesmos JSON usados na análise | ✅ |
-| RG2 | Todo número rastreável à fonte | Evento → `arquivo:linha` + SHA-256; correlação → lista de eventos e máquinas. Números do resumo ainda não são clicáveis | ⚠️ |
+| RG2 | Todo número rastreável à fonte | No site (admin/analista): todo número da tela do lote é clicável → lista filtrada dos eventos que o formam → detalhe do evento com **arquivo, linha (cabeçalho = 1) e SHA-256** do arquivo, justificativa e correlações (`ConsultaTests`, `Linha_de_origem_conta_o_cabecalho_como_linha_1`, ponta a ponta). No relatório (arquivo estático, sem link para o site): ids de evento e `arquivo:linha` nos anexos. A linha bruta do CSV não é guardada (minimização), e isso é explicado na tela | ✅ |
 | RG3 | Declarar limites e incertezas | Lacunas agrupadas, limites da fonte, ajustes de leitura, premissas (fuso, ambiente = arquivo), possível corte em 10.000 linhas; seção "O que esta análise não consegue dizer"; aviso de confiança baixa junto do score e aviso de empresas/ambientes possivelmente diferentes na página 1 (`AvisosTests`; dados reais: SIEM-1 × SIEM-2) | ✅ |
 | RG4 | Justificativa legível de severidade | 29.564/29.564 eventos reais com justificativa em português (≤ 200 caracteres, teste), inclusive "por que não é Crítica"; correlações com "por que importa" | ✅ |
 | RG5 | Português simples, jargão explicado | Página 1 sem códigos técnicos (teste `Primeira_pagina_responde_as_tres_perguntas_sem_codigos_tecnicos`), cada risco com "o que é / por que importa / como resolver", glossário com 14 termos, plurais corretos. Revisão de linguagem pela equipe ainda pendente | ⚠️ |
@@ -53,7 +53,7 @@ Atualizado ao fim da **Fase 5** (operação automatizada simulada). Números dos
 | Obrigatório: score de risco geral | ✅ |
 | Obrigatório: relatório executivo gerado pela plataforma | ✅ (gerado sozinho, com resumo executivo, score, plano e anexos; validação na Fase 4) |
 | Obrigatório: RS4 a RS6 | ⚠️ (RS4 e RS6 ✅; RS5: anonimização pronta, minimização a revisar) |
-| Desejável: trilha de evidências navegável | ⚠️ (ids e linhas no relatório; navegação na Fase 6) |
+| Desejável: trilha de evidências navegável | ✅ (número → eventos → arquivo e linha de origem; filtros por severidade, serviço, fonte, ambiente, máquina, regra, correlação e ação do plano) |
 | Desejável: recomendações automáticas | ✅ (plano gerado a partir dos dados; impacto calculado) |
 | Desejável: priorização por esforço e impacto | ✅ (matriz impacto × esforço, prazo por severidade; `Matriz_impacto_por_esforco`, `Plano_calcula_quanto_cada_acao_elimina`) |
 | Desejável: remediação automatizada e chamados | ✅ (chamados e plano de correção SIMULADOS, artefato `/automacao/CH-NNNN.txt`; nada é enviado. `OperacaoTests`, ponta a ponta com os exemplos) |
@@ -91,3 +91,17 @@ Atualizado ao fim da **Fase 5** (operação automatizada simulada). Números dos
 | Respeita a decisão humana | rejeitado/desfeito não é refeito sozinho (`Pessoa_aprova_rejeita_com_motivo_e_desfaz`) | ✅ |
 | Consistência da automação | V13 confere as travas por outro caminho; adulterar um item reprova (`V13_aprova_...`) | ✅ |
 | Com os dados reais | ainda não rodado | ❌ |
+
+## Visões executiva e técnica (PROMPT 5.1 · Fase 6)
+
+| Item | Evidência | Status |
+|---|---|---|
+| Mapa máquina × serviço de negócio com premissa declarada | `regras/servicos.json` (nome → tipo, primeira regra vence), premissa na seção 2 do relatório e na tela; V14 confere (`ServicosTests`) | ✅ |
+| Impacto financeiro em faixas, com premissas visíveis | Faixa por serviço com premissa; prejuízo potencial = soma dos serviços em risco ("entre R$ X e R$ Y"), na página 1, seção 2 e tela; nunca número exato; sem serviço em risco, não inventa valor | ✅ |
+| "3 achados explicam X% do risco" | Recalculado sem cada problema; linguagem de diretoria; "risco espalhado" quando explica pouco (`ScoreEPlanoTests`) | ✅ |
+| Visão técnica filtrável | `/Lote/{id}/Eventos` (fonte, severidade, tipo, serviço, ambiente, máquina, regra, texto, correlação, ação do plano, arquivo), paginada; só admin/analista (executivo → /Negado, testado) | ✅ |
+| Navegação executivo → técnico | Serviços, riscos, ações e contagens da tela do lote levam aos eventos; cada evento mostra o serviço afetado | ✅ |
+| Filtro por ambiente sem trocar o consolidado | Tabela "Por ambiente" e filtro na visão técnica (ambiente = arquivo, premissa) | ✅ |
+| Discordar da severidade com motivo e recálculo | Ver RF4 (`RevisaoTests`, ponta a ponta no site) | ✅ |
+| Linha do tempo por ativo / cadeia usuário→máquina→servidor | Os dados não trazem usuário nem ligação entre máquinas; a lista por máquina (filtro) ordena por gravidade, não por tempo | ❌ |
+| MITRE ATT&CK como tabela de dados | Aguarda o catálogo de regras do mentor | ❓ |

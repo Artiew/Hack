@@ -4,7 +4,7 @@ Protótipo que recebe CSVs de ferramentas de segurança, padroniza os dados, cla
 correlaciona eventos, calcula um score de risco de 0 a 100, monta um plano de ação e gera sozinho um relatório
 executivo (HTML e PDF) cuja primeira página é escrita para quem não é da área. Uma operação automática (simulada) abre
 chamados sozinha dentro de travas e deixa o resto numa fila de aprovação humana.
-**Estado atual: Fase 5** (score, plano de ação, relatório para leigo, validação, login e operação automática simulada). O que está provado fica em
+**Estado atual: Fase 6** (score, plano, relatório para leigo, validação, login, operação automática simulada, serviços e prejuízo em faixas, visão técnica com rastro até a linha do CSV e "discordar da severidade"). O que está provado fica em
 [`docs/REQUISITOS.md`](docs/REQUISITOS.md); o que sabemos dos dados, em [`docs/FONTES.md`](docs/FONTES.md).
 
 > Uso restrito ao ambiente do hackathon. Não publique este repositório: os dados do desafio não podem sair da máquina.
@@ -46,10 +46,11 @@ src/Piersec.Core/        regras de negócio, sem tela
   Pipeline/              lote: coleta → padronização → severidade → correlação; ciclo completo
   Armazenamento/         lotes salvos em var/lotes/{id}/
   Operacao/              automação: gatilhos, decisão (travas), chamados simulados
+  Consulta/              filtros da visão técnica (número → eventos → linha do CSV)
   Relatorio/             HTML do relatório e conversão para PDF pelo navegador
 src/Piersec.Web/         telas (ASP.NET Core Razor Pages)
 tests/Piersec.Tests/     testes automatizados (xUnit v3), sempre com dados fictícios
-regras/                  severidade, correlacao, frameworks, ativos, score, plano, automacao (.json; editáveis; validados ao subir)
+regras/                  severidade, correlacao, frameworks, ativos, score, plano, automacao, servicos (.json; editáveis; validados ao subir)
 exemplos/                CSVs fictícios para demonstração
 dados/                   CSVs do desafio (fora do git)
 var/                     dados gerados (fora do git)

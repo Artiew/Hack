@@ -57,8 +57,18 @@ O briefing completo está em **`docs/PROMPT.md`** — leia antes de qualquer tar
     Executivo só vê; admin/analista decidem; tudo na auditoria. 212 testes passando.
 - **Depois da Fase 5:** linhas repetidas contam uma vez só (lacuna com a linha); "faltou o arquivo de alertas/vulnerabilidades"
   (RF7); "3 achados explicam X% do risco" (ou "risco espalhado"); `.txt` do chamado sem "Eventos: 0". 224 testes.
-- **Próximo passo: Fase 6** — visões executiva e técnica com navegação entre elas, números clicáveis até a linha do CSV
-  (RG2), tabela técnica filtrável, filtro por ambiente, "discordar da severidade". Ver `docs/PROMPT.md` seção 5.1.
+- **Fase 6 concluída (07/10/2026):**
+  - `regras/servicos.json`: máquina → serviço (nome, depois tipo; PREMISSA declarada) e faixa de prejuízo por serviço.
+    Prejuízo potencial = soma dos serviços em risco (nota ≥ 40). Página 1 ganhou uma linha; seção 2 nova (as outras
+    foram renumeradas: 3 score, 4 plano, 5 automação, 6 limites). Impressão compacta: resumo da diretoria cabe em 1 folha.
+  - Visão técnica: `/Lote/{id}/Eventos` (filtros) e `/Lote/{id}/Evento/{ev}` (arquivo, linha, SHA-256); números da tela
+    do lote clicáveis; tabela por ambiente; política "Tecnico" (admin/analista); `LotesEmMemoria` (cache 3 lotes/10 min).
+  - Discordar da severidade: no detalhe do evento; cria REVISÃO (`ProcessadorLote.Revisar`, `CicloAnalise.RevisarAsync`),
+    o original não muda; aviso na página 1 + anexo I; V14 (serviços) e V15 (ajustes). 248 testes.
+  - Texto para executivo: ação + faixa, sem jargão (ver memória/feedback do Vitor).
+- **Próximo passo: Fase 7** — polimento visual (cards da `docs/referencia-ui.png`, arrastar-e-soltar no envio, progresso
+  por etapa), linguagem, PDF. Pendentes pequenos: linha do tempo por máquina (ordenar por data), severidade usando a
+  criticidade do serviço (RF4), rodar com os 3 arquivos reais e conferir contagens.
 - Atenção: `rodar.cmd -DoZero` apaga também usuários e chaves; na 1ª execução a senha do admin aparece UMA vez no terminal.
 - Ideia aprovada para a Fase 6: filtro por ambiente (cada arquivo separado) sem precisar reenviar.
 - Perguntas ao mentor ainda abertas: fim de `docs/FONTES.md` (inclui: SIEM-1 e SIEM-2 são empresas diferentes?).
