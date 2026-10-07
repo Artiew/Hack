@@ -83,7 +83,7 @@ O briefing completo está em **`docs/PROMPT.md`** — leia antes de qualquer tar
 - Commits terminam com a linha de co-autoria indicada pelo ambiente.
 
 ## Trabalhar em dois computadores (pen drive)
-- **Levar daqui:** `git bundle create <PEN>:\piersec.bundle main` (commit tudo antes; o bundle leva só o que foi commitado).
+- **Levar daqui:** `git bundle create <PEN>:\piersec.bundle HEAD main` (commit tudo antes; o bundle leva só o que foi commitado).
 - **Na faculdade:** o Vitor abre o Claude Code e pede para ler `<PEN>:\CLAUDE-FACULDADE.md`.
 - **Trazer da faculdade:** `git pull <PEN>:\piersec-faculdade.bundle main`, depois rode os testes, leia `git log` dos commits
   novos e a seção "Estado atual" acima, e resuma ao Vitor o que mudou.

@@ -97,3 +97,11 @@ Requisito afetado: RS3 · Impacto: atrasa (mensagem ruim)
 - **Causa:** sem a chave, os bytes cifrados chegam como "lixo" ao leitor de JSON, que falha antes da decifragem reclamar.
 - **Correção:** tratar `CryptographicException` e `JsonException` do mesmo jeito: erro claro e **nada é apagado** (começar do zero duplicaria chamados).
 - **Teste:** `Chamados_ficam_cifrados_no_disco_e_sao_lidos_de_volta` (falhou antes, passa depois) ✔.
+
+## P-012 · Pacote do pen drive (bundle) abria uma pasta vazia
+Requisito afetado: nenhum (transporte do projeto) · Impacto: bloqueia o trabalho na faculdade
+- **Sintoma × Esperado:** `git clone piersec.bundle piersec` → "remote HEAD refers to nonexistent ref" e pasta sem arquivos × projeto completo.
+- **Causa:** o bundle foi criado com `git bundle create ... main`, que leva só o ramo `main`, sem o `HEAD` (qual ramo abrir). O clone não sabe o que colocar na pasta.
+- **Correção:** `git bundle create <PEN>:\piersec.bundle HEAD main` (aqui, no `CLAUDE.md` e nas instruções do pen drive). `git pull <bundle> main` já funcionava, porque diz o ramo.
+- **Verificação:** clone em pasta nova seguindo as instruções → ramo `main`, último commit, 248/248 testes ✔.
+- **Aprendizado:** testar o pacote do jeito que ele vai ser usado (clone do zero), não só com `git bundle verify`.
