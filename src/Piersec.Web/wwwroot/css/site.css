@@ -1,4 +1,4 @@
-/* Fase 1: visual simples e legível. O layout em cards vem na Fase 7. */
+/* Visual simples e legível, com letras maiores e mais espaço. O layout em cards vem na Fase 7. */
 :root {
     --fundo: #f5f7fa;
     --superficie: #ffffff;
@@ -34,8 +34,8 @@
 body {
     margin: 0;
     font-family: "Segoe UI", Arial, sans-serif;
-    font-size: 15px;
-    line-height: 1.5;
+    font-size: 17px;
+    line-height: 1.6;
     color: var(--tinta);
     background: var(--fundo);
 }
@@ -47,17 +47,18 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid 
     display: flex;
     gap: 12px;
     align-items: center;
-    padding: 12px 24px;
+    padding: 16px 40px;
     background: var(--superficie);
     border-bottom: 1px solid var(--linha);
 }
-.marca { font-weight: 700; text-decoration: none; color: var(--tinta); }
-.etiqueta { font-size: 12px; color: var(--suave); border: 1px solid var(--linha); border-radius: 999px; padding: 2px 10px; }
+.marca { font-weight: 700; font-size: 19px; text-decoration: none; color: var(--tinta); }
+.etiqueta { font-size: 13px; color: var(--suave); border: 1px solid var(--linha); border-radius: 999px; padding: 2px 10px; }
 
-.conteudo { max-width: 1100px; margin: 0 auto; padding: 24px 16px 48px; }
+.conteudo { max-width: 1440px; margin: 0 auto; padding: 32px 40px 64px; }
 
-h1 { font-size: 28px; margin: 8px 0; }
-h2 { font-size: 19px; margin-top: 32px; }
+h1 { font-size: 34px; margin: 8px 0 16px; }
+h2 { font-size: 24px; margin: 48px 0 16px; }
+h3 { font-size: 19px; margin: 32px 0 12px; }
 .meta { color: var(--suave); }
 .vazio { color: var(--suave); font-style: italic; }
 .erro { color: var(--erro); font-weight: 600; }
@@ -70,7 +71,7 @@ h2 { font-size: 19px; margin-top: 32px; }
     background: var(--superficie);
     border: 1px solid var(--linha);
     border-radius: 12px;
-    padding: 16px;
+    padding: 24px;
 }
 .cartao label { width: 100%; font-weight: 600; }
 
@@ -80,7 +81,7 @@ button, .botao {
     color: #fff;
     border: 0;
     border-radius: 8px;
-    padding: 8px 16px;
+    padding: 10px 20px;
     font: inherit;
     font-weight: 600;
     text-decoration: none;
@@ -88,30 +89,30 @@ button, .botao {
 }
 @media (prefers-color-scheme: dark) { button, .botao { color: #0d1117; } }
 
-.acoes { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 16px 0; }
+.acoes { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin: 24px 0; }
 
-.menu { display: flex; gap: 14px; align-items: center; margin-left: auto; flex-wrap: wrap; }
+.menu { display: flex; gap: 20px; align-items: center; margin-left: auto; flex-wrap: wrap; }
 .em-linha { display: inline; margin: 0; }
 .botao-discreto { background: transparent; color: var(--destaque); border: 1px solid var(--linha); padding: 4px 10px; }
-.estreito { max-width: 420px; }
+.estreito { max-width: 480px; }
 .formulario { flex-direction: column; align-items: stretch; }
-.formulario input, .cartao input:not([type=file]), .cartao select { font: inherit; padding: 8px; border: 1px solid var(--linha); border-radius: 6px; background: var(--superficie); color: var(--tinta); }
+.formulario input, .cartao input:not([type=file]), .cartao select { font: inherit; padding: 10px 12px; border: 1px solid var(--linha); border-radius: 6px; background: var(--superficie); color: var(--tinta); }
 code.senha { font-size: 18px; letter-spacing: .08em; }
 
-.selo-ok { display: inline-block; border: 2px solid var(--baixa); color: var(--baixa); border-radius: 8px; padding: 4px 12px; font-weight: 700; }
-.nao-validado { border: 3px solid var(--erro); color: var(--erro); border-radius: 8px; padding: 10px 14px; font-weight: 700; background: var(--superficie); }
-.aviso-forte { border: 2px solid var(--alta); border-radius: 8px; padding: 8px 12px; font-weight: 600; background: var(--superficie); }
+.selo-ok { display: inline-block; border: 2px solid var(--baixa); color: var(--baixa); border-radius: 8px; padding: 6px 14px; margin: 8px 0; font-weight: 700; }
+.nao-validado { border: 3px solid var(--erro); color: var(--erro); border-radius: 8px; padding: 14px 18px; margin: 16px 0; font-weight: 700; background: var(--superficie); }
+.aviso-forte { border: 2px solid var(--alta); border-radius: 8px; padding: 12px 16px; margin: 16px 0; font-weight: 600; background: var(--superficie); }
 
-.resumo { align-items: flex-start; gap: 24px; }
-.resumo .score { min-width: 160px; }
-.resumo .grande { font-size: 56px; font-weight: 800; line-height: 1; }
-.resumo p { margin: 4px 0; }
+.resumo { align-items: flex-start; gap: 40px; padding: 28px 32px; }
+.resumo .score { min-width: 200px; }
+.resumo .grande { font-size: 72px; font-weight: 800; line-height: 1; }
+.resumo p { margin: 6px 0; }
 
 table { width: 100%; border-collapse: collapse; background: var(--superficie); }
-table.estreita { max-width: 360px; }
-th, td { border: 1px solid var(--linha); padding: 6px 10px; text-align: left; vertical-align: top; }
+table.estreita { max-width: 440px; }
+th, td { border: 1px solid var(--linha); padding: 10px 14px; text-align: left; vertical-align: top; }
 .num { text-align: right; font-variant-numeric: tabular-nums; }
-code { font-family: Consolas, monospace; font-size: 12px; }
+code { font-family: Consolas, monospace; font-size: 14px; }
 
 .sev { font-weight: 700; white-space: nowrap; }
 .sev-critica { color: var(--critica); }
@@ -120,6 +121,12 @@ code { font-family: Consolas, monospace; font-size: 12px; }
 .sev-baixa { color: var(--baixa); }
 .sev-nenhuma { color: var(--suave); }
 
+ol li { margin-bottom: 10px; }
+
 @media (max-width: 700px) {
+    body { font-size: 16px; }
+    .topo { padding: 12px 16px; }
+    .conteudo { padding: 20px 16px 48px; }
+    .resumo { padding: 20px; gap: 16px; }
     table { display: block; overflow-x: auto; }
 }
