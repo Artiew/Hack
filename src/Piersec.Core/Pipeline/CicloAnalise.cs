@@ -86,27 +86,39 @@ public sealed class CicloAnalise(
         }
 
         // Relatório gerado e relido por inteiro antes de sair (V12). Se algo escapou do filtro, é retido.
+        // A versão da diretoria só tira seções da completa (os textos vindos dos dados são os mesmos), então a V12 da
+        // completa vale para as duas; se a completa for retida, a da diretoria também é.
         etapa?.Invoke(EtapaCiclo.Relatorio);
-        var html = gerador.Gerar(lote);
-        var final = ValidadorLote.ConferirRelatorioFinal(html);
+        var final = ValidadorLote.ConferirRelatorioFinal(gerador.Gerar(lote));
         lote = lote with { Validacao = new ResultadoValidacao([.. lote.Validacao!.Verificacoes, final]) };
-        html = final.Aprovada ? gerador.Gerar(lote) : gerador.GerarRetido(lote);
+        var versoes = Enum.GetValues<VersaoRelatorio>()
+            .Select(v => (Versao: v, Html: final.Aprovada ? gerador.Gerar(lote, v) : gerador.GerarRetido(lote)))
+            .ToList();
 
         repositorio.Salvar(lote);
-        repositorio.SalvarRelatorio(lote.Id, "html", new UTF8Encoding(false).GetBytes(html));
+        foreach (var (versao, html) in versoes)
+            repositorio.SalvarRelatorio(lote.Id, "html", new UTF8Encoding(false).GetBytes(html), versao);
 
         // O navegador precisa do HTML aberto para "imprimir" o PDF: arquivos temporários em var/tmp, apagados no fim.
         var temporaria = repositorio.CriarPastaTemporaria();
         try
         {
-            var caminhoHtml = Path.Combine(temporaria, "relatorio.html");
-            var caminhoPdf = Path.Combine(temporaria, "relatorio.pdf");
-            await File.WriteAllTextAsync(caminhoHtml, html, new UTF8Encoding(false), ct);
             etapa?.Invoke(EtapaCiclo.Pdf);
-            var pdf = await conversorPdf.GerarAsync(caminhoHtml, caminhoPdf, ct);
-            if (pdf.Sucesso)
-                repositorio.SalvarRelatorio(lote.Id, "pdf", await File.ReadAllBytesAsync(caminhoPdf, ct));
-            return new ResultadoCiclo(lote, pdf.Sucesso, pdf.Mensagem);
+            string? falha = null;
+            var mensagem = "";
+            foreach (var (versao, html) in versoes)
+            {
+                var caminhoHtml = Path.Combine(temporaria, $"relatorio-{versao}.html");
+                var caminhoPdf = Path.Combine(temporaria, $"relatorio-{versao}.pdf");
+                await File.WriteAllTextAsync(caminhoHtml, html, new UTF8Encoding(false), ct);
+                var pdf = await conversorPdf.GerarAsync(caminhoHtml, caminhoPdf, ct);
+                if (pdf.Sucesso)
+                    repositorio.SalvarRelatorio(lote.Id, "pdf", await File.ReadAllBytesAsync(caminhoPdf, ct), versao);
+                else
+                    falha ??= pdf.Mensagem;
+                mensagem = pdf.Mensagem;
+            }
+            return new ResultadoCiclo(lote, falha is null, falha ?? mensagem);
         }
         finally
         {

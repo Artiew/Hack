@@ -9,6 +9,12 @@ using Piersec.Core.Operacao;
 namespace Piersec.Core.Relatorio;
 
 /// <summary>
+/// Completo: tudo, para admin e analista. Diretoria: só o que o executivo usa para decidir (resumo, serviços e prejuízo,
+/// score, plano completo e glossário); automação, limites e anexos ficam na versão completa.
+/// </summary>
+public enum VersaoRelatorio { Completo, Diretoria }
+
+/// <summary>
 /// Monta o relatório em HTML a partir do lote (RG1: ninguém digita número nenhum).
 /// Página 1 é para quem não é da área: como estamos, o que é mais grave, o que fazer agora.
 /// O detalhe técnico fica nos anexos. Todo texto vindo dos dados passa por <see cref="H"/> (escape de HTML);
@@ -25,8 +31,12 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
 
     private readonly CalculadoraScore _calculadora = new(regras.Score, regras.Ativos);
 
-    public string Gerar(Lote lote)
+    /// <summary>Na versão da diretoria, as referências a anexos apontam para a versão completa (que o executivo não recebe).</summary>
+    public const string ReferenciaVersaoCompleta = "versão completa do relatório, com a equipe técnica";
+
+    public string Gerar(Lote lote, VersaoRelatorio versao = VersaoRelatorio.Completo)
     {
+        var diretoria = versao == VersaoRelatorio.Diretoria;
         var sb = new StringBuilder();
         sb.Append($"""
             <!doctype html>
@@ -35,40 +45,50 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
             <meta charset="utf-8">
             <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'">
             <meta name="viewport" content="width=device-width, initial-scale=1">
-            <title>Relatório de segurança — lote {H(lote.Id[..8])}</title>
+            <title>Relatório de segurança{(diretoria ? " para a diretoria" : "")} — lote {H(lote.Id[..8])}</title>
             <style>{Estilo}</style>
             </head>
             <body>
             <header class="capa">
               <p class="selo">{H(SeloConfidencialidade)}</p>
-              <h1>Relatório de segurança</h1>
+              <h1>Relatório de segurança{(diretoria ? " — versão para a diretoria" : "")}</h1>
               <p class="meta">Gerado automaticamente pela plataforma em {H(Formatar.DataHora(lote.CriadoEmUtc, fusoExibicao))} (horário de Brasília)
               · lote {H(lote.Id[..8])} · {lote.Arquivos.Count(a => a.Fonte is not null)} de {lote.Arquivos.Count} arquivo(s) analisado(s).
-              A primeira página é para a diretoria; o detalhe técnico está nos anexos.</p>
-              {SeloValidacao(lote.Validacao)}
+              {(diretoria
+                  ? $"O detalhe técnico (operação automática, limites da análise e anexos) está na {ReferenciaVersaoCompleta}."
+                  : "A primeira página é para a diretoria; o detalhe técnico está nos anexos.")}</p>
+              {SeloValidacao(lote.Validacao, diretoria)}
             </header>
             """);
 
         if (lote.Avaliacao is { } avaliacao)
         {
-            PaginaDiretoria(sb, lote, avaliacao);
+            PaginaDiretoria(sb, lote, avaliacao, diretoria);
             SecaoServicos(sb, lote);
             SecaoScore(sb, avaliacao);
-            SecaoPlano(sb, avaliacao);
-            SecaoAutomacao(sb, lote.Operacao);
+            SecaoPlano(sb, avaliacao, diretoria);
+            if (!diretoria)
+                SecaoAutomacao(sb, lote.Operacao);
         }
-        SecaoLimites(sb, lote);
 
-        sb.Append("<h2 class=\"quebra\">Anexos para a equipe técnica</h2>");
-        AnexoCorrelacoes(sb, lote);
-        AnexoMaquinasEEventos(sb, lote);
-        AnexoComoDecidimos(sb, lote);
-        AnexoArquivos(sb, lote);
-        AnexoLacunas(sb, lote);
-        AnexoMetodologia(sb);
-        AnexoGlossario(sb);
-        AnexoValidacao(sb, lote.Validacao);
-        AnexoAjustes(sb, lote);
+        if (diretoria)
+        {
+            AnexoGlossario(sb, "Glossário");
+        }
+        else
+        {
+            SecaoLimites(sb, lote);
+            sb.Append("<h2 class=\"quebra\">Anexos para a equipe técnica</h2>");
+            AnexoCorrelacoes(sb, lote);
+            AnexoMaquinasEEventos(sb, lote);
+            AnexoComoDecidimos(sb, lote);
+            AnexoArquivos(sb, lote);
+            AnexoLacunas(sb, lote);
+            AnexoMetodologia(sb);
+            AnexoGlossario(sb, "G. Glossário");
+            AnexoValidacao(sb, lote.Validacao);
+            AnexoAjustes(sb, lote);
+        }
 
         sb.Append($"""
             <footer>
@@ -105,30 +125,30 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
         </html>
         """;
 
-    private static string SeloValidacao(ResultadoValidacao? v)
+    private static string SeloValidacao(ResultadoValidacao? v, bool diretoria)
     {
         if (v is null)
             return "";
         if (v.TudoCerto)
-            return $"<p class=\"selo-ok\">✔ {v.Total} verificações de consistência, {v.Aprovadas} aprovadas (anexo H)</p>";
+            return $"<p class=\"selo-ok\">✔ {v.Total} verificações de consistência, {v.Aprovadas} aprovadas{(diretoria ? "" : " (anexo H)")}</p>";
         var falhas = v.Total - v.Aprovadas;
         return $"<div class=\"nao-validado\">✖ RELATÓRIO NÃO VALIDADO: {falhas} de {v.Total} verificações de consistência falharam " +
                $"({H(string.Join("; ", v.Verificacoes.Where(x => !x.Aprovada).Select(x => $"{x.Id}: {x.Descricao}")))}). " +
-               "Os números abaixo NÃO devem ser usados para decisão até a correção. Detalhes no anexo H.</div>";
+               $"Os números abaixo NÃO devem ser usados para decisão até a correção. Detalhes {(diretoria ? "na " + ReferenciaVersaoCompleta : "no anexo H")}.</div>";
     }
 
     /// <summary>
     /// Revisão com severidades ajustadas por pessoas: dito com todas as letras na página 1, com o score de antes,
     /// para ninguém confundir o número revisado com o calculado pela plataforma. Null no lote original.
     /// </summary>
-    public static string? AvisoRevisao(Lote lote)
+    public static string? AvisoRevisao(Lote lote, bool diretoria = false)
     {
         if (lote.RevisaoDe is null || lote.Ajustes.Count == 0)
             return null;
         var antes = lote.Comparacao is { } c ? $" Antes dos ajustes, o score era {Inteiro(c.ScoreAnterior)}." : "";
         return $"Esta é uma REVISÃO do lote {lote.RevisaoDe[..8]}: " +
                $"{Formatar.Qtd(lote.Ajustes.Count, "severidade foi ajustada", "severidades foram ajustadas")} por pessoas que discordaram da plataforma, " +
-               $"cada uma com motivo registrado (anexo I).{antes}";
+               $"cada uma com motivo registrado ({(diretoria ? ReferenciaVersaoCompleta : "anexo I")}).{antes}";
     }
 
     private void AnexoAjustes(StringBuilder sb, Lote lote)
@@ -166,7 +186,7 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
 
     // ================= Página 1: para a diretoria =================
 
-    private void PaginaDiretoria(StringBuilder sb, Lote lote, Avaliacao a)
+    private void PaginaDiretoria(StringBuilder sb, Lote lote, Avaliacao a, bool diretoria)
     {
         var s = a.Score;
         var numero = s.Valor is { } v ? Inteiro(v) : "—";
@@ -194,7 +214,7 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
               </div>
             </div>
             """);
-        if (AvisoRevisao(lote) is { } revisao)
+        if (AvisoRevisao(lote, diretoria) is { } revisao)
             sb.Append($"<p class=\"aviso-forte\">⚠ {H(revisao)}</p>");
         foreach (var avisoAmbiente in lote.FontesAusentes.Concat(lote.AvisosAmbiente))
             sb.Append($"<p class=\"aviso-forte\">⚠ {H(avisoAmbiente)}</p>");
@@ -342,17 +362,21 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
 
     // ================= 3. Plano de ação =================
 
-    private static void SecaoPlano(StringBuilder sb, Avaliacao a)
+    private static void SecaoPlano(StringBuilder sb, Avaliacao a, bool diretoria)
     {
-        sb.Append("""
+        sb.Append($"""
             <section>
             <h2>4. Plano de ação completo</h2>
-            <p>O resultado de cada ação é <strong>calculado</strong> contando as falhas que ela elimina. Prazos e esforço seguem as premissas do anexo F.</p>
+            <p>O resultado de cada ação é <strong>calculado</strong> contando as falhas que ela elimina. Prazos e esforço seguem as premissas {(diretoria ? "da " + ReferenciaVersaoCompleta : "do anexo F")}.</p>
             <table><thead><tr><th>#</th><th>Ação e como fazer</th><th>Resultado esperado</th><th>Impacto</th><th>Esforço</th><th>Prazo</th></tr></thead><tbody>
             """);
         foreach (var acao in a.Acoes)
-            sb.Append($"<tr><td class=\"num\">{acao.Ordem}</td><td><strong>{H(acao.Titulo)}</strong><br>{H(acao.ComoFazer)}</td><td>{H(acao.Impacto)}</td>" +
+        {
+            // A lista de máquinas (anexo B) só existe na versão completa.
+            var comoFazer = diretoria ? acao.ComoFazer.Replace("A lista está no anexo B.", $"A lista está na {ReferenciaVersaoCompleta}.") : acao.ComoFazer;
+            sb.Append($"<tr><td class=\"num\">{acao.Ordem}</td><td><strong>{H(acao.Titulo)}</strong><br>{H(comoFazer)}</td><td>{H(acao.Impacto)}</td>" +
                       $"<td>{H(NomeNivel(acao.NivelImpacto))}</td><td>{H(NomeNivel(acao.Esforco))}</td><td>até {acao.PrazoDias} dias</td></tr>");
+        }
         sb.Append("</tbody></table>");
 
         string Celula(string quadrante)
@@ -650,9 +674,9 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
         ("SIEM", "sistema que junta os registros (logs) de várias ferramentas e gera alertas."),
     ];
 
-    private static void AnexoGlossario(StringBuilder sb)
+    private static void AnexoGlossario(StringBuilder sb, string titulo)
     {
-        sb.Append("<section><h2>G. Glossário</h2><dl class=\"glossario\">");
+        sb.Append($"<section><h2>{H(titulo)}</h2><dl class=\"glossario\">");
         foreach (var (termo, explicacao) in Glossario)
             sb.Append($"<dt>{H(termo)}</dt><dd>{H(explicacao)}</dd>");
         sb.Append("</dl></section>");

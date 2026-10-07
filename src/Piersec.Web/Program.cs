@@ -172,10 +172,12 @@ app.UseAuthorization();
 app.UseMiddleware<ExigirTrocaDeSenha>();
 
 app.MapRazorPages();
-app.MapGet("/lotes/{id}/relatorio.html", (string id, HttpContext ctx, RepositorioLotes repo, Auditoria auditoria) =>
-    ArquivoRelatorio(ctx, repo, auditoria, id, "html", "text/html; charset=utf-8"));
-app.MapGet("/lotes/{id}/relatorio.pdf", (string id, HttpContext ctx, RepositorioLotes repo, Auditoria auditoria) =>
-    ArquivoRelatorio(ctx, repo, auditoria, id, "pdf", "application/pdf"));
+// Executivo recebe SEMPRE a versão da diretoria (não adianta pedir a completa). Admin e analista recebem a completa,
+// ou a da diretoria com ?versao=diretoria (para conferir o que a diretoria vai ler).
+app.MapGet("/lotes/{id}/relatorio.html", (string id, string? versao, HttpContext ctx, RepositorioLotes repo, Auditoria auditoria) =>
+    ArquivoRelatorio(ctx, repo, auditoria, id, versao, "html", "text/html; charset=utf-8"));
+app.MapGet("/lotes/{id}/relatorio.pdf", (string id, string? versao, HttpContext ctx, RepositorioLotes repo, Auditoria auditoria) =>
+    ArquivoRelatorio(ctx, repo, auditoria, id, versao, "pdf", "application/pdf"));
 
 // Artefato do chamado (simulado): o texto que seria enviado ao sistema de chamados. A plataforma não envia; quem quiser, baixa.
 app.MapGet("/automacao/{numero}.txt", (string numero, HttpContext ctx, ServicoOperacao operacao, Auditoria auditoria) =>
@@ -202,11 +204,13 @@ app.Logger.LogInformation("Regras carregadas de {Pasta}: {Correlacoes} regra(s) 
     pastaRegras, regras.Correlacoes.Count, regras.Automacao.Playbooks.Count, regras.Automacao.NivelAutonomia, regras.Automacao.ModoEnsaio ? " (ENSAIO)" : "");
 app.Run();
 
-static IResult ArquivoRelatorio(HttpContext ctx, RepositorioLotes repo, Auditoria auditoria, string id, string extensao, string tipo)
+static IResult ArquivoRelatorio(HttpContext ctx, RepositorioLotes repo, Auditoria auditoria, string id, string? pedida, string extensao, string tipo)
 {
-    if (!RepositorioLotes.IdValido(id) || repo.LerRelatorio(id, extensao) is not { } conteudo)
+    var versao = ctx.User.IsInRole(Papeis.Executivo) || pedida == "diretoria" ? VersaoRelatorio.Diretoria : VersaoRelatorio.Completo;
+    if (!RepositorioLotes.IdValido(id) || repo.LerRelatorio(id, extensao, versao) is not { } conteudo)
         return Results.NotFound();
-    auditoria.Registrar(ctx.User.Identity?.Name, "relatorio_aberto", $"lote {id[..8]} · {extensao}");
+    auditoria.Registrar(ctx.User.Identity?.Name, "relatorio_aberto",
+        $"lote {id[..8]} · {extensao}{(versao == VersaoRelatorio.Diretoria ? " · versão da diretoria" : "")}");
     ctx.Response.Headers.ContentSecurityPolicy = CabecalhosSeguranca.CspRelatorio;
     return Results.Bytes(conteudo, tipo); // decifrado só na memória, na hora de enviar
 }

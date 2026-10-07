@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Piersec.Core.Modelo;
+using Piersec.Core.Relatorio;
 
 namespace Piersec.Core.Armazenamento;
 
@@ -54,20 +55,24 @@ public sealed class RepositorioLotes
     public Lote? Carregar(string id) =>
         IdValido(id) && Ler(id, "lote.json") is { } bytes ? JsonSerializer.Deserialize<Lote>(bytes, Json) : null;
 
-    public void SalvarRelatorio(string id, string extensao, byte[] conteudo)
+    public void SalvarRelatorio(string id, string extensao, byte[] conteudo, VersaoRelatorio versao = VersaoRelatorio.Completo)
     {
         if (!ExtensaoValida(extensao))
             throw new ArgumentException("Extensão de relatório inválida.", nameof(extensao));
         Directory.CreateDirectory(Pasta(id));
-        Gravar(id, "relatorio." + extensao, conteudo);
+        Gravar(id, NomeRelatorio(extensao, versao), conteudo);
     }
 
     /// <summary>Relatório decifrado, ou null se não existir (ou não decifrar).</summary>
-    public byte[]? LerRelatorio(string id, string extensao) =>
-        IdValido(id) && ExtensaoValida(extensao) ? Ler(id, "relatorio." + extensao) : null;
+    public byte[]? LerRelatorio(string id, string extensao, VersaoRelatorio versao = VersaoRelatorio.Completo) =>
+        IdValido(id) && ExtensaoValida(extensao) ? Ler(id, NomeRelatorio(extensao, versao)) : null;
 
-    public bool ExisteRelatorio(string id, string extensao) =>
-        IdValido(id) && ExtensaoValida(extensao) && File.Exists(Caminho(id, "relatorio." + extensao));
+    /// <summary>Lotes analisados antes da versão da diretoria existir só têm o relatório completo.</summary>
+    public bool ExisteRelatorio(string id, string extensao, VersaoRelatorio versao = VersaoRelatorio.Completo) =>
+        IdValido(id) && ExtensaoValida(extensao) && File.Exists(Caminho(id, NomeRelatorio(extensao, versao)));
+
+    private static string NomeRelatorio(string extensao, VersaoRelatorio versao) =>
+        (versao == VersaoRelatorio.Diretoria ? "relatorio-diretoria." : "relatorio.") + extensao;
 
     /// <summary>Resumo de todos os lotes, do mais recente para o mais antigo (sem carregar os eventos).</summary>
     public IReadOnlyList<ResumoLote> Listar() =>

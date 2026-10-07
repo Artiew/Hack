@@ -19,7 +19,7 @@
     <p class="meta">Processado em @Formatar.DataHora(lote.CriadoEmUtc, fuso) (horário de Brasília) ·
         @Formatar.Qtd(lote.Arquivos.Count(a => a.Fonte is not null), "arquivo analisado", "arquivos analisados") ·
         @Formatar.Qtd(lote.Eventos.Count, "evento", "eventos")</p>
-    @if (GeradorRelatorioHtml.AvisoRevisao(lote) is { } avisoRevisao)
+    @if (GeradorRelatorioHtml.AvisoRevisao(lote, diretoria: !tecnico) is { } avisoRevisao)
     {
         <p class="aviso-forte" role="note">⚠ @avisoRevisao <a href="/Lote/@lote.RevisaoDe">Abrir o lote original →</a></p>
     }
@@ -34,14 +34,38 @@
         {
             <span class="selo-ok">✔ @val.Total verificações de consistência, @val.Aprovadas aprovadas</span>
         }
-        <a class="botao" href="/lotes/@lote.Id/relatorio.html" target="_blank" rel="noopener">Abrir relatório (HTML)</a>
-        @if (Model.PdfDisponivel)
+        @if (tecnico)
         {
-            <a class="botao botao-secundario" href="/lotes/@lote.Id/relatorio.pdf" download="relatorio-@(lote.Id[..8]).pdf">Baixar PDF</a>
+            <a class="botao" href="/lotes/@lote.Id/relatorio.html" target="_blank" rel="noopener">Abrir relatório (HTML)</a>
+            @if (Model.PdfDisponivel)
+            {
+                <a class="botao botao-secundario" href="/lotes/@lote.Id/relatorio.pdf" download="relatorio-@(lote.Id[..8]).pdf">Baixar PDF</a>
+            }
+            else
+            {
+                <span class="erro">O PDF não foi gerado (veja a mensagem no terminal). Abra o HTML e use Imprimir → Salvar como PDF.</span>
+            }
+            @if (Model.DiretoriaDisponivel)
+            {
+                <a class="botao botao-secundario" href="/lotes/@lote.Id/relatorio.html?versao=diretoria" target="_blank" rel="noopener">Versão da diretoria</a>
+            }
+        }
+        else if (Model.DiretoriaDisponivel)
+        {
+            @* O servidor entrega ao executivo sempre a versão da diretoria, mesmo sem ?versao. *@
+            <a class="botao" href="/lotes/@lote.Id/relatorio.html" target="_blank" rel="noopener">Abrir relatório (HTML)</a>
+            @if (Model.PdfDiretoriaDisponivel)
+            {
+                <a class="botao botao-secundario" href="/lotes/@lote.Id/relatorio.pdf" download="relatorio-diretoria-@(lote.Id[..8]).pdf">Baixar PDF</a>
+            }
+            else
+            {
+                <span class="erro">O PDF não foi gerado. Abra o HTML e use Imprimir → Salvar como PDF.</span>
+            }
         }
         else
         {
-            <span class="erro">O PDF não foi gerado (veja a mensagem no terminal). Abra o HTML e use Imprimir → Salvar como PDF.</span>
+            <span class="meta">O relatório para a diretoria não existe para este lote (ele foi analisado antes dessa versão existir). Peça à equipe técnica para enviar os arquivos de novo.</span>
         }
     </div>
     @if (lote.Validacao is { } v && !v.TudoCerto)

@@ -113,6 +113,11 @@ public class CifragemTests : IDisposable
         Assert.True(resultado.PdfGerado, resultado.MensagemPdf);
         Assert.StartsWith("%PDF-", Encoding.ASCII.GetString(repositorio.LerRelatorio(resultado.Lote.Id, "pdf")!, 0, 5));
         Assert.Contains("FICT-SRV", Encoding.UTF8.GetString(repositorio.LerRelatorio(resultado.Lote.Id, "html")!));
+        // A versão da diretoria também é gerada (HTML e PDF) e também fica cifrada.
+        Assert.StartsWith("%PDF-", Encoding.ASCII.GetString(repositorio.LerRelatorio(resultado.Lote.Id, "pdf", VersaoRelatorio.Diretoria)!, 0, 5));
+        var diretoria = Encoding.UTF8.GetString(repositorio.LerRelatorio(resultado.Lote.Id, "html", VersaoRelatorio.Diretoria)!);
+        Assert.Contains("versão para a diretoria", diretoria);
+        Assert.DoesNotContain("Anexos para a equipe técnica", diretoria);
         Assert.All(TextoDeTodosOsArquivos(), t => Assert.DoesNotContain("FICT-SRV", t));
         var temporarias = Path.Combine(_pasta, "tmp");
         Assert.True(!Directory.Exists(temporarias) || Directory.GetFileSystemEntries(temporarias).Length == 0, "sobrou arquivo temporário");

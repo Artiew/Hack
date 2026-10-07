@@ -37,6 +37,29 @@ public class RelatorioTests
     }
 
     [Fact]
+    public void Versao_da_diretoria_tem_so_resumo_servicos_score_plano_e_glossario()
+    {
+        var lote = Fabrica.ProcessadorReal().Processar([Fabrica.Exemplo("vulnerabilidades-ficticio.csv"), Fabrica.Exemplo("alertas-ficticio.csv")]);
+        lote = lote with { Validacao = Fabrica.Validador().Validar(lote) };
+
+        var diretoria = Fabrica.Gerador().Gerar(lote, VersaoRelatorio.Diretoria);
+        var completo = Fabrica.Gerador().Gerar(lote);
+
+        string[] mantidas = ["Resumo para a diretoria", "2. Serviços da empresa e prejuízo potencial", "3. Entendendo o score", "4. Plano de ação completo", "Glossário"];
+        string[] tiradas = ["5. O que a plataforma fez sozinha", "6. O que esta análise não consegue dizer", "Anexos para a equipe técnica",
+                            "A. Correlações", "C. Como a severidade", "F. Metodologia", "H. Verificações de consistência"];
+        Assert.All(mantidas, s => Assert.Contains(s, diretoria));
+        Assert.All(tiradas, s => Assert.DoesNotContain(s, diretoria));
+        Assert.Contains("versão para a diretoria", diretoria);
+        Assert.Contains(GeradorRelatorioHtml.SeloConfidencialidade, diretoria);
+        // Nenhuma referência a um anexo que o executivo não recebe.
+        Assert.DoesNotMatch(@"anexo [A-I]\b", diretoria);
+
+        // A versão completa (admin e analista) continua com tudo.
+        Assert.All(mantidas.Concat(tiradas), s => Assert.Contains(s, completo));
+    }
+
+    [Fact]
     public void Lacunas_iguais_aparecem_agrupadas_com_a_quantidade()
     {
         var html = GerarHtml(

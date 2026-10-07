@@ -14,6 +14,10 @@ public sealed class LoteModel(RepositorioLotes repositorio, LotesEmMemoria lotes
     public Lote Lote { get; private set; } = null!;
     public bool PdfDisponivel { get; private set; }
 
+    /// <summary>Versão da diretoria (HTML e PDF); lotes analisados antes dela existir não têm.</summary>
+    public bool DiretoriaDisponivel { get; private set; }
+    public bool PdfDiretoriaDisponivel { get; private set; }
+
     /// <summary>Mesmo aviso de confiança baixa da página 1 do relatório (null quando a confiança não é baixa).</summary>
     public string? AvisoConfianca { get; private set; }
 
@@ -38,6 +42,8 @@ public sealed class LoteModel(RepositorioLotes repositorio, LotesEmMemoria lotes
             return NotFound();
         Lote = lote;
         PdfDisponivel = repositorio.ExisteRelatorio(id, "pdf");
+        DiretoriaDisponivel = repositorio.ExisteRelatorio(id, "html", VersaoRelatorio.Diretoria);
+        PdfDiretoriaDisponivel = repositorio.ExisteRelatorio(id, "pdf", VersaoRelatorio.Diretoria);
         AvisoConfianca = lote.Avaliacao is { } a ? gerador.AvisoConfianca(a.Score) : null;
         FraseAchados = lote.Avaliacao is { } av ? gerador.FraseAchados(av) : null;
         Revisoes = repositorio.Listar().Where(r => r.RevisaoDe == lote.Id).ToList();
