@@ -22,7 +22,7 @@ Atualizado ao fim da **Fase 2** (fontes reais, severidade com justificativa, cor
 |---|---|---|---|
 | RS1 | Autenticação | — (Fase 4) | ❌ |
 | RS2 | OWASP Top 10 | Provado: CSRF (POST sem token → 400), escape de HTML (testes + PDF), path traversal (→ 404), validação de upload. Falta: cabeçalhos/CSP no site, login, limites de tentativa | ⚠️ |
-| RS3 | Proteger dados em trânsito e em repouso | HTTPS local funcionando, mas o certificado do .NET 10 ainda não é confiável no Windows. Em repouso: `var/` não cifrado | ⚠️ |
+| RS3 | Proteger dados em trânsito e em repouso | HTTPS local em `https://localhost:5001` com certificado confiável (`dotnet dev-certs https --check --trust` → confiável, válido até 07/10/2027). Em repouso: `var/` ainda não cifrado | ⚠️ |
 | RS4 | Registrar atividades sem dados sensíveis | Log do lote só com números; falta auditoria de acesso/alterações | ⚠️ |
 | RS5 | Minimização / LGPD | Anonimização de usuário pronta (as fontes reais não trazem usuário); CSV bruto não é guardado | ⚠️ |
 | RS6 | Dependências confiáveis e atualizadas | Produção: **0 pacotes NuGet** (só .NET 10.0.401). Testes: xunit.v3 4.0.1, Test.Sdk 18.10.1, runner 4.0.0. `--vulnerable --include-transitive` = nenhum; `--outdated` = nenhum (07/10/2026, após a Fase 2) | ✅ |
