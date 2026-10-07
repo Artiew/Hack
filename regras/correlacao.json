@@ -1,0 +1,55 @@
+{
+  "descricao": "Regras de correlação. Cada regra tem um 'tipo' (o algoritmo, implementado no código) e 'parametros' ajustáveis aqui. Textos entre chaves, como {cve}, são preenchidos com os dados. Mesma entrada = mesma saída.",
+  "regras": [
+    {
+      "id": "COR-VULN-ESPALHADA",
+      "nome": "Mesma falha grave em muitas máquinas",
+      "tipo": "mesma_vulnerabilidade_em_varios_ativos",
+      "parametros": { "minimoAtivos": 10, "severidadeMinima": "Alta" },
+      "titulo": "{cve} está em {ativos} máquinas",
+      "justificativa": "A mesma falha ({cve}, nota CVSS {cvss}) aparece em {ativos} máquinas. Quem conhece essa falha pode tentar usá-la em todas elas; corrigi-la reduz o risco de várias máquinas de uma vez.",
+      "severidade": "maior_dos_eventos",
+      "frameworks": { "mitre": [], "nist": ["ID.RA-01", "PR.PS-02"], "cis": ["7.3", "7.4"], "iso": ["A.8.8"] }
+    },
+    {
+      "id": "COR-PACOTE-CONCENTRA",
+      "nome": "Um software concentra muitas falhas",
+      "tipo": "pacote_concentra_vulnerabilidades",
+      "parametros": { "minimoCves": 5, "severidadeMinima": "Alta" },
+      "titulo": "Atualizar {pacote} resolve {cves} falhas em {ativos} máquinas",
+      "justificativa": "O software {pacote} reúne {cves} falhas diferentes (a mais grave com nota CVSS {cvss}) em {ativos} máquinas. Uma única ação (atualizar esse software) elimina todas elas: é a correção com maior retorno por esforço.",
+      "severidade": "maior_dos_eventos",
+      "frameworks": { "mitre": [], "nist": ["PR.PS-02"], "cis": ["7.4"], "iso": ["A.8.8"] }
+    },
+    {
+      "id": "COR-ATIVO-ACUMULA",
+      "nome": "Máquina acumula falhas críticas",
+      "tipo": "ativo_acumula_vulnerabilidades",
+      "parametros": { "minimoFalhas": 5, "severidadeMinima": "Critica" },
+      "titulo": "{ativo} tem {quantidade} falhas críticas",
+      "justificativa": "A máquina {ativo} tem {quantidade} falhas classificadas como críticas. Cada uma é uma porta de entrada; juntas, tornam essa máquina um alvo fácil e uma prioridade de correção.",
+      "severidade": "Critica",
+      "frameworks": { "mitre": [], "nist": ["ID.RA-01"], "cis": ["7.3", "7.4"], "iso": ["A.8.8"] }
+    },
+    {
+      "id": "COR-RAJADA-ALERTAS",
+      "nome": "Pico de alertas da mesma regra",
+      "tipo": "rajada_de_alertas",
+      "parametros": { "minimoAlertas": 20, "janelaMinutos": 10 },
+      "titulo": "{quantidade} alertas da regra {regra} em {janela} minutos ({ativo})",
+      "justificativa": "O equipamento {ativo} gerou {quantidade} alertas da regra {regra} (\"{descricao}\") em até {janela} minutos. Volume concentrado assim costuma indicar atividade em andamento, como varredura ou tentativas repetidas, e merece análise.",
+      "severidade": "maior_dos_eventos",
+      "frameworks": { "mitre": [], "nist": ["DE.CM-01", "DE.AE-02"], "cis": ["13.1"], "iso": ["A.8.16"] }
+    },
+    {
+      "id": "COR-ALERTA-E-FALHA-MESMO-ATIVO",
+      "nome": "Alerta em máquina que tem falha grave",
+      "tipo": "alerta_e_vulnerabilidade_no_mesmo_ativo",
+      "parametros": { "severidadeMinima": "Alta" },
+      "titulo": "{ativo} gerou alertas e tem falhas graves",
+      "justificativa": "A máquina {ativo} tem {quantidade} falhas graves e também aparece em {alertas} alertas. Uma máquina vulnerável que já está sendo alvo de atividade suspeita tem chance muito maior de ser invadida.",
+      "severidade": "Critica",
+      "frameworks": { "mitre": [], "nist": ["ID.RA-01", "DE.AE-02"], "cis": ["7.4", "13.1"], "iso": ["A.8.8", "A.8.16"] }
+    }
+  ]
+}

@@ -4,6 +4,8 @@
     var lote = Model.Lote;
     ViewData["Title"] = "Lote " + lote.Id[..8];
     var fuso = Piersec.Core.Padronizacao.NormalizadorDatas.FusoBrasilia;
+    var correlacoes = Agrupamentos.CorrelacoesMaisGraves(lote.Correlacoes).Take(20).ToList();
+    var lacunas = Agrupamentos.Lacunas(lote.Lacunas);
 }
 
 <p><a href="/">← Enviar outro lote</a></p>
@@ -35,6 +37,42 @@
     <tfoot><tr><th>Total</th><th class="num">@Formatar.Numero(lote.Eventos.Count)</th></tr></tfoot>
 </table>
 
+<h2>Correlações (@Formatar.Numero(lote.Correlacoes.Count))</h2>
+@if (correlacoes.Count == 0)
+{
+    <p class="vazio">Nenhuma correlação encontrada. Veja abaixo o motivo de cada regra.</p>
+}
+else
+{
+    <p class="meta">As @correlacoes.Count mais graves. A lista completa e as justificativas estão no relatório.</p>
+    <table>
+        <thead><tr><th>Id</th><th>Severidade</th><th>O que foi encontrado</th><th class="num">Máquinas</th><th class="num">Eventos</th></tr></thead>
+        <tbody>
+            @foreach (var c in correlacoes)
+            {
+                Severidade? s = c.Severidade;
+                <tr>
+                    <td><code>@c.Id</code></td>
+                    <td><span class="sev @s.ClasseCss()"><span aria-hidden="true">@s.Simbolo()</span> @s.Nome()</span></td>
+                    <td title="@c.Justificativa">@c.Titulo</td>
+                    <td class="num">@Formatar.Numero(c.Ativos.Count)</td>
+                    <td class="num">@Formatar.Numero(c.EventoIds.Count)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+<h3>Resultado de cada regra</h3>
+<table>
+    <thead><tr><th>Regra</th><th class="num">Ocorrências</th><th>Observação</th></tr></thead>
+    <tbody>
+        @foreach (var r in lote.RegrasAvaliadas)
+        {
+            <tr><td><code>@r.RegraId</code> @r.Nome</td><td class="num">@Formatar.Numero(r.Ocorrencias)</td><td>@r.MotivoSemOcorrencia</td></tr>
+        }
+    </tbody>
+</table>
+
 <h2>Arquivos recebidos</h2>
 <table>
     <thead>
@@ -48,30 +86,37 @@
                 <td>
                     @if (a.Fonte is not null) { @a.Fonte }
                     else { <span class="erro">Não processado: @a.MotivoNaoProcessado</span> }
+                    @foreach (var aviso in a.Avisos)
+                    {
+                        <div class="meta">Ajuste: @aviso</div>
+                    }
                 </td>
                 <td class="num">@Formatar.Bytes(a.TamanhoBytes)</td>
-                <td class="num">@a.RegistrosLidos</td>
-                <td class="num">@a.RegistrosRejeitados</td>
-                <td class="num">@a.Lacunas</td>
+                <td class="num">@Formatar.Numero(a.RegistrosLidos)</td>
+                <td class="num">@Formatar.Numero(a.RegistrosRejeitados)</td>
+                <td class="num">@Formatar.Numero(a.Lacunas)</td>
                 <td><code title="@a.Sha256">@(a.Sha256 is null ? "—" : a.Sha256[..16] + "…")</code></td>
             </tr>
         }
     </tbody>
 </table>
 
-<h2>Lacunas (@lote.Lacunas.Count)</h2>
-@if (lote.Lacunas.Count == 0)
+<h2>Lacunas (@Formatar.Numero(lote.Lacunas.Count))</h2>
+@if (lacunas.Count == 0)
 {
     <p class="vazio">Nenhuma lacuna: todos os campos vieram completos e válidos.</p>
 }
 else
 {
     <table>
-        <thead><tr><th>Arquivo</th><th class="num">Linha</th><th>Campo</th><th>Motivo</th></tr></thead>
+        <thead><tr><th>Arquivo</th><th>Campo</th><th>Motivo</th><th class="num">Ocorrências</th><th>Linhas (exemplos)</th></tr></thead>
         <tbody>
-            @foreach (var l in lote.Lacunas)
+            @foreach (var g in lacunas)
             {
-                <tr><td>@l.Arquivo</td><td class="num">@(l.Linha?.ToString() ?? "—")</td><td>@l.Campo</td><td>@l.Motivo</td></tr>
+                <tr>
+                    <td>@g.Arquivo</td><td>@g.Campo</td><td>@g.Motivo</td><td class="num">@Formatar.Numero(g.Quantidade)</td>
+                    <td>@(g.LinhasExemplo.Count == 0 ? "—" : string.Join(", ", g.LinhasExemplo))</td>
+                </tr>
             }
         </tbody>
     </table>

@@ -31,16 +31,17 @@ else
 {
     <table>
         <thead>
-            <tr><th>Data</th><th class="num">Arquivos</th><th class="num">Eventos</th><th class="num">Lacunas</th><th></th></tr>
+            <tr><th>Data</th><th class="num">Arquivos</th><th class="num">Eventos</th><th class="num">Correlações</th><th class="num">Lacunas</th><th></th></tr>
         </thead>
         <tbody>
             @foreach (var lote in Model.Lotes)
             {
                 <tr>
                     <td>@Formatar.DataHora(lote.CriadoEmUtc, fuso)</td>
-                    <td class="num">@lote.Arquivos.Count</td>
-                    <td class="num">@Formatar.Numero(lote.Eventos.Count)</td>
-                    <td class="num">@Formatar.Numero(lote.Lacunas.Count)</td>
+                    <td class="num">@lote.Arquivos</td>
+                    <td class="num">@Formatar.Numero(lote.Eventos)</td>
+                    <td class="num">@Formatar.Numero(lote.Correlacoes)</td>
+                    <td class="num">@Formatar.Numero(lote.Lacunas)</td>
                     <td><a asp-page="/Lote" asp-route-id="@lote.Id">Abrir</a></td>
                 </tr>
             }

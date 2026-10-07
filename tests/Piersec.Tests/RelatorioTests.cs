@@ -10,7 +10,7 @@ public class RelatorioTests
     private static string GerarHtml(params string[] linhas)
     {
         var lote = Fabrica.Processador().Processar([Fabrica.CsvExemplo("a.csv", linhas)]);
-        return new GeradorRelatorioHtml(NormalizadorDatas.FusoBrasilia).Gerar(lote);
+        return Fabrica.Gerador().Gerar(lote);
     }
 
     [Fact]
@@ -20,6 +20,32 @@ public class RelatorioTests
 
         Assert.DoesNotContain("<script>", html);
         Assert.Contains("&lt;script&gt;", html);
+    }
+
+    [Fact]
+    public void Relatorio_das_fontes_reais_mostra_correlacoes_justificativas_e_regras_sem_ocorrencia()
+    {
+        var lote = Fabrica.ProcessadorReal().Processar([Fabrica.Exemplo("vulnerabilidades-ficticio.csv"), Fabrica.Exemplo("alertas-ficticio.csv")]);
+        var html = Fabrica.Gerador().Gerar(lote);
+
+        Assert.Contains("CVE-2099-0001 está em 12 máquinas", html);
+        Assert.Contains("Não é Crítica porque a nota está abaixo de 9,0", html); // "por que não é crítica"
+        Assert.Contains("0 em comum", html);                                      // o que não correlacionou
+        Assert.Contains("ID.RA-01", html);                                        // frameworks
+        Assert.Contains("linha(s) corrigida(s)", html);                           // ajuste de leitura declarado
+        Assert.DoesNotContain("<script>", html);
+    }
+
+    [Fact]
+    public void Lacunas_iguais_aparecem_agrupadas_com_a_quantidade()
+    {
+        var html = GerarHtml(
+            "1,data ruim,SRV-01,ana,Alta,web,x",
+            "2,data ruim,SRV-01,ana,Alta,web,x",
+            "3,data ruim,SRV-01,ana,Alta,web,x");
+
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(html, "data em formato não reconhecido"));
+        Assert.Contains("2, 3, 4", html); // linhas de exemplo
     }
 
     [Fact]
@@ -103,7 +129,7 @@ public class ConversorPdfTests : IDisposable
         var html = Path.Combine(_pasta, "relatorio.html");
         var pdf = Path.Combine(_pasta, "relatorio.pdf");
         var lote = Fabrica.Processador().Processar([Fabrica.CsvExemplo("a.csv", "1,2026-09-01 10:00,SRV-01,ana,Alta,web,teste")]);
-        await File.WriteAllTextAsync(html, new GeradorRelatorioHtml(NormalizadorDatas.FusoBrasilia).Gerar(lote), TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(html, Fabrica.Gerador().Gerar(lote), TestContext.Current.CancellationToken);
 
         var resultado = await conversor.GerarAsync(html, pdf, TestContext.Current.CancellationToken);
 

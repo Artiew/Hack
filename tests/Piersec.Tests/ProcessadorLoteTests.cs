@@ -93,6 +93,19 @@ public class ProcessadorLoteTests
         Assert.Equal(2, lote.Eventos.Select(e => e.Id).Distinct().Count());
     }
 
+    [Fact]
+    public void Arquivo_em_Windows1252_mantem_aspas_curvas_e_acentos()
+    {
+        // "Ação “teste” – ok" em Windows-1252: ç=E7, ã=E3, “=93, ”=94, –=96 (os 3 últimos não existem em Latin-1)
+        byte[] descricao = [0x41, 0xE7, 0xE3, 0x6F, 0x20, 0x93, 0x74, 0x65, 0x73, 0x74, 0x65, 0x94, 0x20, 0x96, 0x20, 0x6F, 0x6B];
+        byte[] conteudo = [.. Encoding.ASCII.GetBytes(Fabrica.CabecalhoExemplo + "\n1,2026-09-01 10:00,SRV-01,ana,Alta,web,"), .. descricao];
+
+        var lote = Fabrica.Processador().Processar([ArquivoEnviado.De("win.csv", conteudo)]);
+
+        Assert.Equal("Ação “teste” – ok", Assert.Single(lote.Eventos).Descricao);
+        Assert.Contains(lote.Lacunas, l => l.Motivo.Contains("Windows-1252"));
+    }
+
     [Theory]
     [InlineData(@"..\..\segredo.csv", "segredo.csv")]
     [InlineData("../../etc/dados.csv", "dados.csv")]

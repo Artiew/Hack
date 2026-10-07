@@ -1,7 +1,9 @@
 # Plataforma de risco — Hackathon Piersec 2026
 
-Protótipo que recebe CSVs de ferramentas de segurança, padroniza os dados e gera sozinho um relatório executivo (HTML e PDF).
-**Estado atual: Fase 1 (esqueleto ponta a ponta).** O detalhe do que está provado fica em [`docs/REQUISITOS.md`](docs/REQUISITOS.md).
+Protótipo que recebe CSVs de ferramentas de segurança, padroniza os dados, classifica a severidade com justificativa,
+correlaciona eventos por regras declaradas e gera sozinho um relatório executivo (HTML e PDF).
+**Estado atual: Fase 2** (fontes reais, severidade com justificativa, correlação). O que está provado fica em
+[`docs/REQUISITOS.md`](docs/REQUISITOS.md); o que sabemos dos dados, em [`docs/FONTES.md`](docs/FONTES.md).
 
 > Uso restrito ao ambiente do hackathon. Não publique este repositório: os dados do desafio não podem sair da máquina.
 
@@ -16,25 +18,32 @@ Requisitos: Windows, [SDK do .NET 10](https://dot.net) e Microsoft Edge ou Googl
 
 O site fica em **https://localhost:5001**. Se algum teste falhar, o site não sobe.
 
-Para testar sem os dados do desafio, envie os arquivos de `exemplos/`. Eles foram **criados por nós**, são fictícios e
-têm erros de propósito (data inválida, ativo em branco, severidade desconhecida, texto malicioso, coluna a mais).
+- **Dados do desafio:** coloque os CSVs em `dados/` (fora do git) e envie os três juntos pela tela.
+- **Sem os dados do desafio:** envie os arquivos de `exemplos/`. São **fictícios, criados por nós**, no mesmo formato das
+  fontes reais (inclusive linhas entre aspas e data com vírgula) e com erros de propósito (nota inválida, máquina em branco,
+  texto malicioso, coluna a mais, arquivo de fonte desconhecida).
 
 ## Como está organizado
 
 ```
-src/Piersec.Core/        regras, sem tela
+src/Piersec.Core/        regras de negócio, sem tela
   Coleta/                leitor de CSV + um adaptador por fonte (IAdaptadorFonte)
-  Padronizacao/          datas → UTC, nomes de ativos, anonimização, conversão de severidade
-  Pipeline/              processamento do lote e ciclo completo (processar → salvar → relatório)
+  Padronizacao/          datas → UTC, nomes de ativos, anonimização
+  Analise/               regras (JSON), severidade com justificativa, motor de correlação
+  Pipeline/              lote: coleta → padronização → severidade → correlação; ciclo completo
   Armazenamento/         lotes salvos em var/lotes/{id}/
   Relatorio/             HTML do relatório e conversão para PDF pelo navegador
 src/Piersec.Web/         telas (ASP.NET Core Razor Pages)
 tests/Piersec.Tests/     testes automatizados (xUnit v3), sempre com dados fictícios
+regras/                  severidade.json, correlacao.json, frameworks.json (editáveis; validados ao subir)
 exemplos/                CSVs fictícios para demonstração
+dados/                   CSVs do desafio (fora do git)
 var/                     dados gerados (fora do git)
 ```
 
-Para adicionar uma fonte: criar uma classe que implementa `IAdaptadorFonte` e registrá-la no `Program.cs`.
+- **Nova fonte:** criar uma classe que implementa `IAdaptadorFonte` e registrá-la no `Program.cs`.
+- **Ajustar uma regra:** editar `regras/*.json`. Se houver erro (tipo inexistente, parâmetro faltando, `{campo}` errado),
+  a plataforma não sobe e diz o que corrigir.
 
 ## Variáveis de ambiente (opcionais)
 

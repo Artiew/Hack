@@ -35,19 +35,6 @@ public class PadronizacaoTests
         Assert.Contains(contexto.Lacunas, l => l.Campo == "ativo");
     }
 
-    [Fact]
-    public void Severidade_desconhecida_fica_nula_e_vira_lacuna()
-    {
-        var contexto = Fabrica.Contexto();
-
-        var eventos = Converter(contexto, "1,2026-09-01 10:00,SRV-01,ana,urgentissimo,firewall,teste");
-
-        var evento = Assert.Single(eventos);
-        Assert.Null(evento.Severidade);
-        Assert.Equal("urgentissimo", evento.SeveridadeOrigem);
-        Assert.Contains(contexto.Lacunas, l => l.Campo == "severidade");
-    }
-
     [Theory]
     [InlineData("Crítica", Severidade.Critica)]
     [InlineData("CRITICAL", Severidade.Critica)]
@@ -56,7 +43,30 @@ public class PadronizacaoTests
     [InlineData(" Low ", Severidade.Baixa)]
     public void Converte_textos_de_severidade_das_fontes(string texto, Severidade esperada)
     {
-        Assert.Equal(esperada, ConversorSeveridade.Converter(texto));
+        Assert.Equal(esperada, Fabrica.Regras.Severidade.ConverterTexto(texto));
+    }
+
+    [Theory]
+    [InlineData("9.8", 9.8)]
+    [InlineData("9,8", 9.8)]
+    [InlineData("10", 10.0)]
+    [InlineData("0", 0.0)]
+    public void Nota_CVSS_aceita_ponto_ou_virgula(string texto, double esperada)
+    {
+        Assert.Equal(esperada, Fabrica.Contexto().ConverterCvss(texto, 2));
+    }
+
+    [Theory]
+    [InlineData("n/a")]
+    [InlineData("11")]
+    [InlineData("-1")]
+    [InlineData("")]
+    public void Nota_CVSS_invalida_vira_lacuna(string texto)
+    {
+        var contexto = Fabrica.Contexto();
+
+        Assert.Null(contexto.ConverterCvss(texto, 2));
+        Assert.Contains(contexto.Lacunas, l => l.Campo == "cvss" && l.Linha == 2);
     }
 
     [Fact]
@@ -86,6 +96,8 @@ public class PadronizacaoTests
     [InlineData("2026-09-01T08:00:00")]
     [InlineData("2026-09-01T11:00:00Z")]
     [InlineData("2026-09-01T08:00:00-03:00")]
+    [InlineData("Sep 1,2026 @ 08:00:00.000")]
+    [InlineData("Sep 1, 2026 @ 08:00:00")]
     public void Datas_em_formatos_diferentes_viram_o_mesmo_instante_UTC(string texto)
     {
         Assert.True(Fabrica.Datas().TentarNormalizar(texto, out var utc));

@@ -24,4 +24,10 @@
     <ProjectReference Include="..\..\src\Piersec.Core\Piersec.Core.csproj" />
   </ItemGroup>
 
+  <!-- Os testes usam as MESMAS regras e os mesmos exemplos fictícios da plataforma. -->
+  <ItemGroup>
+    <None Include="..\..\regras\*.json" Link="regras\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\exemplos\*.csv" Link="exemplos\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

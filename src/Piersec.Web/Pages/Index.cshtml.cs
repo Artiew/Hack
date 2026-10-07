@@ -9,7 +9,7 @@ namespace Piersec.Web.Pages;
 /// <summary>Tela "Enviar arquivos": recebe os CSVs, roda o ciclo e abre o resultado do lote.</summary>
 public sealed class IndexModel(CicloAnalise ciclo, RepositorioLotes repositorio, ILogger<IndexModel> log) : PageModel
 {
-    public IReadOnlyList<Lote> Lotes { get; private set; } = [];
+    public IReadOnlyList<ResumoLote> Lotes { get; private set; } = [];
     public string? Erro { get; private set; }
 
     public void OnGet() => Lotes = repositorio.Listar();

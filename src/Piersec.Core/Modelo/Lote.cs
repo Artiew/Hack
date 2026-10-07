@@ -1,8 +1,8 @@
 namespace Piersec.Core.Modelo;
 
 /// <summary>
-/// Algo que faltou ou veio inválido (RF7). Nada some em silêncio: vira lacuna declarada no relatório.
-/// <paramref name="Linha"/> é nula quando a lacuna é do arquivo inteiro ou do lote.
+/// Algo que faltou, veio inválido ou limita a análise (RF7). Nada some em silêncio: vira lacuna declarada.
+/// <paramref name="Linha"/> é nula quando a lacuna é do arquivo inteiro, da fonte ou do lote.
 /// </summary>
 public sealed record Lacuna(string Arquivo, long? Linha, string Campo, string Motivo);
 
@@ -24,6 +24,9 @@ public sealed record ResultadoArquivo
     public int RegistrosLidos { get; init; }
     public int RegistrosRejeitados { get; init; }
     public int Lacunas { get; init; }
+
+    /// <summary>Ajustes feitos na leitura (ex.: linhas desembrulhadas, datas remontadas), para transparência.</summary>
+    public IReadOnlyList<string> Avisos { get; init; } = [];
 }
 
 /// <summary>
@@ -37,8 +40,23 @@ public sealed record Lote
     public required IReadOnlyList<ResultadoArquivo> Arquivos { get; init; }
     public required IReadOnlyList<EventoSeguranca> Eventos { get; init; }
     public required IReadOnlyList<Lacuna> Lacunas { get; init; }
+    public IReadOnlyList<Correlacao> Correlacoes { get; init; } = [];
+    public IReadOnlyList<RegraAvaliada> RegrasAvaliadas { get; init; } = [];
 
     /// <summary>Quantos eventos têm a severidade informada (null = sem severidade).</summary>
     public int ContarPorSeveridade(Severidade? severidade) =>
         Eventos.Count(e => e.Severidade == severidade);
+}
+
+/// <summary>Versão leve do lote para listas (não carrega os eventos).</summary>
+public sealed record ResumoLote(
+    string Id,
+    DateTimeOffset CriadoEmUtc,
+    int Arquivos,
+    int Eventos,
+    int Lacunas,
+    int Correlacoes)
+{
+    public static ResumoLote De(Lote lote) => new(
+        lote.Id, lote.CriadoEmUtc, lote.Arquivos.Count, lote.Eventos.Count, lote.Lacunas.Count, lote.Correlacoes.Count);
 }

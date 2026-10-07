@@ -32,14 +32,47 @@ public class LeitorCsvTests
     }
 
     [Fact]
-    public void Linha_com_colunas_a_mais_vira_erro_com_o_numero_da_linha()
+    public void Linha_com_colunas_a_mais_fica_separada_e_nunca_e_lida_desalinhada()
     {
         var tabela = LeitorCsv.Ler("a,b\n1,2\n3,4,5\n6,7");
 
         Assert.Equal(2, tabela.Linhas.Count);
-        var erro = Assert.Single(tabela.Erros);
-        Assert.Equal(3, erro.Linha);
-        Assert.Contains("3 colunas", erro.Motivo);
+        var desalinhada = Assert.Single(tabela.Desalinhadas);
+        Assert.Equal(3, desalinhada.Numero);
+        Assert.Equal(3, desalinhada.Campos.Length);
+    }
+
+    [Fact]
+    public void Arquivo_com_cada_linha_embrulhada_em_aspas_e_desembrulhado()
+    {
+        var tabela = LeitorCsv.Ler("\"a,b,c\"\n\"1,\"\"x, y\"\",3\"\n\"4,5,6\"");
+
+        Assert.Equal(["a", "b", "c"], tabela.Cabecalho);
+        Assert.Equal(2, tabela.Linhas.Count);
+        Assert.Equal("x, y", tabela.Valor(tabela.Linhas[0], "b"));
+        Assert.Contains(LeitorCsv.AvisoLinhasEmbrulhadas, tabela.Avisos);
+    }
+
+    [Fact]
+    public void Cabecalho_normal_com_aspas_nao_e_confundido_com_linha_embrulhada()
+    {
+        var tabela = LeitorCsv.Ler("\"a\",\"b\"\n\"1\",\"2\"");
+
+        Assert.Equal(["a", "b"], tabela.Cabecalho);
+        Assert.Empty(tabela.Avisos);
+    }
+
+    [Fact]
+    public void Reparo_aceita_so_linhas_que_ficam_com_o_numero_certo_de_colunas()
+    {
+        var tabela = LeitorCsv.Ler("a,b\n1,2\n3,4,5\n6,7,8,9");
+
+        var reparada = tabela.ComReparos((_, c) => c.Length == 3 ? [c[0] + c[1], c[2]] : null, out var quantas);
+
+        Assert.Equal(1, quantas);
+        Assert.Equal([2L, 3L], reparada.Linhas.Select(l => l.Numero)); // ordem original mantida
+        Assert.Equal("34", reparada.Valor(reparada.Linhas[1], "a"));
+        Assert.Equal(4, Assert.Single(reparada.Desalinhadas).Numero);
     }
 
     [Fact]

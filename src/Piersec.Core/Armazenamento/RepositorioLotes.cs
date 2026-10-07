@@ -38,6 +38,7 @@ public sealed class RepositorioLotes
         var pasta = Pasta(lote.Id);
         Directory.CreateDirectory(pasta);
         File.WriteAllText(Path.Combine(pasta, "lote.json"), JsonSerializer.Serialize(lote, Json));
+        File.WriteAllText(Path.Combine(pasta, "resumo.json"), JsonSerializer.Serialize(ResumoLote.De(lote), Json));
     }
 
     public Lote? Carregar(string id)
@@ -48,13 +49,21 @@ public sealed class RepositorioLotes
         return File.Exists(arquivo) ? JsonSerializer.Deserialize<Lote>(File.ReadAllText(arquivo), Json) : null;
     }
 
-    /// <summary>Todos os lotes, do mais recente para o mais antigo.</summary>
-    public IReadOnlyList<Lote> Listar() =>
+    /// <summary>Resumo de todos os lotes, do mais recente para o mais antigo (sem carregar os eventos).</summary>
+    public IReadOnlyList<ResumoLote> Listar() =>
         Directory.EnumerateDirectories(_pastaLotes)
             .Select(Path.GetFileName)
             .Where(IdValido)
-            .Select(id => Carregar(id!))
-            .OfType<Lote>()
+            .Select(id => CarregarResumo(id!))
+            .OfType<ResumoLote>()
             .OrderByDescending(l => l.CriadoEmUtc)
             .ToList();
+
+    private ResumoLote? CarregarResumo(string id)
+    {
+        var arquivo = Path.Combine(Pasta(id), "resumo.json");
+        if (File.Exists(arquivo))
+            return JsonSerializer.Deserialize<ResumoLote>(File.ReadAllText(arquivo), Json);
+        return Carregar(id) is { } lote ? ResumoLote.De(lote) : null; // lotes antigos, sem resumo
+    }
 }

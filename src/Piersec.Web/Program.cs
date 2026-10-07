@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Http.Features;
+using Piersec.Core.Analise;
 using Piersec.Core.Armazenamento;
 using Piersec.Core.Coleta;
 using Piersec.Core.Padronizacao;
@@ -18,15 +19,22 @@ const long LimiteRequisicaoBytes = 60L * 1024 * 1024;
 builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = LimiteRequisicaoBytes);
 builder.Services.Configure<FormOptions>(o => o.MultipartBodyLengthLimit = LimiteRequisicaoBytes);
 
+// Regras de severidade, correlação e frameworks (regras/*.json). Regra inválida impede a plataforma de subir.
+var pastaRegras = Path.GetFullPath(builder.Configuration["Piersec:PastaRegras"]
+    ?? Path.Combine(builder.Environment.ContentRootPath, "..", "..", "regras"));
+var regras = ConjuntoRegras.Carregar(pastaRegras);
+
 // Peças do núcleo. Para adicionar uma fonte nova: mais uma linha AddSingleton<IAdaptadorFonte, ...>.
 var fuso = NormalizadorDatas.FusoBrasilia;
+builder.Services.AddSingleton(regras);
 builder.Services.AddSingleton(new RepositorioLotes(pastaDados));
 builder.Services.AddSingleton(new Anonimizador(ChaveAnonimizacao.Obter(pastaDados)));
 builder.Services.AddSingleton(new NormalizadorDatas(fuso));
-builder.Services.AddSingleton<IAdaptadorFonte, AdaptadorExemplo>();
+builder.Services.AddSingleton<IAdaptadorFonte, AdaptadorVulnerabilidades>();
+builder.Services.AddSingleton<IAdaptadorFonte, AdaptadorAlertasSiem>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<ProcessadorLote>();
-builder.Services.AddSingleton(new GeradorRelatorioHtml(fuso));
+builder.Services.AddSingleton(new GeradorRelatorioHtml(fuso, regras));
 builder.Services.AddSingleton(new ConversorPdf());
 builder.Services.AddSingleton<CicloAnalise>();
 builder.Services.AddRazorPages();
@@ -53,6 +61,7 @@ if (Environment.GetEnvironmentVariable("PIERSEC_ABRIR_NAVEGADOR") == "1")
 }
 
 app.Logger.LogInformation("Dados da plataforma em {Pasta}", pastaDados);
+app.Logger.LogInformation("Regras carregadas de {Pasta}: {Correlacoes} regra(s) de correlação", pastaRegras, regras.Correlacoes.Count);
 app.Run();
 
 static IResult ArquivoRelatorio(RepositorioLotes repo, string id, string extensao, string tipo)

@@ -24,6 +24,11 @@ public sealed partial class NormalizadorDatas(TimeZoneInfo fusoPadrao)
         "dd/MM/yyyy HH:mm:ss",
         "dd/MM/yyyy HH:mm",
         "dd/MM/yyyy",
+        // Exportação do SIEM: "Oct 7,2026 @ 08:49:03.123" (mês em inglês)
+        "MMM d,yyyy @ HH:mm:ss.FFFFFFF",
+        "MMM d,yyyy @ HH:mm:ss",
+        "MMM d, yyyy @ HH:mm:ss.FFFFFFF",
+        "MMM d, yyyy @ HH:mm:ss",
     ];
 
     public TimeZoneInfo FusoPadrao { get; } = fusoPadrao;

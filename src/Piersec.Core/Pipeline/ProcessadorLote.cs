@@ -1,8 +1,10 @@
 using System.Security.Cryptography;
 using System.Text;
+using Piersec.Core.Analise;
 using Piersec.Core.Coleta;
 using Piersec.Core.Modelo;
 using Piersec.Core.Padronizacao;
+using Piersec.Core.Relatorio;
 
 namespace Piersec.Core.Pipeline;
 
@@ -23,6 +25,7 @@ public sealed class ProcessadorLote(
     IEnumerable<IAdaptadorFonte> adaptadores,
     Anonimizador anonimizador,
     NormalizadorDatas datas,
+    ConjuntoRegras regras,
     TimeProvider relogio)
 {
     public const long TamanhoMaximoBytes = 10 * 1024 * 1024;
@@ -30,8 +33,41 @@ public sealed class ProcessadorLote(
     public const string ArquivoDoLote = "(lote)";
 
     private readonly IReadOnlyList<IAdaptadorFonte> _adaptadores = adaptadores.ToList();
+    private readonly ClassificadorSeveridade _classificador = new(regras.Severidade);
+    private readonly MotorCorrelacao _motor = new();
 
+    /// <summary>Etapas: coleta e padronização (por arquivo) → severidade → correlação (no lote inteiro).</summary>
     public Lote Processar(IReadOnlyList<ArquivoEnviado> arquivos)
+    {
+        var coletado = Coletar(arquivos);
+
+        var lacunas = new List<Lacuna>(coletado.Lacunas);
+        var eventos = new List<EventoSeguranca>(coletado.Eventos.Count);
+        foreach (var bruto in coletado.Eventos)
+        {
+            var (evento, lacuna) = _classificador.Classificar(bruto);
+            eventos.Add(evento);
+            if (lacuna is not null)
+                lacunas.Add(lacuna);
+        }
+
+        var (correlacoes, avaliadas) = _motor.Correlacionar(eventos, regras.Correlacoes);
+
+        return new Lote
+        {
+            Id = Guid.NewGuid().ToString("N"),
+            CriadoEmUtc = relogio.GetUtcNow(),
+            Arquivos = coletado.Arquivos,
+            Eventos = eventos,
+            Lacunas = lacunas,
+            Correlacoes = correlacoes,
+            RegrasAvaliadas = avaliadas,
+        };
+    }
+
+    private sealed record Coleta(List<ResultadoArquivo> Arquivos, List<EventoSeguranca> Eventos, List<Lacuna> Lacunas);
+
+    private Coleta Coletar(IReadOnlyList<ArquivoEnviado> arquivos)
     {
         var resultados = new List<ResultadoArquivo>();
         var eventos = new List<EventoSeguranca>();
@@ -70,14 +106,29 @@ public sealed class ProcessadorLote(
                 continue;
             }
 
-            var contexto = new ContextoConversao(nome, sha!, anonimizador, datas, () => $"EV-{++sequencia:00000}");
-            if (avisoCodificacao is not null)
-                lacunas.Add(new Lacuna(nome, null, "arquivo", avisoCodificacao));
+            var avisos = new List<string>(tabela.Avisos);
+            var linhasDeDados = tabela.Linhas.Count + tabela.Desalinhadas.Count + tabela.Erros.Count;
+            tabela = tabela.ComReparos(adaptador.RepararLinha, out var reparadas);
+            if (reparadas > 0)
+                avisos.Add($"{Formatar.Numero(reparadas)} linha(s) corrigida(s): {adaptador.DescricaoReparo ?? "colunas a mais remontadas pelo adaptador da fonte"}");
 
+            var lacunasArquivo = new List<Lacuna>();
+            if (avisoCodificacao is not null)
+                lacunasArquivo.Add(new Lacuna(nome, null, "arquivo", avisoCodificacao));
+            lacunasArquivo.AddRange(adaptador.LimitacoesDaFonte.Select(l => new Lacuna(nome, null, "fonte", l)));
+            if (linhasDeDados >= 1000 && linhasDeDados % 1000 == 0)
+                lacunasArquivo.Add(new Lacuna(nome, null, "arquivo",
+                    $"o arquivo tem exatamente {Formatar.Numero(linhasDeDados)} linhas de dados: número redondo pode indicar que a exportação foi cortada no limite da ferramenta"));
+
+            var contexto = new ContextoConversao(nome, sha!, Ambiente(nome), anonimizador, datas, () => $"EV-{++sequencia:00000}");
             var convertidos = adaptador.Converter(tabela, contexto);
             eventos.AddRange(convertidos);
-            lacunas.AddRange(tabela.Erros.Select(e => new Lacuna(nome, e.Linha, "linha", e.Motivo)));
-            lacunas.AddRange(contexto.Lacunas);
+
+            lacunasArquivo.AddRange(tabela.Erros.Select(e => new Lacuna(nome, e.Linha, "linha", e.Motivo)));
+            lacunasArquivo.AddRange(tabela.Desalinhadas.Select(l => new Lacuna(nome, l.Numero, "linha",
+                $"linha com {l.Campos.Length} colunas; o cabeçalho tem {tabela.Cabecalho.Count} (não lida para não desalinhar os dados)")));
+            lacunasArquivo.AddRange(contexto.Lacunas);
+            lacunas.AddRange(lacunasArquivo);
 
             resultados.Add(new ResultadoArquivo
             {
@@ -86,8 +137,9 @@ public sealed class ProcessadorLote(
                 Sha256 = sha,
                 Fonte = adaptador.Nome,
                 RegistrosLidos = convertidos.Count,
-                RegistrosRejeitados = tabela.Erros.Count,
-                Lacunas = tabela.Erros.Count + contexto.Lacunas.Count,
+                RegistrosRejeitados = tabela.Erros.Count + tabela.Desalinhadas.Count,
+                Lacunas = lacunasArquivo.Count,
+                Avisos = avisos,
             });
         }
 
@@ -95,15 +147,11 @@ public sealed class ProcessadorLote(
             lacunas.Add(new Lacuna(ArquivoDoLote, null, "lote",
                 "nenhum arquivo foi reconhecido: não há dados para avaliar (isso NÃO significa ambiente sem problemas)"));
 
-        return new Lote
-        {
-            Id = Guid.NewGuid().ToString("N"),
-            CriadoEmUtc = relogio.GetUtcNow(),
-            Arquivos = resultados,
-            Eventos = eventos,
-            Lacunas = lacunas,
-        };
+        return new Coleta(resultados, eventos, lacunas);
     }
+
+    /// <summary>Premissa da Fase 2: os dados não trazem cliente/ambiente, então o ambiente é o nome do arquivo.</summary>
+    public static string Ambiente(string nomeArquivo) => Path.GetFileNameWithoutExtension(nomeArquivo);
 
     private static ResultadoArquivo Recusado(string nome, long tamanho, string? sha, string motivo) => new()
     {
@@ -135,7 +183,16 @@ public sealed class ProcessadorLote(
         return null;
     }
 
-    /// <summary>Tenta UTF-8; se não for, lê como Latin-1 (comum em CSV exportado pelo Excel) e avisa.</summary>
+    // Windows-1252 é o padrão do Excel/Windows em português. Diferente do Latin-1, ele tem aspas curvas, travessão etc.
+    private static readonly Encoding Windows1252 = CarregarWindows1252();
+
+    private static Encoding CarregarWindows1252()
+    {
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+        return Encoding.GetEncoding(1252);
+    }
+
+    /// <summary>Tenta UTF-8; se não for, lê como Windows-1252 (CSV exportado no Windows) e avisa.</summary>
     private static string Decodificar(byte[] conteudo, out string? aviso)
     {
         aviso = null;
@@ -145,8 +202,8 @@ public sealed class ProcessadorLote(
         }
         catch (DecoderFallbackException)
         {
-            aviso = "arquivo não está em UTF-8; lido como Latin-1 (acentos podem ter sido trocados)";
-            return Encoding.Latin1.GetString(conteudo);
+            aviso = "arquivo não está em UTF-8; lido como Windows-1252, o padrão do Windows (confira acentos e símbolos)";
+            return Windows1252.GetString(conteudo);
         }
     }
 }

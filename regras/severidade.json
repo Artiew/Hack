@@ -1,0 +1,27 @@
+{
+  "descricao": "Como a plataforma decide a severidade. Ordem: 1) nota CVSS, quando existe; 2) nível do alerta, quando existe; 3) texto de severidade da fonte. O contexto (exposição, serviço de negócio) entra na Fase 3.",
+  "textos": {
+    "Critica": ["critica", "critico", "critical"],
+    "Alta": ["alta", "alto", "high"],
+    "Media": ["media", "medio", "moderada", "medium", "moderate"],
+    "Baixa": ["baixa", "baixo", "low", "informativa", "info", "informational"]
+  },
+  "cvss": {
+    "fonte": "Escala qualitativa oficial do CVSS v3.1 (FIRST)",
+    "faixas": [
+      { "minimo": 9.0, "severidade": "Critica", "descricao": "nota de 9,0 a 10,0" },
+      { "minimo": 7.0, "severidade": "Alta", "descricao": "nota de 7,0 a 8,9" },
+      { "minimo": 4.0, "severidade": "Media", "descricao": "nota de 4,0 a 6,9" },
+      { "minimo": 0.0, "severidade": "Baixa", "descricao": "nota de 0,0 a 3,9" }
+    ]
+  },
+  "nivelAlerta": {
+    "fonte": "Níveis de regra do SIEM (Wazuh, 0 a 15) — faixas adotadas pela equipe como premissa",
+    "faixas": [
+      { "minimo": 15, "severidade": "Critica", "descricao": "nível 15: ataque grave" },
+      { "minimo": 12, "severidade": "Alta", "descricao": "níveis 12 a 14: evento de alta importância" },
+      { "minimo": 7, "severidade": "Media", "descricao": "níveis 7 a 11: evento relevante que merece análise" },
+      { "minimo": 0, "severidade": "Baixa", "descricao": "níveis 0 a 6: baixa prioridade" }
+    ]
+  }
+}

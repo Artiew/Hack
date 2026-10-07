@@ -1,0 +1,32 @@
+{
+  "descricao": "Controles de frameworks ligados a cada tipo de evento. MITRE ATT&CK só é preenchido quando os dados permitem saber a técnica.",
+  "porTipo": {
+    "vulnerabilidade": {
+      "mitre": [],
+      "nist": ["ID.RA-01", "PR.PS-02"],
+      "cis": ["7.3", "7.4"],
+      "iso": ["A.8.8"],
+      "observacao": "A técnica MITRE depende de como cada falha é explorada; os dados (sem exposição nem exploração conhecida) não permitem afirmar."
+    },
+    "alerta": {
+      "mitre": [],
+      "nist": ["DE.CM-01", "DE.AE-02"],
+      "cis": ["13.1", "13.3"],
+      "iso": ["A.8.16", "A.8.20"],
+      "observacao": "A técnica MITRE de cada alerta depende do catálogo de regras do SIEM (aguardando liberação do mentor)."
+    }
+  },
+  "controles": {
+    "ID.RA-01": "NIST CSF 2.0 — vulnerabilidades dos ativos são identificadas, validadas e registradas",
+    "PR.PS-02": "NIST CSF 2.0 — software é mantido, substituído e removido de acordo com o risco",
+    "DE.CM-01": "NIST CSF 2.0 — redes e serviços de rede são monitorados para encontrar eventos potencialmente adversos",
+    "DE.AE-02": "NIST CSF 2.0 — eventos potencialmente adversos são analisados para entender a atividade",
+    "7.3": "CIS Controls v8 — atualização automática do sistema operacional",
+    "7.4": "CIS Controls v8 — atualização automática de aplicativos",
+    "13.1": "CIS Controls v8 — centralizar alertas de eventos de segurança",
+    "13.3": "CIS Controls v8 — solução de detecção de intrusão na rede",
+    "A.8.8": "ISO/IEC 27001:2022 — gestão de vulnerabilidades técnicas",
+    "A.8.16": "ISO/IEC 27001:2022 — atividades de monitoramento",
+    "A.8.20": "ISO/IEC 27001:2022 — segurança de redes"
+  }
+}

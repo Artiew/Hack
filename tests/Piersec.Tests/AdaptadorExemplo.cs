@@ -1,10 +1,11 @@
+using Piersec.Core.Coleta;
 using Piersec.Core.Modelo;
 
-namespace Piersec.Core.Coleta;
+namespace Piersec.Tests;
 
 /// <summary>
-/// Fonte FICTÍCIA, criada por nós só para provar o esqueleto (Fase 1).
-/// Será acompanhada pelos adaptadores das fontes reais do desafio quando tivermos os cabeçalhos.
+/// Fonte FICTÍCIA e simples, usada só nos testes de base (leitura, lacunas, relatório).
+/// As fontes reais do desafio têm adaptadores próprios no Piersec.Core.
 /// </summary>
 public sealed class AdaptadorExemplo : IAdaptadorFonte
 {
@@ -21,17 +22,16 @@ public sealed class AdaptadorExemplo : IAdaptadorFonte
         foreach (var linha in tabela.Linhas)
         {
             var n = linha.Numero;
-            var severidadeOrigem = tabela.Valor(linha, "severidade");
             eventos.Add(new EventoSeguranca
             {
                 Id = contexto.NovoId(),
                 IdOrigem = tabela.Valor(linha, "id_evento"),
                 Fonte = Nome,
                 Tipo = tabela.Valor(linha, "tipo") ?? ContextoConversao.NaoInformado,
+                Ambiente = contexto.Ambiente,
                 Ativo = contexto.ConverterAtivo(tabela.Valor(linha, "ativo"), n),
                 UsuarioAnonimo = contexto.ConverterUsuario(tabela.Valor(linha, "usuario"), n),
-                SeveridadeOrigem = severidadeOrigem,
-                Severidade = contexto.ConverterSeveridade(severidadeOrigem, n),
+                SeveridadeOrigem = tabela.Valor(linha, "severidade"),
                 DataUtc = contexto.ConverterData(tabela.Valor(linha, "data_hora"), n),
                 Descricao = tabela.Valor(linha, "descricao") ?? "",
                 Evidencia = contexto.Evidencia(n),
