@@ -124,7 +124,7 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
             <table><thead><tr><th>Id</th><th>O que foi conferido</th><th>Resultado</th><th>Detalhe</th></tr></thead><tbody>
             """);
         foreach (var x in v.Verificacoes)
-            sb.Append($"<tr><td><code>{H(x.Id)}</code></td><td>{H(x.Descricao)}</td><td>{(x.Aprovada ? "✔ aprovada" : "<strong>✖ reprovada</strong>")}</td><td>{H(x.Detalhe)}</td></tr>");
+            sb.Append($"<tr><td class=\"id\"><code>{H(x.Id)}</code></td><td>{H(x.Descricao)}</td><td>{(x.Aprovada ? "✔ aprovada" : "<strong>✖ reprovada</strong>")}</td><td>{H(x.Detalhe)}</td></tr>");
         sb.Append("</tbody></table></section>");
     }
 
@@ -604,5 +604,31 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
         footer{margin-top:40px;border-top:1px solid var(--linha);padding-top:8px;color:var(--suave);font-size:12px}
         @page{size:A4;margin:14mm}
         @media print{body{padding:0;max-width:none}h2,h3{break-after:avoid}tr{break-inside:avoid}.quebra{break-before:page}}
+        @media screen{
+        body{max-width:1280px;padding:48px 56px 80px;font-size:17px;line-height:1.6}
+        .selo{font-size:14px;padding:6px 14px}
+        h1{font-size:38px;margin:20px 0 8px}
+        h2{font-size:26px;margin:56px 0 18px;padding-bottom:8px}
+        h3{font-size:20px;margin:32px 0 12px}
+        table{margin:12px 0}
+        th,td{padding:10px 14px}
+        .pequeno{font-size:15px}
+        code{font-size:14px}
+        .diretoria{font-size:17px}.diretoria h2{margin-top:32px}.diretoria h3{margin:32px 0 14px}.diretoria td,.diretoria th{padding:10px 14px}
+        .score-caixa{gap:40px;padding:24px 32px;margin:16px 0}
+        .grande{font-size:84px}.de{font-size:20px}
+        .score-texto p{margin:8px 0}.rotulo{font-size:19px}.frase{font-size:21px}
+        .riscos{gap:16px}
+        .risco{padding:14px 20px}.risco p{margin:6px 0}.titulo-risco{font-size:19px}
+        .ordem{min-width:26px;height:26px;border-radius:13px;font-size:15px;line-height:26px;margin-right:8px}
+        .selo-ok{font-size:16px;padding:6px 14px;margin:14px 0 0}
+        .nao-validado{font-size:18px;padding:16px 20px;margin:18px 0}
+        .aviso-forte{padding:12px 16px;margin:16px 0}
+        .uma-coisa{font-size:18px;padding:16px 20px;margin:20px 0}
+        .barra{width:160px;height:12px}
+        .glossario dt{margin-top:12px}.glossario dd{margin:2px 0 8px 20px}
+        footer{margin-top:64px;font-size:14px}
+        }
+        @media screen and (max-width:700px){body{padding:20px 16px 48px;font-size:16px}.score-caixa{flex-direction:column;align-items:flex-start;gap:12px}table{display:block;overflow-x:auto}}
         """;
 }
