@@ -15,6 +15,9 @@ public sealed class LoteModel(RepositorioLotes repositorio, GeradorRelatorioHtml
     /// <summary>Mesmo aviso de confiança baixa da página 1 do relatório (null quando a confiança não é baixa).</summary>
     public string? AvisoConfianca { get; private set; }
 
+    /// <summary>"Três problemas respondem por…" ou "O risco está espalhado…" (null quando não se aplica).</summary>
+    public string? FraseAchados { get; private set; }
+
     public IActionResult OnGet(string id)
     {
         var lote = repositorio.Carregar(id); // id inválido → null → 404
@@ -23,6 +26,7 @@ public sealed class LoteModel(RepositorioLotes repositorio, GeradorRelatorioHtml
         Lote = lote;
         PdfDisponivel = repositorio.ExisteRelatorio(id, "pdf");
         AvisoConfianca = lote.Avaliacao is { } a ? gerador.AvisoConfianca(a.Score) : null;
+        FraseAchados = lote.Avaliacao is { } av ? gerador.FraseAchados(av) : null;
         return Page();
     }
 }

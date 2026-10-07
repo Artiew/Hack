@@ -66,10 +66,6 @@
             {
                 <p>Se fizer só uma coisa: @av.FraseUmaCoisa</p>
             }
-            @if (GeradorRelatorioHtml.FraseAchados(av) is { } fraseAchados)
-            {
-                <p>@fraseAchados <span class="meta">(@string.Join("; ", av.AchadosPrincipais.Select(x => x.Descricao)))</span></p>
-            }
         </div>
     </section>
 
@@ -85,6 +81,18 @@
             <li><strong>@r.Titulo.</strong> @r.OQueE <em>@r.ComoResolver</em></li>
         }
     </ol>
+
+    @if (Model.FraseAchados is { } fraseAchados)
+    {
+        <h2>@GeradorRelatorioHtml.TituloAchados(av)</h2>
+        <p><strong>@fraseAchados</strong></p>
+        <ol>
+            @foreach (var achado in av.AchadosPrincipais)
+            {
+                <li>@achado.Texto</li>
+            }
+        </ol>
+    }
 
     <h2>O que fazer agora</h2>
     <table>

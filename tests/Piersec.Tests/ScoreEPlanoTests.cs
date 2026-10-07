@@ -273,7 +273,9 @@ public class ScoreEPlanoTests
         Assert.Equal(100, a.PercentualExplicado);
         Assert.Equal(0, a.ScoreSemAchados);
         Assert.Equal(a.Score.Valor, achado.Pontos);
-        Assert.Equal("1 achado explica 100% do risco: sem ele, o score cairia de 70 para 0.", GeradorRelatorioHtml.FraseAchados(a));
+        Assert.Equal("Atualizar o programa openssl, que está em 1 máquina", achado.Texto);   // empate: a ação mais simples vence
+        Assert.Equal("Um problema responde por todo o risco. Resolvendo só ele, o risco cairia de alto para baixo (de 70 para 0).",
+            Fabrica.Gerador().FraseAchados(a));
     }
 
     [Fact]
@@ -290,7 +292,8 @@ public class ScoreEPlanoTests
         Assert.InRange(a.PercentualExplicado!.Value, 0.1, 100);
         // o percentual e o "score sem eles" contam a mesma história
         Assert.Equal(a.Score.Valor!.Value * (1 - a.PercentualExplicado.Value / 100), a.ScoreSemAchados!.Value, 0.2);
-        Assert.Contains("achados explicam", GeradorRelatorioHtml.FraseAchados(a));
+        Assert.Matches("^(Dois|Três) problemas respondem por", Fabrica.Gerador().FraseAchados(a));
+        Assert.All(a.AchadosPrincipais, x => Assert.DoesNotContain("regra", x.Texto));   // nada de número de regra para o executivo
     }
 
     [Fact]
@@ -303,9 +306,9 @@ public class ScoreEPlanoTests
 
         Assert.False(GeradorRelatorioHtml.RiscoConcentrado(a));
         Assert.InRange(a.PercentualExplicado!.Value, 1, GeradorRelatorioHtml.PercentualRiscoConcentrado - 1);
-        var frase = GeradorRelatorioHtml.FraseAchados(a)!;
-        Assert.StartsWith("O risco está espalhado: os 3 achados que mais pesam explicam só 15%", frase);
-        Assert.Contains("Não há atalho", frase);
+        var frase = Fabrica.Gerador().FraseAchados(a)!;
+        Assert.Equal("Não existe um problema único para atacar. Mesmo resolvendo os 3 maiores, o risco cairia pouco: de crítico para alto (de 85 para 72). " +
+                     "O caminho é atualizar todas as máquinas de forma automática, e não corrigir uma por uma.", frase);
     }
 
     [Fact]
@@ -315,7 +318,7 @@ public class ScoreEPlanoTests
 
         Assert.Empty(a.AchadosPrincipais);
         Assert.Null(a.PercentualExplicado);
-        Assert.Null(GeradorRelatorioHtml.FraseAchados(a));
+        Assert.Null(Fabrica.Gerador().FraseAchados(a));
     }
 
     [Fact]
@@ -325,8 +328,10 @@ public class ScoreEPlanoTests
 
         var html = Fabrica.Gerador().Gerar(lote with { Validacao = Fabrica.Validador().Validar(lote) });
 
-        Assert.Contains("Poucos achados explicam boa parte do risco", html);
-        Assert.Contains("1 achado explica 100% do risco", html);
+        Assert.Contains("Poucos problemas concentram boa parte do risco", html);
+        Assert.Contains("Um problema responde por todo o risco", html);
+        Assert.Contains("Atualizar o programa openssl, que está em 1 máquina", html);
+        Assert.Contains("Detalhe técnico: falhas no programa openssl", html);   // o técnico continua, em letra pequena
         Assert.Contains("tira 70 pontos do score", html);
     }
 }

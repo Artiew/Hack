@@ -109,7 +109,13 @@ public sealed record Avaliacao
 public sealed record ComparacaoLote(string LoteAnteriorId, DateTimeOffset DataAnterior, double ScoreAnterior, double Diferenca, string Motivo);
 
 /// <summary>
-/// Um dos achados que mais pesam no score: um programa, uma máquina ou um grupo de alertas.
-/// <paramref name="Pontos"/> = quanto o score cairia se só este achado fosse resolvido (calculado, não estimado).
+/// Um dos problemas que mais pesam no score: um programa, uma máquina ou um grupo de alertas.
+/// <paramref name="Descricao"/> é a versão técnica ("alertas da regra 81628 em FW-01"); <paramref name="Acao"/> é o que
+/// o executivo lê ("Verificar os sinais de ataque repetidos registrados pelo firewall FW-01").
+/// <paramref name="Pontos"/> = quanto o score cairia se só este problema fosse resolvido (calculado, não estimado).
 /// </summary>
-public sealed record AchadoPrincipal(string Descricao, double Pontos, int Eventos);
+public sealed record AchadoPrincipal(string Descricao, double Pontos, int Eventos, string? Acao = null)
+{
+    /// <summary>A ação em linguagem simples; lotes antigos (sem ela) mostram a descrição.</summary>
+    public string Texto => Acao ?? Descricao;
+}

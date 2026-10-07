@@ -74,7 +74,8 @@ public sealed class PlanejadorAvaliacao(ConjuntoRegras regras, CalculadoraScore 
         if (score.Valor is not { } total || total <= 0)
             return ([], null, null);
 
-        var candidatos = new List<(string Descricao, HashSet<string> Ids)>();
+        // Cada candidato tem duas versões do texto: a técnica (anexos) e a ação em linguagem simples (executivo).
+        var candidatos = new List<(string Descricao, string Acao, HashSet<string> Ids)>();
         HashSet<string> Ids(IEnumerable<EventoSeguranca> g) => g.Select(e => e.Id).ToHashSet(StringComparer.Ordinal);
         var vulnerabilidades = eventos.Where(e => e.Tipo == TiposEvento.Vulnerabilidade && e.Ativo != ContextoConversao.NaoInformado).ToList();
 
@@ -82,34 +83,46 @@ public sealed class PlanejadorAvaliacao(ConjuntoRegras regras, CalculadoraScore 
                      .GroupBy(e => e.Pacote!.Trim().ToLowerInvariant(), StringComparer.Ordinal)
                      .OrderByDescending(g => g.Count(e => e.Severidade >= Severidade.Alta)).ThenByDescending(g => g.Count()).ThenBy(g => g.Key, StringComparer.Ordinal)
                      .Take(10))
-            candidatos.Add(($"falhas no programa {g.First().Pacote!.Trim()} ({Qtd(g.Select(e => e.Ativo).Distinct().Count(), "máquina", "máquinas")})", Ids(g)));
+        {
+            var programa = g.First().Pacote!.Trim();
+            var maquinas = Qtd(g.Select(e => e.Ativo).Distinct().Count(), "máquina", "máquinas");
+            candidatos.Add(($"falhas no programa {programa} ({maquinas}, {Qtd(g.Count(), "falha", "falhas")})",
+                            $"Atualizar o programa {programa}, que está em {maquinas}", Ids(g)));
+        }
 
         foreach (var g in vulnerabilidades.GroupBy(e => e.Ativo, StringComparer.Ordinal)
                      .OrderByDescending(g => calculadora.PontosDaMaquina(g) * regras.Ativos.Tipo(g.First().TipoAtivo).PesoNoScore)
                      .ThenByDescending(g => g.Count()).ThenBy(g => g.Key, StringComparer.Ordinal)
                      .Take(5))
-            candidatos.Add(($"a máquina {g.Key} ({regras.Ativos.Tipo(g.First().TipoAtivo).Singular}, {Qtd(g.Count(), "falha", "falhas")})", Ids(g)));
+        {
+            var tipo = g.First().TipoAtivo;
+            var acao = tipo == "servidor" ? $"Corrigir o servidor {g.Key}" : $"Corrigir a máquina {g.Key} ({regras.Ativos.Tipo(tipo).Singular})";
+            candidatos.Add(($"a máquina {g.Key} ({regras.Ativos.Tipo(tipo).Singular}, {Qtd(g.Count(), "falha", "falhas")})", acao, Ids(g)));
+        }
 
         foreach (var g in eventos.Where(e => e.Tipo == TiposEvento.Alerta && e.Severidade is { } s && regras.Score.PesoPorAlerta[s] > 0)
                      .GroupBy(e => (e.Ativo, Regra: e.RegraOrigem ?? "?"))
                      .OrderByDescending(g => g.Sum(e => regras.Score.PesoPorAlerta[e.Severidade!.Value]))
                      .ThenBy(g => g.Key.Ativo, StringComparer.Ordinal).ThenBy(g => g.Key.Regra, StringComparer.Ordinal)
                      .Take(5))
-            candidatos.Add(($"{Qtd(g.Count(), "alerta", "alertas")} da regra {g.Key.Regra} em {g.Key.Ativo}", Ids(g)));
+            candidatos.Add(($"{Qtd(g.Count(), "alerta", "alertas")} da regra {g.Key.Regra} em {g.Key.Ativo}",
+                            $"Verificar os sinais de ataque repetidos registrados pelo firewall {g.Key.Ativo}", Ids(g)));
 
         double ScoreSem(HashSet<string> ids) =>
             calculadora.Calcular(eventos.Where(e => !ids.Contains(e.Id)).ToList(), tiposMedidos, populacao).Valor ?? 0;
 
-        var principais = new List<(string Descricao, HashSet<string> Ids, double Queda)>();
+        // Empate na queda: vence quem entrou antes na lista (programa, depois máquina, depois alertas), porque
+        // "atualizar o programa X" é a ação mais simples de pedir e de fazer.
+        var principais = new List<(string Descricao, string Acao, HashSet<string> Ids, double Queda)>();
         foreach (var c in candidatos
-                     .Select(c => (c.Descricao, c.Ids, Queda: total - ScoreSem(c.Ids)))
+                     .Select((c, ordem) => (c.Descricao, c.Acao, c.Ids, Queda: Math.Round(total - ScoreSem(c.Ids), 1), Ordem: ordem))
                      .Where(c => c.Queda >= 0.1)
-                     .OrderByDescending(c => c.Queda).ThenBy(c => c.Descricao, StringComparer.Ordinal))
+                     .OrderByDescending(c => c.Queda).ThenBy(c => c.Ordem))
         {
             // "o programa X" e "a máquina Y" podem ser exatamente as mesmas falhas: conta uma vez só.
             if (principais.Any(p => p.Ids.SetEquals(c.Ids)))
                 continue;
-            principais.Add(c);
+            principais.Add((c.Descricao, c.Acao, c.Ids, c.Queda));
             if (principais.Count == QuantidadeAchadosPrincipais)
                 break;
         }
@@ -118,7 +131,7 @@ public sealed class PlanejadorAvaliacao(ConjuntoRegras regras, CalculadoraScore 
 
         var semTodos = Math.Round(ScoreSem(principais.SelectMany(c => c.Ids).ToHashSet(StringComparer.Ordinal)), 1);
         var percentual = Math.Round(100 * (total - semTodos) / total, 1);
-        return (principais.Select(c => new AchadoPrincipal(c.Descricao, Math.Round(c.Queda, 1), c.Ids.Count)).ToList(), percentual, semTodos);
+        return (principais.Select(c => new AchadoPrincipal(c.Descricao, Math.Round(c.Queda, 1), c.Ids.Count, c.Acao)).ToList(), percentual, semTodos);
     }
 
     // ---------------- plano de ação ----------------

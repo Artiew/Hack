@@ -224,11 +224,15 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
 
         if (FraseAchados(a) is { } frase)
         {
-            sb.Append($"<h3>{(RiscoConcentrado(a) ? "Poucos achados explicam boa parte do risco" : "O risco está espalhado")}</h3><p><strong>{H(frase)}</strong></p><ol>");
+            sb.Append($"<h3>{H(TituloAchados(a))}</h3><p><strong>{H(frase)}</strong></p><ol>");
             foreach (var achado in a.AchadosPrincipais)
-                sb.Append($"<li>{H(achado.Descricao)}: sozinho, resolver isso tira {H(Pontos(achado.Pontos))} do score.</li>");
-            sb.Append("</ol><p class=\"meta\">Calculado refazendo a conta do score sem cada achado (máquinas corrigidas continuam na média, valendo 0). " +
-                      "Juntos, o efeito é menor que a soma, porque um mesmo evento pode estar em dois achados.</p>");
+            {
+                // Linguagem simples na frente; o detalhe técnico fica numa linha pequena, para a equipe conferir.
+                var detalhe = achado.Acao is null ? "" : $"<br><span class=\"pequeno\">Detalhe técnico: {H(achado.Descricao)}; sozinho, tira {H(Pontos(achado.Pontos))} do score.</span>";
+                sb.Append($"<li>{H(achado.Texto)}{detalhe}</li>");
+            }
+            sb.Append("</ol><p class=\"meta\">Como calculamos: refazendo a conta do score sem cada problema (máquinas corrigidas continuam na média, valendo 0). " +
+                      "Juntos, o efeito é menor que a soma, porque uma mesma falha pode estar em dois problemas.</p>");
         }
 
         sb.Append("<h3>Faixas</h3><table><thead><tr><th>Score</th><th>Faixa</th><th>O que significa</th></tr></thead><tbody>");
@@ -588,20 +592,42 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
     /// <summary>O risco está concentrado em poucos achados? (decide o título e o tom da frase)</summary>
     public static bool RiscoConcentrado(Avaliacao a) => a.PercentualExplicado >= PercentualRiscoConcentrado;
 
+    /// <summary>Título da parte "poucos problemas concentram o risco" (ou "o risco está espalhado").</summary>
+    public static string TituloAchados(Avaliacao a) =>
+        RiscoConcentrado(a) ? "Poucos problemas concentram boa parte do risco" : "O risco está espalhado";
+
     /// <summary>
-    /// "3 achados explicam 58% do risco: sem eles, o score cairia de 74 para 31." Quando explicam pouco, diz isso
-    /// com todas as letras (risco espalhado), em vez de sugerir um atalho que não existe. Null quando não se aplica.
+    /// Em linguagem de diretoria, com a faixa (alto, moderado…) e não só o número:
+    /// "Três problemas respondem por mais da metade do risco (58%). Resolvendo só eles, o risco cairia de alto para moderado (de 74 para 31)."
+    /// Quando explicam pouco, diz isso com todas as letras e aponta o caminho, em vez de sugerir um atalho que não existe.
+    /// Null quando não se aplica.
     /// </summary>
-    public static string? FraseAchados(Avaliacao a)
+    public string? FraseAchados(Avaliacao a)
     {
         if (a.AchadosPrincipais.Count == 0 || a.PercentualExplicado is not { } pct || a.Score.Valor is not { } atual || a.ScoreSemAchados is not { } sem)
             return null;
-        var quantos = Formatar.Qtd(a.AchadosPrincipais.Count, "achado explica", "achados explicam");
-        var eles = a.AchadosPrincipais.Count == 1 ? "ele" : "eles";
-        return RiscoConcentrado(a)
-            ? $"{quantos} {Inteiro(pct)}% do risco: sem {eles}, o score cairia de {Inteiro(atual)} para {Inteiro(sem)}."
-            : $"O risco está espalhado: {(a.AchadosPrincipais.Count == 1 ? "o achado que mais pesa explica" : $"os {a.AchadosPrincipais.Count} achados que mais pesam explicam")} " +
-              $"só {Inteiro(pct)}% (sem {eles}, o score iria de {Inteiro(atual)} para {Inteiro(sem)}). Não há atalho: é preciso corrigir máquina por máquina.";
+        var n = a.AchadosPrincipais.Count;
+        var eles = n == 1 ? "ele" : "eles";
+        var antes = regras.Score.FaixaDe(atual).Nome.ToLowerInvariant();
+        var depois = regras.Score.FaixaDe(sem).Nome.ToLowerInvariant();
+        var numeros = $"de {Inteiro(atual)} para {Inteiro(sem)}";
+
+        if (RiscoConcentrado(a))
+        {
+            var quantos = n switch { 1 => "Um problema responde", 2 => "Dois problemas respondem", _ => "Três problemas respondem" };
+            var parte = pct >= 99.5 ? "por todo o risco" : pct > 50 ? $"por mais da metade do risco ({Inteiro(pct)}%)" : $"por {Inteiro(pct)}% do risco";
+            var efeito = antes == depois
+                ? $"o risco cairia {numeros}, mas continuaria {antes}"
+                : $"o risco cairia de {antes} para {depois} ({numeros})";
+            return $"{quantos} {parte}. Resolvendo só {eles}, {efeito}.";
+        }
+
+        var maiores = n == 1 ? "o maior" : $"os {n} maiores";
+        var pouco = antes == depois
+            ? $"o risco continuaria {antes} ({numeros})"
+            : $"o risco cairia pouco: de {antes} para {depois} ({numeros})";
+        return $"Não existe um problema único para atacar. Mesmo resolvendo {maiores}, {pouco}. " +
+               "O caminho é atualizar todas as máquinas de forma automática, e não corrigir uma por uma.";
     }
 
     private static string Pontos(double valor) => valor < 1
