@@ -12,9 +12,15 @@ executivo (HTML e PDF) cuja primeira página é escrita para quem não é da ár
 
 Requisitos: Windows, [SDK do .NET 10](https://dot.net) e Microsoft Edge ou Google Chrome (usado para gerar o PDF).
 
+**Jeito mais fácil:** dois cliques em **`Abrir Plataforma.cmd`**, na pasta do projeto. Esqueceu a senha do admin?
+Dois cliques em **`Esqueci a senha do admin.cmd`** (gera uma senha temporária, mostrada uma vez, com troca obrigatória).
+Dica: deixe o navegador salvar a senha ao entrar; ele guarda cifrada e preenche sozinho.
+
+Pelo terminal:
 ```powershell
-.\rodar.cmd           # compila, roda os testes, sobe o site e abre o navegador
-.\rodar.cmd -DoZero   # o mesmo, mas apagando antes tudo de var\ (lotes, relatórios, usuários, auditoria e chaves)
+.\rodar.cmd                        # compila, roda os testes, sobe o site e abre o navegador
+.\rodar.cmd -DoZero                # o mesmo, apagando antes tudo de var\ (lotes, relatórios, usuários, auditoria, chaves)
+.\rodar.cmd -RedefinirSenhaAdmin   # esqueceu a senha do admin
 ```
 
 O site fica em **https://localhost:5001**. Se algum teste falhar, o site não sobe.

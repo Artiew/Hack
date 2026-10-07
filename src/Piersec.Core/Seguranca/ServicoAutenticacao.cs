@@ -116,6 +116,18 @@ public sealed class ServicoAutenticacao(RepositorioUsuarios repositorio, TimePro
         return (true, usarAmbiente ? null : senha);
     }
 
+    /// <summary>
+    /// "Esqueci a senha": gera uma senha temporária nova (mostrada UMA vez), desbloqueia e obriga a troca no próximo
+    /// acesso. Só é chamado por quem tem acesso à máquina (rodar.cmd -RedefinirSenhaAdmin), nunca pelo site.
+    /// </summary>
+    public string RedefinirSenha(string login)
+    {
+        var usuario = repositorio.Obter(login) ?? throw new ArgumentException($"Usuário '{login}' não existe.");
+        var senha = GerarSenhaInicial();
+        repositorio.Salvar(usuario with { HashSenha = HashSenha.Gerar(senha), TrocarSenha = true, TentativasFalhas = 0, BloqueadoAteUtc = null });
+        return senha;
+    }
+
     public static string GerarSenhaInicial() =>
         string.Create(TamanhoSenhaInicial, 0, (destino, _) =>
         {

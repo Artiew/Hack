@@ -154,6 +154,21 @@ public class SegurancaTests : IDisposable
         Assert.Contains("confirmação", _servico.TrocarSenha("admin", "Ab3$efgH", "Nova-Senha-2026", "Outra-Senha-2026"));
     }
 
+    [Fact]
+    public void Redefinir_senha_gera_temporaria_desbloqueia_e_obriga_troca()
+    {
+        _servico.GarantirAdmin("Ab3$efgH");
+        _servico.TrocarSenha("admin", "Ab3$efgH", "Nova-Senha-2026", "Nova-Senha-2026");
+        for (var i = 0; i < ServicoAutenticacao.MaximoTentativas; i++)
+            _servico.Entrar("admin", "errada00"); // bloqueia
+
+        var temporaria = _servico.RedefinirSenha("admin");
+
+        Assert.Equal(ServicoAutenticacao.TamanhoSenhaInicial, temporaria.Length);
+        Assert.Equal(ResultadoEntrada.PrecisaTrocarSenha, _servico.Entrar("admin", temporaria).Resultado);
+        Assert.Equal(ResultadoEntrada.Falhou, _servico.Entrar("admin", "Nova-Senha-2026").Resultado);
+    }
+
     // ---------- criação de usuários ----------
 
     [Fact]

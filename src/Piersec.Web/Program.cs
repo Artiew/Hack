@@ -122,6 +122,19 @@ if (adminCriado)
           $"  ====================================================================\n");
 }
 
+// "Esqueci a senha do admin": o rodar.ps1 -RedefinirSenhaAdmin liga esta variável. Nova senha temporária, mostrada UMA vez.
+if (!adminCriado && Environment.GetEnvironmentVariable("PIERSEC_REDEFINIR_ADMIN") == "1")
+{
+    var nova = app.Services.GetRequiredService<ServicoAutenticacao>().RedefinirSenha(Papeis.Admin);
+    app.Services.GetRequiredService<Auditoria>().Registrar("sistema", "senha_redefinida", "admin (pelo computador local)");
+    Console.WriteLine(
+        $"\n  ====================================================================\n" +
+        $"   SENHA DO ADMIN REDEFINIDA\n" +
+        $"   USUÁRIO: admin    SENHA TEMPORÁRIA: {nova}\n" +
+        $"   Anote agora: ela NÃO será mostrada de novo. Troca obrigatória ao entrar.\n" +
+        $"  ====================================================================\n");
+}
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Erro"); // em produção, erro nunca mostra detalhes técnicos
