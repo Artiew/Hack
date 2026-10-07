@@ -114,3 +114,12 @@ Requisito afetado: RS1/RS2 · Impacto: degrada nota (sair não funcionava; a ses
 - **Correção:** `asp-page="/Sair"` (o ASP.NET gera a URL e o token). Conferidos os outros formulários com `action`: são buscas por GET, que não precisam de token.
 - **Verificação:** ponta a ponta como executivo, com o token da PRÓPRIA página: Sair → 302 /Entrar; depois disso, `/` → /Entrar ✔.
 - **Aprendizado:** testar cada botão com o que a página dele oferece, como um usuário faria.
+
+## P-014 · "Usuário não encontrado" ao CRIAR usuário logo depois de excluir
+Requisito afetado: RS1 (gestão de usuários) · Impacto: bloqueia (não dava para criar usuário depois de excluir)
+- **Sintoma × Esperado:** depois de excluir, criar um usuário novo mostrava "Usuário não encontrado." × criar normalmente. Relatado pelo Vitor.
+- **Causa:** a exclusão respondia na própria página, e o endereço ficava `/Usuarios?handler=Excluir`. O formulário de criar não dizia para onde enviar, então ia para o mesmo endereço, e o servidor tratava o "criar" como um "excluir" sem nome.
+- **Correção:** (1) o formulário de criar aponta explicitamente para `/Usuarios` (`asp-page`); (2) depois de excluir, redireciona para `/Usuarios` limpo (padrão "POST → redireciona → GET"), com a mensagem em `TempData`. Bônus: F5 não tenta excluir de novo.
+- **Por que os testes não pegaram:** o teste de ponta a ponta excluía, mas não criava depois. Novo teste refaz o caminho do Vitor usando o endereço que o próprio formulário indica.
+- **Verificação:** criar → excluir → criar → criar com a confirmação aberta → login inválido: todos certos ✔.
+- **Aprendizado:** formulário sem destino explícito vai para o endereço atual, e ele pode mudar depois de outra ação. Sempre dizer o destino (`asp-page` / `asp-page-handler`).

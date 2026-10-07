@@ -11,14 +11,18 @@ public sealed class UsuariosModel(ServicoAutenticacao servico, RepositorioUsuari
     [BindProperty] public string NovoPapel { get; set; } = Papeis.Analista;
 
     public IReadOnlyList<Usuario> Usuarios { get; private set; } = [];
-    public string? Erro { get; private set; }
     public (string Login, string Senha)? Criado { get; private set; }
     public DateTimeOffset Agora => relogio.GetUtcNow();
 
     /// <summary>Usuário a confirmar a exclusão (passo 1: GET ?excluir=login mostra "Tem certeza?").</summary>
     public Usuario? AConfirmar { get; private set; }
 
-    public string? Mensagem { get; private set; }
+    // TempData: o resultado da exclusão sobrevive ao redirecionamento e some depois de mostrado.
+    [TempData] public string? Mensagem { get; set; }
+    [TempData] public string? Erro { get; set; }
+
+    /// <summary>Erro ao criar (mostrado na mesma resposta, sem redirecionar: por isso não usa TempData).</summary>
+    public string? ErroCriacao { get; private set; }
 
     public void OnGet(string? excluir)
     {
@@ -26,7 +30,11 @@ public sealed class UsuariosModel(ServicoAutenticacao servico, RepositorioUsuari
         AConfirmar = excluir is null ? null : repositorio.Obter(excluir);
     }
 
-    /// <summary>Passo 2: exclui de fato (POST com token). A sessão aberta da pessoa cai no próximo clique.</summary>
+    /// <summary>
+    /// Passo 2: exclui de fato (POST com token) e volta para /Usuarios limpo (redireciona): assim o endereço não fica
+    /// "?handler=Excluir" — que faria o próximo formulário da página cair aqui — e F5 não tenta excluir de novo.
+    /// A sessão aberta da pessoa excluída cai no próximo clique.
+    /// </summary>
     public IActionResult OnPostExcluir(string? login)
     {
         var quem = User.Identity!.Name!;
@@ -38,8 +46,7 @@ public sealed class UsuariosModel(ServicoAutenticacao servico, RepositorioUsuari
         }
         else
             Erro = erro;
-        Usuarios = repositorio.Listar();
-        return Page();
+        return RedirectToPage();
     }
 
     public IActionResult OnPost()
@@ -53,7 +60,7 @@ public sealed class UsuariosModel(ServicoAutenticacao servico, RepositorioUsuari
         }
         catch (ArgumentException ex)
         {
-            Erro = ex.Message;
+            ErroCriacao = ex.Message;
         }
         Usuarios = repositorio.Listar();
         return Page();

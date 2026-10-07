@@ -15,9 +15,9 @@
         Entregue à pessoa agora: esta senha NÃO será mostrada de novo. Ela será obrigada a trocá-la no primeiro acesso.
     </div>
 }
-@if (Model.Erro is not null)
+@if ((Model.Erro ?? Model.ErroCriacao) is { } erro)
 {
-    <p class="erro" role="alert">@Model.Erro</p>
+    <p class="erro" role="alert">@erro</p>
 }
 @if (Model.Mensagem is not null)
 {
@@ -39,7 +39,7 @@
     </section>
 }
 
-<form method="post" class="cartao">
+<form method="post" asp-page="/Usuarios" class="cartao">
     <label for="login">Novo usuário (login)</label>
     <input id="login" name="NovoLogin" value="@Model.NovoLogin" required pattern="[a-z0-9._\-]{3,32}" maxlength="32" placeholder="ex.: maria.silva">
     <label for="papel">Papel</label>
