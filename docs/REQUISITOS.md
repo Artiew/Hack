@@ -1,7 +1,7 @@
 # Matriz de requisitos
 
 Regra: ✅ só para o que foi **executado e provado**. ⚠️ parcial · ❌ não feito · ❓ depende de informação que ainda não temos.
-Atualizado ao fim da **Fase 4** (validação, login, auditoria, proteções do site, cifra em repouso). Números dos dados reais vêm de contagens (`docs/FONTES.md`).
+Atualizado ao fim da **Fase 5** (operação automatizada simulada). Números dos dados reais vêm de contagens (`docs/FONTES.md`).
 
 ## Requisitos funcionais (manual 4.1)
 
@@ -14,7 +14,7 @@ Atualizado ao fim da **Fase 4** (validação, login, auditoria, proteções do s
 | RF5 | Score 0–100 com fatores | `CalculadoraScore` + `regras/score.json`: direção escrita ("100 = risco máximo"), 5 fatores com contribuição (soma = score, teste), fator sem dados = "não medido" (não vira zero), confiança, faixas com nome, comparação com o lote anterior e motivo (`Comparacao_com_o_lote_anterior...`), sanidade: limpo → 0 "Baixo", caótico → ≥ 80 "Crítico". Dados reais: 74 (Alto), confiança média (55% do peso medido) | ✅ |
 | RF6 | Relatório gerado automaticamente | Upload dos 3 arquivos reais → HTML + PDF em ~3,5 s, sem intervenção (ensaio do zero com `rodar.cmd -DoZero`). Página 1 para a diretoria (como estamos / mais grave / o que fazer / se fizer só uma coisa), seções de score, plano e limites, anexos técnicos e glossário. Falta validação antes de emitir (RF8) | ⚠️ |
 | RF7 | Sinalizar lacunas | Por campo, linha, arquivo, fonte ("não informa data/usuário/exposição") e lote; aviso de possível corte em 10.000 linhas; lacunas agrupadas no relatório. Falta: fonte esperada ausente | ⚠️ |
-| RF8 | Validar consistência antes de emitir | `ValidadorLote`: 12 verificações antes de emitir (somas, lidos × eventos, origem de todo evento, datas coerentes, fonte vazia = lacuna, correlações íntegras, contribuições = score, **score recalculado por segundo caminho**, percentuais do plano, máquinas por tipo, credenciais mascaradas, relatório final relido). Selo "N verificações, N aprovadas"; se reprovar, relatório marcado "NÃO VALIDADO". Dados reais: 12/12; arquivo corrompido de propósito (`exemplos/alertas-corrompido-ficticio.csv`): V04 reprova (`ValidacaoTests`) | ✅ |
+| RF8 | Validar consistência antes de emitir | `ValidadorLote`: 12 verificações antes de emitir + **V13** (a operação automática respeitou as travas, conferido por outro caminho em `MotorDecisao.Conferir`) (somas, lidos × eventos, origem de todo evento, datas coerentes, fonte vazia = lacuna, correlações íntegras, contribuições = score, **score recalculado por segundo caminho**, percentuais do plano, máquinas por tipo, credenciais mascaradas, relatório final relido). Selo "N verificações, N aprovadas"; se reprovar, relatório marcado "NÃO VALIDADO". Dados reais: 12/12; arquivo corrompido de propósito (`exemplos/alertas-corrompido-ficticio.csv`): V04 reprova (`ValidacaoTests`) | ✅ |
 
 ## Requisitos de segurança (manual 4.2)
 
@@ -56,15 +56,15 @@ Atualizado ao fim da **Fase 4** (validação, login, auditoria, proteções do s
 | Desejável: trilha de evidências navegável | ⚠️ (ids e linhas no relatório; navegação na Fase 6) |
 | Desejável: recomendações automáticas | ✅ (plano gerado a partir dos dados; impacto calculado) |
 | Desejável: priorização por esforço e impacto | ✅ (matriz impacto × esforço, prazo por severidade; `Matriz_impacto_por_esforco`, `Plano_calcula_quanto_cada_acao_elimina`) |
-| Desejável: remediação automatizada e chamados | ❌ |
-| Desejável: transparência, rastreabilidade, operação autônoma | ⚠️ (regras e justificativas abertas; operação autônoma na Fase 5) |
+| Desejável: remediação automatizada e chamados | ✅ (chamados e plano de correção SIMULADOS, artefato `/automacao/CH-NNNN.txt`; nada é enviado. `OperacaoTests`, ponta a ponta com os exemplos) |
+| Desejável: transparência, rastreabilidade, operação autônoma | ✅ (regras e playbooks em JSON; cada decisão com regra, evidência, confiança e motivo no log; desfazer; auditoria) |
 
 ## Checklist final (manual 10)
 
 | Item | Status |
 |---|---|
-| Funciona de ponta a ponta | ⚠️ (login → envio dos 3 arquivos reais → relatório validado e cifrado; falta a operação automatizada) |
-| Operação automatizada funciona | ❌ |
+| Funciona de ponta a ponta | ⚠️ (login → envio → relatório validado e cifrado → operação automática → aprovar/rejeitar/desfazer: provado com os exemplos fictícios; falta rodar a operação com os 3 arquivos reais) |
+| Operação automatizada funciona | ✅ (ver tabela "Operação automatizada" abaixo; provado com dados fictícios e teste de ponta a ponta no site) |
 | Relatório gerado pela plataforma | ✅ |
 | Resumo responde "como estamos / mais grave / o que fazer" | ✅ (página 1; teste + PDF conferido) |
 | Score com justificativa e fatores | ✅ (seção 2: cada fator com pergunta, valor, peso, pontos e explicação) |
@@ -73,3 +73,21 @@ Atualizado ao fim da **Fase 4** (validação, login, auditoria, proteções do s
 | Sem credenciais, dados pessoais indevidos ou dados reais | ⚠️ (sem varredura ainda) |
 | Plano de remediação | ✅ (ações com impacto calculado, esforço, prazo e score previsto) |
 | Regras de segurança e conduta respeitadas | ⚠️ (fora do OneDrive, dados fora do git, IA só viu cabeçalhos e contagens) |
+
+## Operação automatizada (PROMPT 5.2 · 30% da nota)
+
+| Item | Evidência | Status |
+|---|---|---|
+| Níveis de autonomia 0–3 | `regras/automacao.json` (`nivelAutonomia`, hoje 2); testes `Nivel_0_so_sugere`, `Nivel_1_pede_aprovacao_para_tudo`, `Nivel_2_...`, `Nivel_3_...`; tela Automação mostra o que cada nível faria com o último lote | ✅ |
+| Dry-run (ensaio) | `modoEnsaio`: calcula tudo e não grava nada (`Modo_ensaio_mostra_o_que_faria_e_nao_grava_nenhum_chamado`) | ✅ |
+| Nada irreversível / alto impacto sem pessoa | trava em `MotorDecisao` (vale em qualquer nível); isolar máquina sempre aguarda aprovação | ✅ |
+| Ativo crítico sempre com pessoa | ação que altera servidor ou equipamento de rede aguarda aprovação mesmo no nível 3 (`Nivel_3_corrige_estacao_sozinho_mas_servidor_...`) | ✅ |
+| Limite de ações por período | `limiteAcoesPorDia` (20), dia de Brasília (`Limite_por_dia_segura_o_excesso_e_volta_a_valer_no_dia_seguinte`) | ✅ |
+| Lote não validado não age sozinho | `Lote_que_nao_passou_na_validacao_nao_dispara_nada_sozinho` | ✅ |
+| Log de decisão (regra + evidência + confiança + desfazer) | histórico de cada chamado, tela Automação, artefato .txt, seção 4 do relatório; aprovar/rejeitar/desfazer na auditoria | ✅ |
+| Chamados e remediação simulados (artefato, não envia) | `/automacao/CH-NNNN.txt` ("SIMULADO · nenhum sistema externo foi acionado") | ✅ |
+| Idempotência | chave estável por playbook + problema (`Mesmo_lote_duas_vezes_nao_duplica_chamado`; ponta a ponta: 2º envio = 11 "já existiam", 0 novos) | ✅ |
+| Verificação contínua | fecha sozinho quando some, reabre o MESMO chamado quando volta; sem dados do tipo, não fecha (`Chamado_fecha_sozinho_...`, `Lote_sem_dados_de_vulnerabilidade_nao_fecha_...`) | ✅ |
+| Respeita a decisão humana | rejeitado/desfeito não é refeito sozinho (`Pessoa_aprova_rejeita_com_motivo_e_desfaz`) | ✅ |
+| Consistência da automação | V13 confere as travas por outro caminho; adulterar um item reprova (`V13_aprova_...`) | ✅ |
+| Com os dados reais | ainda não rodado | ❌ |

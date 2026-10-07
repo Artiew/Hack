@@ -41,10 +41,22 @@ O briefing completo está em **`docs/PROMPT.md`** — leia antes de qualquer tar
     Para testar com senha conhecida: `$env:ADMIN_SENHA_INICIAL='8chars!!'` antes do `rodar.cmd -DoZero`.
   - **Parte 3 feita:** lotes, resumos, relatórios e chave de anonimização gravados cifrados (`ICifrador`, Web usa Data
     Protection com chaves em `var/chaves` + DPAPI). PDF gerado em `var/tmp` e apagado. 192 testes passando.
-- **Próximo passo: Fase 5 — operação automatizada (30% da nota):** playbooks com níveis de autonomia 0–3, dry-run, nada
-  irreversível sem aprovação humana (ativos críticos sempre com humano), limite de ações por período, log de decisão,
-  chamados e remediação SIMULADOS (gerar o artefato, não enviar), idempotência e verificação contínua (chamado fecha
-  sozinho se o problema some, reabre se volta). Ver `docs/PROMPT.md` seção 5.2.
+- **Feito depois da Fase 4:** senha mínima de **8** (NIST; 12 estava errado, pedido do Vitor); site e relatório na tela com
+  letra maior e mais espaço (PDF continua compacto); atalhos de dois cliques `Abrir Plataforma.cmd` e
+  `Esqueci a senha do admin.cmd` (sem senha guardada em atalho).
+- **Fase 5 concluída (07/10/2026) — operação automatizada (SOC simulado):**
+  - `regras/automacao.json`: nível de autonomia 0–3 (hoje 2), `modoEnsaio` (dry-run), `limiteAcoesPorDia` (20),
+    `tiposCriticos` (servidor, rede) e 5 playbooks: atualizar programa (chamado), corrigir máquina (impacto médio),
+    isolar máquina (alto impacto, sempre com aprovação), investigar pico de alertas, medir fator (só sugestão).
+  - `Core/Operacao`: `Gatilhos` (problemas com chave estável), `MotorDecisao` (travas em ordem fixa + V13 que confere
+    as travas por outro caminho), `ServicoOperacao` (idempotente; fecha sozinho quando some, reabre quando volta; sem
+    dados do tipo, NÃO fecha; respeita rejeitar/desfazer humano; artefato .txt), `RepositorioChamados`
+    (`var/operacao/estado.json.cifrado`). Roda dentro do `CicloAnalise`, depois da validação.
+  - Tela **/Automacao** (fila de aprovação, sugestões, abertos com desfazer, último lote, ensaio por nível, log de
+    decisão); `/automacao/CH-NNNN.txt`; resumo na tela do lote; seção 4 do relatório (limites viraram seção 5).
+    Executivo só vê; admin/analista decidem; tudo na auditoria. 212 testes passando.
+- **Próximo passo: Fase 6** — visões executiva e técnica com navegação entre elas, números clicáveis até a linha do CSV
+  (RG2), tabela técnica filtrável, filtro por ambiente, "discordar da severidade". Ver `docs/PROMPT.md` seção 5.1.
 - Atenção: `rodar.cmd -DoZero` apaga também usuários e chaves; na 1ª execução a senha do admin aparece UMA vez no terminal.
 - Ideia aprovada para a Fase 6: filtro por ambiente (cada arquivo separado) sem precisar reenviar.
 - Perguntas ao mentor ainda abertas: fim de `docs/FONTES.md` (inclui: SIEM-1 e SIEM-2 são empresas diferentes?).

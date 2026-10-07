@@ -82,3 +82,18 @@ Requisito afetado: plano de remediação · Impacto: degrada nota (número engan
 - **Sintoma × Esperado:** ao simular as correções, máquinas sem falhas restantes sumiam da média (podendo até subir o score) × contar como 0.
 - **Correção:** `CalculadoraScore.Calcular(..., maquinasConhecidas)` mantém a população original na projeção.
 - **Teste:** `Na_projecao_maquina_corrigida_conta_como_zero_e_nao_some_da_media` ✔.
+
+## P-010 · Teste de ponta a ponta mostrou texto antigo depois de corrigido
+Requisito afetado: nenhum (processo de teste) · Impacto: atrasa (falso alarme)
+- **Sintoma × Esperado:** o relatório do site ainda dizia "0" em vez de "0 ações" depois da correção × texto novo.
+- **Isolamento:** etapa = build. O `dotnet test` recompila os testes e o núcleo, **mas não o site**; o script subia o site com `--no-build`, usando a versão antiga.
+- **Correção:** rodar `dotnet build Piersec.slnx` antes de subir o site com `--no-build` (o `rodar.cmd` já compila tudo, então o usuário não é afetado).
+- **Verificação:** depois do build, o ponta a ponta mostrou "0 ações" ✔.
+- **Aprendizado:** quando o resultado não muda depois de uma correção, primeiro confirmar que o programa rodando é o novo.
+
+## P-011 · Sem a chave, o estado da automação dava erro confuso
+Requisito afetado: RS3 · Impacto: atrasa (mensagem ruim)
+- **Sintoma × Esperado:** abrir `var/operacao/estado.json.cifrado` sem a chave certa gerava `JsonException` × mensagem clara.
+- **Causa:** sem a chave, os bytes cifrados chegam como "lixo" ao leitor de JSON, que falha antes da decifragem reclamar.
+- **Correção:** tratar `CryptographicException` e `JsonException` do mesmo jeito: erro claro e **nada é apagado** (começar do zero duplicaria chamados).
+- **Teste:** `Chamados_ficam_cifrados_no_disco_e_sao_lidos_de_volta` (falhou antes, passa depois) ✔.
