@@ -12,6 +12,26 @@
 <h1>Lote @(lote.Id[..8])</h1>
 <p class="meta">Processado em @Formatar.DataHora(lote.CriadoEmUtc, fuso) (horário de Brasília).</p>
 
+@if (lote.Validacao is { } val)
+{
+    if (val.TudoCerto)
+    {
+        <p class="selo-ok">✔ @val.Total verificações de consistência, @val.Aprovadas aprovadas</p>
+    }
+    else
+    {
+        <div class="nao-validado" role="alert">
+            ✖ RELATÓRIO NÃO VALIDADO: @(val.Total - val.Aprovadas) de @val.Total verificações falharam. Não use estes números para decisão.
+            <ul>
+                @foreach (var falha in val.Verificacoes.Where(x => !x.Aprovada))
+                {
+                    <li>@falha.Id — @falha.Descricao: @falha.Detalhe</li>
+                }
+            </ul>
+        </div>
+    }
+}
+
 <div class="acoes">
     <a class="botao" href="/lotes/@lote.Id/relatorio.html" target="_blank" rel="noopener">Abrir relatório (HTML)</a>
     @if (Model.PdfDisponivel)

@@ -44,6 +44,7 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
               <p class="meta">Gerado automaticamente pela plataforma em {H(Formatar.DataHora(lote.CriadoEmUtc, fusoExibicao))} (horário de Brasília)
               · lote {H(lote.Id[..8])} · {lote.Arquivos.Count(a => a.Fonte is not null)} de {lote.Arquivos.Count} arquivo(s) analisado(s).
               A primeira página é para a diretoria; o detalhe técnico está nos anexos.</p>
+              {SeloValidacao(lote.Validacao)}
             </header>
             """);
 
@@ -63,6 +64,7 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
         AnexoLacunas(sb, lote);
         AnexoMetodologia(sb);
         AnexoGlossario(sb);
+        AnexoValidacao(sb, lote.Validacao);
 
         sb.Append($"""
             <footer>
@@ -74,6 +76,56 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
             </html>
             """);
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// Versão emitida quando a leitura final encontra algo com cara de credencial (V12): nada dos dados sai,
+    /// só o aviso de que o relatório foi retido (S1).
+    /// </summary>
+    public string GerarRetido(Lote lote) => $"""
+        <!doctype html>
+        <html lang="pt-BR">
+        <head>
+        <meta charset="utf-8">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'">
+        <title>Relatório retido — lote {H(lote.Id[..8])}</title>
+        <style>{Estilo}</style>
+        </head>
+        <body>
+        <p class="selo">{H(SeloConfidencialidade)}</p>
+        <h1>Relatório retido</h1>
+        <div class="nao-validado">A verificação final encontrou no relatório um trecho com cara de credencial (senha, token ou chave).
+        Por segurança, o relatório deste lote NÃO foi emitido. A equipe técnica deve revisar os arquivos enviados.</div>
+        <p class="meta">Lote {H(lote.Id[..8])} · {H(Formatar.DataHora(lote.CriadoEmUtc, fusoExibicao))} (horário de Brasília)</p>
+        </body>
+        </html>
+        """;
+
+    private static string SeloValidacao(ResultadoValidacao? v)
+    {
+        if (v is null)
+            return "";
+        if (v.TudoCerto)
+            return $"<p class=\"selo-ok\">✔ {v.Total} verificações de consistência, {v.Aprovadas} aprovadas (anexo H)</p>";
+        var falhas = v.Total - v.Aprovadas;
+        return $"<div class=\"nao-validado\">✖ RELATÓRIO NÃO VALIDADO: {falhas} de {v.Total} verificações de consistência falharam " +
+               $"({H(string.Join("; ", v.Verificacoes.Where(x => !x.Aprovada).Select(x => $"{x.Id}: {x.Descricao}")))}). " +
+               "Os números abaixo NÃO devem ser usados para decisão até a correção. Detalhes no anexo H.</div>";
+    }
+
+    private static void AnexoValidacao(StringBuilder sb, ResultadoValidacao? v)
+    {
+        if (v is null)
+            return;
+        sb.Append($"""
+            <section>
+            <h2>H. Verificações de consistência</h2>
+            <p>Feitas pela plataforma antes de emitir este relatório: {v.Aprovadas} de {v.Total} aprovadas.</p>
+            <table><thead><tr><th>Id</th><th>O que foi conferido</th><th>Resultado</th><th>Detalhe</th></tr></thead><tbody>
+            """);
+        foreach (var x in v.Verificacoes)
+            sb.Append($"<tr><td><code>{H(x.Id)}</code></td><td>{H(x.Descricao)}</td><td>{(x.Aprovada ? "✔ aprovada" : "<strong>✖ reprovada</strong>")}</td><td>{H(x.Detalhe)}</td></tr>");
+        sb.Append("</tbody></table></section>");
     }
 
     // ================= Página 1: para a diretoria =================
@@ -501,7 +553,8 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
     // (o WebUtility.HtmlEncode trocaria "à" por "&#224;").
     private static readonly HtmlEncoder Codificador = HtmlEncoder.Create(UnicodeRanges.All);
 
-    private static string H(string? texto) => Codificador.Encode(texto ?? "");
+    // Todo texto passa pelo filtro de credenciais ANTES do escape (S1: nunca no relatório, nem parcialmente).
+    private static string H(string? texto) => Codificador.Encode(Validacao.FiltroCredenciais.Mascarar(texto ?? ""));
 
     private const string Estilo = """
         :root{--tinta:#1b2430;--suave:#5b6675;--linha:#d5dbe3;--cabecalho:#eef1f5;--fundo-claro:#f5f7fa;
@@ -531,6 +584,8 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
         .risco.sev-critica{border-left-color:var(--critica);color:inherit}.risco.sev-alta{border-left-color:var(--alta);color:inherit}
         .risco.sev-media{border-left-color:var(--media);color:inherit}.risco.sev-baixa{border-left-color:var(--baixa);color:inherit}
         .ordem{display:inline-block;min-width:20px;height:20px;border-radius:10px;background:var(--tinta);color:#fff;text-align:center;font-size:12px;line-height:20px;margin-right:4px}
+        .selo-ok{display:inline-block;border:2px solid var(--baixa);color:var(--baixa);border-radius:6px;padding:3px 10px;font-weight:700;margin:6px 0 0}
+        .nao-validado{border:3px solid var(--critica);color:var(--critica);border-radius:6px;padding:10px 14px;margin:10px 0;font-weight:700;font-size:15px}
         .aviso-forte{border:2px solid var(--alta);border-radius:6px;padding:6px 10px;margin:8px 0;font-weight:600}
         .uma-coisa{border:2px dashed var(--tinta);background:var(--fundo-claro);padding:8px 12px;margin:10px 0;font-size:14px}
         .barra{display:inline-block;width:120px;height:10px;border:1px solid var(--tinta);vertical-align:middle;margin-right:6px}

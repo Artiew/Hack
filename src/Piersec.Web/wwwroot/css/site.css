@@ -90,6 +90,8 @@ button, .botao {
 
 .acoes { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 16px 0; }
 
+.selo-ok { display: inline-block; border: 2px solid var(--baixa); color: var(--baixa); border-radius: 8px; padding: 4px 12px; font-weight: 700; }
+.nao-validado { border: 3px solid var(--erro); color: var(--erro); border-radius: 8px; padding: 10px 14px; font-weight: 700; background: var(--superficie); }
 .aviso-forte { border: 2px solid var(--alta); border-radius: 8px; padding: 8px 12px; font-weight: 600; background: var(--superficie); }
 
 .resumo { align-items: flex-start; gap: 24px; }

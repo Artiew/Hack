@@ -31,8 +31,14 @@ O briefing completo está em **`docs/PROMPT.md`** — leia antes de qualquer tar
   - aviso de **empresas/ambientes possivelmente diferentes** quando dois arquivos do mesmo tipo não têm nenhuma máquina em
     comum (`VerificadorAmbientes`). É aviso, não erro. Nos dados reais aparece para SIEM-1 × SIEM-2.
   - 144 testes passando.
-- **Próximo passo:** **Fase 4** (validação RF8 com selo "N verificações, N aprovadas", login RS1 com troca de senha
-  obrigatória, cabeçalhos de segurança/CSP, auditoria RS4, dados cifrados em repouso RS3).
+- **Fase 4 em andamento** (plano: validação → login + auditoria + proteções do site → dados cifrados em repouso):
+  - **Parte 1 feita:** validação RF8 (`Validacao/ValidadorLote`, 12 verificações, selo no relatório, "NÃO VALIDADO" se
+    reprovar, relatório retido se sobrar credencial). Demo: `exemplos/alertas-corrompido-ficticio.csv` reprova a V04.
+    Exemplos fictícios são gerados por `exemplos/gerar-exemplos.ps1`.
+  - **Próximo:** parte 2 — login RS1 (admin com senha inicial de 8 caracteres de `ADMIN_SENHA_INICIAL` ou aleatória
+    mostrada uma vez; troca obrigatória; PBKDF2; bloqueio após 5 tentativas; erro genérico; papéis admin/analista/executivo),
+    auditoria RS4 sem dados sensíveis, cabeçalhos de segurança/CSP, limite de tentativas. Depois parte 3 — cifrar
+    lotes e relatórios em repouso (RS3) com Data Protection + DPAPI.
 - Ideia aprovada para a Fase 6: filtro por ambiente (cada arquivo separado) sem precisar reenviar.
 - Perguntas ao mentor ainda abertas: fim de `docs/FONTES.md` (inclui: SIEM-1 e SIEM-2 são empresas diferentes?).
 

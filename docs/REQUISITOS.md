@@ -14,7 +14,7 @@ Atualizado ao fim da **Fase 3** (score, priorização, plano de ação, relatór
 | RF5 | Score 0–100 com fatores | `CalculadoraScore` + `regras/score.json`: direção escrita ("100 = risco máximo"), 5 fatores com contribuição (soma = score, teste), fator sem dados = "não medido" (não vira zero), confiança, faixas com nome, comparação com o lote anterior e motivo (`Comparacao_com_o_lote_anterior...`), sanidade: limpo → 0 "Baixo", caótico → ≥ 80 "Crítico". Dados reais: 74 (Alto), confiança média (55% do peso medido) | ✅ |
 | RF6 | Relatório gerado automaticamente | Upload dos 3 arquivos reais → HTML + PDF em ~3,5 s, sem intervenção (ensaio do zero com `rodar.cmd -DoZero`). Página 1 para a diretoria (como estamos / mais grave / o que fazer / se fizer só uma coisa), seções de score, plano e limites, anexos técnicos e glossário. Falta validação antes de emitir (RF8) | ⚠️ |
 | RF7 | Sinalizar lacunas | Por campo, linha, arquivo, fonte ("não informa data/usuário/exposição") e lote; aviso de possível corte em 10.000 linhas; lacunas agrupadas no relatório. Falta: fonte esperada ausente | ⚠️ |
-| RF8 | Validar consistência antes de emitir | Só testes unitários; a plataforma ainda não valida na emissão (Fase 4) | ❌ |
+| RF8 | Validar consistência antes de emitir | `ValidadorLote`: 12 verificações antes de emitir (somas, lidos × eventos, origem de todo evento, datas coerentes, fonte vazia = lacuna, correlações íntegras, contribuições = score, **score recalculado por segundo caminho**, percentuais do plano, máquinas por tipo, credenciais mascaradas, relatório final relido). Selo "N verificações, N aprovadas"; se reprovar, relatório marcado "NÃO VALIDADO". Dados reais: 12/12; arquivo corrompido de propósito (`exemplos/alertas-corrompido-ficticio.csv`): V04 reprova (`ValidacaoTests`) | ✅ |
 
 ## Requisitos de segurança (manual 4.2)
 
@@ -38,7 +38,7 @@ Atualizado ao fim da **Fase 3** (score, priorização, plano de ação, relatór
 | RG5 | Português simples, jargão explicado | Página 1 sem códigos técnicos (teste `Primeira_pagina_responde_as_tres_perguntas_sem_codigos_tecnicos`), cada risco com "o que é / por que importa / como resolver", glossário com 14 termos, plurais corretos. Revisão de linguagem pela equipe ainda pendente | ⚠️ |
 | RG6 | Exportável (PDF/HTML) | HTML e PDF pela tela; PDF dos exemplos conferido visualmente | ✅ |
 | RG7 | Só dados sintéticos fornecidos | Plataforma processa só os 3 arquivos fornecidos + fictícios nossos; análise da IA feita só com contagens | ✅ |
-| S1 | Sem credenciais no relatório | Nenhuma credencial no código; varredura automática ainda não feita | ⚠️ |
+| S1 | Sem credenciais no relatório | `FiltroCredenciais` mascara todo texto do relatório; V12 relê o relatório pronto e o retém se sobrar algo; teste com "senha=" fictícia não aparece no HTML (`Credencial_nos_dados_nunca_chega_ao_relatorio`); varredura do código a cada commit | ✅ |
 | S2 | LGPD, minimizar dados pessoais | Ver RS5 | ⚠️ |
 | S3 | Sem detalhe explorável desnecessário | Links de referência não são exibidos no relatório; descrições técnicas longas ficam fora (só "CVE no pacote X") | ⚠️ |
 | S4 | Classificação de confidencialidade | Selo na capa e no rodapé (teste + PDF) | ✅ |
@@ -69,7 +69,7 @@ Atualizado ao fim da **Fase 3** (score, priorização, plano de ação, relatór
 | Resumo responde "como estamos / mais grave / o que fazer" | ✅ (página 1; teste + PDF conferido) |
 | Score com justificativa e fatores | ✅ (seção 2: cada fator com pergunta, valor, peso, pontos e explicação) |
 | Correlações por evidências | ⚠️ (dentro das vulnerabilidades e dos alertas; entre fontes, sem chave comum) |
-| Validações de consistência executadas | ❌ |
+| Validações de consistência executadas | ✅ (12 verificações a cada lote; selo no relatório) |
 | Sem credenciais, dados pessoais indevidos ou dados reais | ⚠️ (sem varredura ainda) |
 | Plano de remediação | ✅ (ações com impacto calculado, esforço, prazo e score previsto) |
 | Regras de segurança e conduta respeitadas | ⚠️ (fora do OneDrive, dados fora do git, IA só viu cabeçalhos e contagens) |

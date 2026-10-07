@@ -127,6 +127,9 @@ public sealed class ProcessadorLote(
             if (avisoCodificacao is not null)
                 lacunasArquivo.Add(new Lacuna(nome, null, "arquivo", avisoCodificacao));
             lacunasArquivo.AddRange(adaptador.LimitacoesDaFonte.Select(l => new Lacuna(nome, null, "fonte", l)));
+            if (linhasDeDados == 0)
+                lacunasArquivo.Add(new Lacuna(nome, null, "arquivo",
+                    "arquivo sem nenhum registro: isso NÃO significa ausência de problemas, e sim ausência de dados"));
             if (linhasDeDados >= 1000 && linhasDeDados % 1000 == 0)
                 lacunasArquivo.Add(new Lacuna(nome, null, "arquivo",
                     $"o arquivo tem exatamente {Formatar.Numero(linhasDeDados)} linhas de dados: número redondo pode indicar que a exportação foi cortada no limite da ferramenta"));

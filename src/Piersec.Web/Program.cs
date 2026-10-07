@@ -6,6 +6,7 @@ using Piersec.Core.Coleta;
 using Piersec.Core.Padronizacao;
 using Piersec.Core.Pipeline;
 using Piersec.Core.Relatorio;
+using Piersec.Core.Validacao;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,6 +35,7 @@ builder.Services.AddSingleton<IAdaptadorFonte, AdaptadorVulnerabilidades>();
 builder.Services.AddSingleton<IAdaptadorFonte, AdaptadorAlertasSiem>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<ProcessadorLote>();
+builder.Services.AddSingleton<ValidadorLote>();
 builder.Services.AddSingleton(new GeradorRelatorioHtml(fuso, regras));
 builder.Services.AddSingleton(new ConversorPdf());
 builder.Services.AddSingleton<CicloAnalise>();

@@ -51,6 +51,9 @@ public sealed record Lote
     /// <summary>Indícios de que o lote mistura empresas ou ambientes diferentes (aviso, não erro).</summary>
     public IReadOnlyList<string> AvisosAmbiente { get; init; } = [];
 
+    /// <summary>Verificações de consistência feitas antes de emitir o relatório (RF8).</summary>
+    public ResultadoValidacao? Validacao { get; init; }
+
     /// <summary>Quantos eventos têm a severidade informada (null = sem severidade).</summary>
     public int ContarPorSeveridade(Severidade? severidade) =>
         Eventos.Count(e => e.Severidade == severidade);
@@ -66,11 +69,17 @@ public sealed record ResumoLote(
     int Correlacoes,
     double? Score = null,
     string? Faixa = null,
-    IReadOnlyDictionary<string, double?>? Fatores = null)
+    IReadOnlyDictionary<string, double?>? Fatores = null,
+    int? VerificacoesAprovadas = null,
+    int? VerificacoesTotal = null)
 {
+    public bool Validado => VerificacoesTotal > 0 && VerificacoesAprovadas == VerificacoesTotal;
+
     public static ResumoLote De(Lote lote) => new(
         lote.Id, lote.CriadoEmUtc, lote.Arquivos.Count, lote.Eventos.Count, lote.Lacunas.Count, lote.Correlacoes.Count,
         lote.Avaliacao?.Score.Valor,
         lote.Avaliacao?.Score.Faixa,
-        lote.Avaliacao?.Score.Fatores.ToDictionary(f => f.Id, f => f.Valor));
+        lote.Avaliacao?.Score.Fatores.ToDictionary(f => f.Id, f => f.Valor),
+        lote.Validacao?.Aprovadas,
+        lote.Validacao?.Total);
 }

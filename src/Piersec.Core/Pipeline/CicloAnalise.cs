@@ -2,30 +2,40 @@ using System.Text;
 using Piersec.Core.Armazenamento;
 using Piersec.Core.Modelo;
 using Piersec.Core.Relatorio;
+using Piersec.Core.Validacao;
 
 namespace Piersec.Core.Pipeline;
 
 public sealed record ResultadoCiclo(Lote Lote, bool PdfGerado, string MensagemPdf);
 
 /// <summary>
-/// O ciclo completo, sem depender da tela: processa o lote, compara com o lote anterior, salva e gera o
-/// relatório (HTML + PDF). Fica no núcleo para a automação (fases seguintes) poder chamá-lo sem ninguém clicar.
+/// O ciclo completo, sem depender da tela: processa o lote, compara com o lote anterior, VALIDA, salva e gera o
+/// relatório (HTML + PDF). Se a validação reprovar, o relatório sai marcado como "não validado"; se o relatório
+/// pronto contiver algo com cara de credencial, ele é retido. Fica no núcleo para a automação poder chamá-lo.
 /// </summary>
 public sealed class CicloAnalise(
     ProcessadorLote processador,
     RepositorioLotes repositorio,
     GeradorRelatorioHtml gerador,
-    ConversorPdf conversorPdf)
+    ConversorPdf conversorPdf,
+    ValidadorLote validador)
 {
     public async Task<ResultadoCiclo> ExecutarAsync(IReadOnlyList<ArquivoEnviado> arquivos, CancellationToken ct = default)
     {
         var lote = processador.Processar(arquivos);
         var anterior = repositorio.Listar().FirstOrDefault(r => r.Score is not null);
         lote = lote with { Comparacao = Comparar(lote, anterior) };
-        repositorio.Salvar(lote);
+        lote = lote with { Validacao = validador.Validar(lote) };
 
+        // Relatório gerado e relido por inteiro antes de sair (V12). Se algo escapou do filtro, é retido.
+        var html = gerador.Gerar(lote);
+        var final = ValidadorLote.ConferirRelatorioFinal(html);
+        lote = lote with { Validacao = new ResultadoValidacao([.. lote.Validacao!.Verificacoes, final]) };
+        html = final.Aprovada ? gerador.Gerar(lote) : gerador.GerarRetido(lote);
+
+        repositorio.Salvar(lote);
         var caminhoHtml = repositorio.CaminhoRelatorio(lote.Id, "html");
-        await File.WriteAllTextAsync(caminhoHtml, gerador.Gerar(lote), new UTF8Encoding(false), ct);
+        await File.WriteAllTextAsync(caminhoHtml, html, new UTF8Encoding(false), ct);
 
         var pdf = await conversorPdf.GerarAsync(caminhoHtml, repositorio.CaminhoRelatorio(lote.Id, "pdf"), ct);
         return new ResultadoCiclo(lote, pdf.Sucesso, pdf.Mensagem);

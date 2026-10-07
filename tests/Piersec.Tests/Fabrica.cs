@@ -36,6 +36,8 @@ internal static class Fabrica
 
     public static GeradorRelatorioHtml Gerador() => new(NormalizadorDatas.FusoBrasilia, Regras);
 
+    public static Core.Validacao.ValidadorLote Validador() => new(Regras, new RelogioFixo(Agora));
+
     public static ArquivoEnviado Csv(string nome, params string[] linhas) =>
         ArquivoEnviado.De(nome, Encoding.UTF8.GetBytes(string.Join("\n", linhas)));
 
