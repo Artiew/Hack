@@ -1,0 +1,78 @@
+@page "{id}"
+@model LoteModel
+@{
+    var lote = Model.Lote;
+    ViewData["Title"] = "Lote " + lote.Id[..8];
+    var fuso = Piersec.Core.Padronizacao.NormalizadorDatas.FusoBrasilia;
+}
+
+<p><a href="/">← Enviar outro lote</a></p>
+<h1>Lote @(lote.Id[..8])</h1>
+<p class="meta">Processado em @Formatar.DataHora(lote.CriadoEmUtc, fuso) (horário de Brasília).</p>
+
+<div class="acoes">
+    <a class="botao" href="/lotes/@lote.Id/relatorio.html" target="_blank" rel="noopener">Abrir relatório (HTML)</a>
+    @if (Model.PdfDisponivel)
+    {
+        <a class="botao" href="/lotes/@lote.Id/relatorio.pdf" download="relatorio-@(lote.Id[..8]).pdf">Baixar PDF</a>
+    }
+    else
+    {
+        <span class="erro">O PDF não foi gerado (veja a mensagem no terminal). Abra o HTML e use Imprimir → Salvar como PDF.</span>
+    }
+</div>
+
+<h2>Eventos por severidade</h2>
+<table class="estreita">
+    <tbody>
+        @foreach (var severidade in SeveridadeExtensoes.DoMaisGrave)
+        {
+            Severidade? s = severidade;
+            <tr><td><span class="sev @s.ClasseCss()"><span aria-hidden="true">@s.Simbolo()</span> @s.Nome()</span></td><td class="num">@Formatar.Numero(lote.ContarPorSeveridade(severidade))</td></tr>
+        }
+        <tr><td><span class="sev sev-nenhuma">Sem severidade</span></td><td class="num">@Formatar.Numero(lote.ContarPorSeveridade(null))</td></tr>
+    </tbody>
+    <tfoot><tr><th>Total</th><th class="num">@Formatar.Numero(lote.Eventos.Count)</th></tr></tfoot>
+</table>
+
+<h2>Arquivos recebidos</h2>
+<table>
+    <thead>
+        <tr><th>Arquivo</th><th>Tipo reconhecido</th><th class="num">Tamanho</th><th class="num">Lidos</th><th class="num">Rejeitados</th><th class="num">Lacunas</th><th>SHA-256</th></tr>
+    </thead>
+    <tbody>
+        @foreach (var a in lote.Arquivos)
+        {
+            <tr>
+                <td>@a.Nome</td>
+                <td>
+                    @if (a.Fonte is not null) { @a.Fonte }
+                    else { <span class="erro">Não processado: @a.MotivoNaoProcessado</span> }
+                </td>
+                <td class="num">@Formatar.Bytes(a.TamanhoBytes)</td>
+                <td class="num">@a.RegistrosLidos</td>
+                <td class="num">@a.RegistrosRejeitados</td>
+                <td class="num">@a.Lacunas</td>
+                <td><code title="@a.Sha256">@(a.Sha256 is null ? "—" : a.Sha256[..16] + "…")</code></td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<h2>Lacunas (@lote.Lacunas.Count)</h2>
+@if (lote.Lacunas.Count == 0)
+{
+    <p class="vazio">Nenhuma lacuna: todos os campos vieram completos e válidos.</p>
+}
+else
+{
+    <table>
+        <thead><tr><th>Arquivo</th><th class="num">Linha</th><th>Campo</th><th>Motivo</th></tr></thead>
+        <tbody>
+            @foreach (var l in lote.Lacunas)
+            {
+                <tr><td>@l.Arquivo</td><td class="num">@(l.Linha?.ToString() ?? "—")</td><td>@l.Campo</td><td>@l.Motivo</td></tr>
+            }
+        </tbody>
+    </table>
+}

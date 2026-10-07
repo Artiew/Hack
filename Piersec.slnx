@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Piersec.Core/Piersec.Core.csproj" />
+    <Project Path="src/Piersec.Web/Piersec.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Piersec.Tests/Piersec.Tests.csproj" />
+  </Folder>
+</Solution>

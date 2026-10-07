@@ -1,0 +1,24 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
+using Piersec.Core.Armazenamento;
+using Piersec.Core.Modelo;
+using Piersec.Core.Relatorio;
+
+namespace Piersec.Web.Pages;
+
+/// <summary>Resultado de um lote: o que aconteceu com cada arquivo e links do relatório.</summary>
+public sealed class LoteModel(RepositorioLotes repositorio) : PageModel
+{
+    public Lote Lote { get; private set; } = null!;
+    public bool PdfDisponivel { get; private set; }
+
+    public IActionResult OnGet(string id)
+    {
+        var lote = repositorio.Carregar(id); // id inválido → null → 404
+        if (lote is null)
+            return NotFound();
+        Lote = lote;
+        PdfDisponivel = ConversorPdf.ArquivoEhPdf(repositorio.CaminhoRelatorio(id, "pdf"));
+        return Page();
+    }
+}

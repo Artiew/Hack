@@ -1,0 +1,9 @@
+id_evento,data_hora,ativo,usuario,severidade,tipo,descricao
+1,2026-09-01 08:15:00,srv-fict-01,usuario.ficticio01,Crítica,vulnerabilidade,"Servidor fictício com falha crítica, ainda sem correção"
+2,2026-09-01T11:20:00Z,PC-FICT-07,usuario.ficticio02,high,phishing,Clique em e-mail simulado de phishing
+3,02/09/2026 14:05,pc-fict-07 ,usuario.ficticio02,Média,antivirus,Antivírus com assinatura desatualizada
+4,data-invalida,SRV-FICT-02,usuario.ficticio03,Baixa,firewall,Data propositalmente inválida para testar lacuna
+5,2026-09-03 09:00:00,,usuario.ficticio04,Alta,vulnerabilidade,Ativo propositalmente em branco para testar lacuna
+6,2026-09-03 10:30:00,SRV-FICT-03,usuario.ficticio05,urgentissimo,email,Severidade propositalmente fora da tabela
+7,2026-09-04 16:45:00,SRV-FICT-01,usuario.ficticio01,Crítica,web,"Texto malicioso de teste: <script>alert('xss')</script>"
+8,2026-09-04 17:00:00,SRV-FICT-04,usuario.ficticio06,Baixa,firewall,linha com coluna a mais,extra

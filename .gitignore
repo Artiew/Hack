@@ -1,0 +1,40 @@
+# ===== Dados do desafio e tudo que a plataforma gera (NUNCA versionar) =====
+var/
+data/
+dados/
+uploads/
+relatorios/
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# CSVs: só os fictícios criados por nós (exemplos/ e testes) podem entrar
+*.csv
+!exemplos/*.csv
+!tests/**/*.csv
+
+# Material da organização (manual, imagem de referência): fica só na máquina
+docs/*.pdf
+docs/referencia-ui.png
+
+# ===== Segredos =====
+.env
+.env.*
+*.pfx
+*.p12
+*.key
+*.pem
+secrets.json
+appsettings.*.local.json
+
+# ===== Build e ferramentas =====
+bin/
+obj/
+TestResults/
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
