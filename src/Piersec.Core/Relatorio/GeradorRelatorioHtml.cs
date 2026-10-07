@@ -522,9 +522,14 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
         if (s.Valor is null || s.Confianca != menor)
             return null;
         var conclusao = s.Valor < 40
-            ? "não dá para afirmar que o ambiente está seguro"
-            : "o risco real pode ser maior ou menor";
-        return $"Atenção: só {s.PercentualMedido:0}% do que deveria ser medido foi medido — {conclusao}.";
+            ? "Não dá para afirmar que o ambiente está seguro."
+            : "O risco real pode ser maior ou menor.";
+        var medidos = s.Fatores.Count(f => f.Valor is not null);
+        var faltam = s.Fatores.Where(f => f.Valor is null).Select(f => f.Nome.ToLowerInvariant()).ToList();
+        var lista = faltam.Count == 1 ? faltam[0] : string.Join(", ", faltam[..^1]) + " e " + faltam[^1];
+        var verbo = medidos == 1 ? "pôde ser avaliado" : "puderam ser avaliados";
+        return $"Atenção: só {medidos} de {s.Fatores.Count} fatores {verbo} ({s.PercentualMedido:0}%). " +
+               $"Faltam dados de: {lista}. {conclusao}";
     }
 
     private static string Inteiro(double valor) => Math.Round(valor, MidpointRounding.AwayFromZero).ToString("0", Formatar.PtBr);

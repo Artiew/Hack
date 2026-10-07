@@ -14,7 +14,8 @@ public sealed record TentativaEntrada(ResultadoEntrada Resultado, Usuario? Usuar
 public sealed class ServicoAutenticacao(RepositorioUsuarios repositorio, TimeProvider relogio)
 {
     public const int TamanhoSenhaInicial = 8;
-    public const int TamanhoMinimoNovaSenha = 12;
+    /// <summary>Mínimo do guia NIST SP 800-63B para senha escolhida pela pessoa.</summary>
+    public const int TamanhoMinimoNovaSenha = 8;
     public const int MaximoTentativas = 5;
     public static readonly TimeSpan TempoBloqueio = TimeSpan.FromMinutes(15);
     public const string VariavelSenhaInicial = "ADMIN_SENHA_INICIAL";

@@ -135,7 +135,7 @@ public class SegurancaTests : IDisposable
     }
 
     [Theory]
-    [InlineData("curta-1", "precisa ter pelo menos 12")]
+    [InlineData("curta1", "precisa ter pelo menos 8")]
     [InlineData("SomenteLetrasAqui", "letras e também números")]
     [InlineData("admin-2026-senha", "não pode conter o nome de usuário")]
     public void Nova_senha_fraca_e_recusada_com_motivo(string nova, string motivo)

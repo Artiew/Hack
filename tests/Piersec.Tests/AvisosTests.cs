@@ -69,8 +69,9 @@ public class AvisosTests
 
         Assert.Equal("baixa", lote.Avaliacao!.Score.Confianca);
         var pagina1 = html[html.IndexOf("Resumo para a diretoria", StringComparison.Ordinal)..html.IndexOf("O que é mais grave", StringComparison.Ordinal)];
-        Assert.Contains("só 20% do que deveria ser medido foi medido", pagina1);
-        Assert.Contains("não dá para afirmar que o ambiente está seguro", pagina1);
+        Assert.Contains("só 1 de 5 fatores pôde ser avaliado (20%)", pagina1);
+        Assert.Contains("Faltam dados de: falhas nos programas, exposição à internet, erro humano e detecção e resposta", pagina1);
+        Assert.Contains("Não dá para afirmar que o ambiente está seguro", pagina1);
     }
 
     [Fact]
@@ -78,7 +79,9 @@ public class AvisosTests
     {
         var lote = Fabrica.ProcessadorReal().Processar([Fabrica.Exemplo("vulnerabilidades-ficticio.csv")]); // 35% medido, score alto
 
-        Assert.Contains("pode ser maior ou menor", Fabrica.Gerador().AvisoConfianca(lote.Avaliacao!.Score));
+        var aviso = Fabrica.Gerador().AvisoConfianca(lote.Avaliacao!.Score);
+        Assert.Contains("pode ser maior ou menor", aviso);
+        Assert.Contains("só 1 de 5 fatores pôde ser avaliado", aviso);
     }
 
     [Fact]
@@ -87,7 +90,7 @@ public class AvisosTests
         var lote = Fabrica.ProcessadorReal().Processar([Fabrica.Exemplo("vulnerabilidades-ficticio.csv"), Fabrica.Exemplo("alertas-ficticio.csv")]);
 
         Assert.Null(Fabrica.Gerador().AvisoConfianca(lote.Avaliacao!.Score));
-        Assert.DoesNotContain("do que deveria ser medido foi medido", Fabrica.Gerador().Gerar(lote));
+        Assert.DoesNotContain("fatores puderam ser avaliados", Fabrica.Gerador().Gerar(lote));
     }
 
     [Fact]
