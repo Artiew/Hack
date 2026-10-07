@@ -86,7 +86,7 @@ else
             {
                 <tr>
                     <td class="nowrap"><a href="@Links.Evento(lote.Id, e.Id)"><code>@e.Id</code></a></td>
-                    <td><span class="sev @e.Severidade.ClasseCss()"><span aria-hidden="true">@e.Severidade.Simbolo()</span> @e.Severidade.Nome()</span></td>
+                    <td>@Visual.Selo(e.Severidade)</td>
                     <td>@e.Ativo<div class="meta">@Model.Regras.Ativos.Tipo(e.TipoAtivo).Singular</div></td>
                     <td>@(lote.Servicos.FirstOrDefault(s => s.Id == e.Servico)?.Nome ?? "—")</td>
                     <td>@e.Descricao</td>

@@ -1,0 +1,12 @@
+@page
+@model BuscarModel
+@{
+    ViewData["Title"] = "Achados";
+}
+
+<h1>Achados</h1>
+<section class="estado-vazio">
+    <svg class="icone grande-icone" aria-hidden="true"><use href="#i-lista"/></svg>
+    <p><strong>Ainda não há nenhum lote analisado.</strong></p>
+    <p class="meta">Envie os arquivos CSV na <a href="/">Visão geral</a>. Depois disso, os achados do lote mais recente aparecem aqui.</p>
+</section>

@@ -101,6 +101,7 @@ builder.Services.AddRazorPages(o =>
     o.Conventions.AuthorizePage("/Auditoria", "Admin");
     o.Conventions.AuthorizePage("/Eventos", "Tecnico");
     o.Conventions.AuthorizePage("/Evento", "Tecnico");
+    o.Conventions.AuthorizePage("/Buscar", "Tecnico");
 });
 
 // Limite de tentativas de login: no máximo 10 por minuto vindas do mesmo endereço.

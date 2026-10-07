@@ -1,4 +1,5 @@
-/* Visual simples e legível, com letras maiores e mais espaço. O layout em cards vem na Fase 7. */
+/* Layout em cards (Fase 7): barra lateral + barra superior + conteúdo. Cores só por variáveis; tema claro e escuro
+   com contraste AA; severidade sempre com cor + ícone + texto. Nada vem da internet (sem fontes nem bibliotecas externas). */
 :root {
     --fundo: #f5f7fa;
     --superficie: #ffffff;
@@ -6,6 +7,8 @@
     --suave: #5b6675;
     --linha: #d5dbe3;
     --destaque: #1e5fae;
+    --destaque-claro: #e7f0fb;
+    --sombra: 0 6px 20px rgba(20, 40, 80, .12);
     --erro: #b42318;
     --critica: #b42318;
     --alta: #c4320a;
@@ -21,6 +24,8 @@
         --suave: #a3adba;
         --linha: #333c48;
         --destaque: #7fb2f0;
+        --destaque-claro: #1c2c40;
+        --sombra: 0 6px 20px rgba(0, 0, 0, .45);
         --erro: #ff8a7a;
         --critica: #ff8a7a;
         --alta: #ffa070;
@@ -41,20 +46,59 @@ body {
 }
 
 a { color: var(--destaque); }
-a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid var(--destaque); outline-offset: 2px; }
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible, .card:focus-visible {
+    outline: 3px solid var(--destaque); outline-offset: 2px;
+}
+
+/* ---------- moldura ---------- */
+.sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+.icone { width: 20px; height: 20px; flex: none; vertical-align: -4px; }
+.so-leitor { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.pular { position: absolute; left: -9999px; top: 8px; z-index: 10; background: var(--superficie); padding: 8px 14px; border-radius: 8px; }
+.pular:focus { left: 8px; }
+
+.app { display: grid; grid-template-columns: 264px minmax(0, 1fr); min-height: 100vh; }
+.app.sem-lateral { grid-template-columns: minmax(0, 1fr); }
+
+.lateral {
+    position: sticky; top: 0; height: 100vh; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 20px;
+    padding: 24px 18px; background: var(--superficie); border-right: 1px solid var(--linha);
+}
+.marca { display: flex; gap: 10px; align-items: center; font-weight: 700; font-size: 19px; text-decoration: none; color: var(--tinta); }
+.marca-icone { width: 28px; height: 28px; color: var(--destaque); }
+.busca { display: flex; align-items: center; gap: 8px; background: var(--fundo); border: 1px solid var(--linha); border-radius: 10px; padding: 8px 12px; color: var(--suave); }
+.busca input { border: 0; background: transparent; font: inherit; font-size: 15px; color: var(--tinta); width: 100%; min-width: 0; }
+.busca input:focus-visible { outline: none; }
+.busca:focus-within { outline: 3px solid var(--destaque); outline-offset: 2px; }
+.navegacao { display: flex; flex-direction: column; gap: 4px; }
+.navegacao a { display: flex; gap: 12px; align-items: center; padding: 10px 14px; border-radius: 10px; color: var(--tinta); text-decoration: none; }
+.navegacao a:hover { background: var(--fundo); }
+.navegacao a[aria-current=page] { background: var(--destaque-claro); color: var(--destaque); font-weight: 600; }
+.etiqueta { margin-top: auto; font-size: 13px; color: var(--suave); border: 1px solid var(--linha); border-radius: 999px; padding: 4px 12px; text-align: center; }
 
 .topo {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    padding: 16px 40px;
-    background: var(--superficie);
-    border-bottom: 1px solid var(--linha);
+    display: flex; gap: 16px; align-items: center; justify-content: space-between;
+    padding: 14px 40px; background: var(--superficie); border-bottom: 1px solid var(--linha);
 }
-.marca { font-weight: 700; font-size: 19px; text-decoration: none; color: var(--tinta); }
-.etiqueta { font-size: 13px; color: var(--suave); border: 1px solid var(--linha); border-radius: 999px; padding: 2px 10px; }
+.selo-confidencial { font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; border: 2px solid var(--tinta); border-radius: 6px; padding: 2px 10px; }
+.usuario { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+.usuario .botao-discreto { display: inline-flex; gap: 6px; align-items: center; text-decoration: none; }
 
-.conteudo { max-width: 1440px; margin: 0 auto; padding: 32px 40px 64px; }
+.conteudo { width: 100%; max-width: 1480px; margin: 0 auto; padding: 32px 40px 64px; }
+.conteudo:focus { outline: none; }
+
+.estado-vazio { text-align: center; padding: 48px 24px; border: 2px dashed var(--linha); border-radius: 16px; background: var(--superficie); }
+.grande-icone { width: 48px; height: 48px; color: var(--suave); }
+
+@media (max-width: 900px) {
+    .app { grid-template-columns: minmax(0, 1fr); }
+    .lateral { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--linha); padding: 16px; gap: 12px; }
+    .navegacao { flex-direction: row; flex-wrap: wrap; }
+    .etiqueta { display: none; }
+    .topo { padding: 12px 16px; }
+    .conteudo { padding: 20px 16px 48px; }
+}
 
 h1 { font-size: 34px; margin: 8px 0 16px; }
 h2 { font-size: 24px; margin: 48px 0 16px; }
@@ -91,7 +135,6 @@ button, .botao {
 
 .acoes { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin: 24px 0; }
 
-.menu { display: flex; gap: 20px; align-items: center; margin-left: auto; flex-wrap: wrap; }
 .em-linha { display: inline; margin: 0; }
 .botao-discreto { background: transparent; color: var(--destaque); border: 1px solid var(--linha); padding: 4px 10px; }
 .estreito { max-width: 480px; }
@@ -165,3 +208,73 @@ table.estreita-media { max-width: 900px; }
 .discordar summary { cursor: pointer; font-weight: 600; color: var(--destaque); font-size: 18px; }
 .discordar textarea { font: inherit; padding: 8px 10px; border: 1px solid var(--linha); border-radius: 8px; background: var(--fundo); color: var(--tinta); }
 .discordar .formulario { display: flex; flex-direction: column; gap: 8px; max-width: 720px; }
+
+/* ---------- Cards (Fase 7, estrutura da referência: cards horizontais, chips, coluna direita) ---------- */
+.sev { display: inline-flex; gap: 6px; align-items: center; }
+.sev .icone { width: 18px; height: 18px; }
+.botao-secundario { background: transparent; color: var(--destaque); border: 2px solid var(--destaque); }
+
+.cabecalho-pagina h1 { font-size: 36px; margin: 4px 0 6px; }
+.cabecalho-pagina .acoes { margin: 16px 0 8px; }
+
+.com-lateral { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 32px; align-items: start; margin-top: 16px; }
+.coluna-direita { position: sticky; top: 24px; display: flex; flex-direction: column; gap: 20px; }
+.coluna-principal > h2:first-child { margin-top: 0; }
+
+.card { background: var(--superficie); border: 1px solid var(--linha); border-radius: 14px; padding: 22px 24px; }
+.cards { display: flex; flex-direction: column; gap: 16px; }
+.card-horizontal { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 20px; align-items: start; transition: box-shadow .15s, border-color .15s; }
+.card-horizontal:hover { box-shadow: var(--sombra); }
+.card-icone { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 14px; background: var(--fundo); }
+.card-icone .icone { width: 32px; height: 32px; }
+.card-icone.sev-critica { color: var(--critica); } .card-icone.sev-alta { color: var(--alta); }
+.card-icone.sev-media { color: var(--media); } .card-icone.sev-baixa { color: var(--baixa); }
+.card-meta { margin: 0 0 4px; font-size: 14px; color: var(--suave); display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; }
+.card-titulo { font-size: 21px; margin: 0 0 8px; line-height: 1.35; }
+.card-corpo p { margin: 6px 0; }
+.card-rodape { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center; margin-top: 12px; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { font-size: 13px; border: 1px solid var(--linha); border-radius: 999px; padding: 2px 10px; color: var(--suave); background: var(--fundo); }
+/* Card selecionado (chegou pelo link #id ou recebeu foco): borda azul de 2px e sombra. */
+.card-selecionavel:target, .card-selecionavel:focus-within { border: 2px solid var(--destaque); box-shadow: var(--sombra); }
+
+.chips { display: flex; flex-wrap: wrap; gap: 10px; margin: 12px 0 20px; }
+.chip { display: inline-flex; gap: 8px; align-items: center; padding: 6px 16px; border: 1px solid var(--linha); border-radius: 999px; background: var(--superficie); color: var(--tinta); text-decoration: none; font-size: 15px; }
+.chip:hover { border-color: var(--destaque); }
+.chip[aria-current] { background: var(--destaque-claro); border-color: var(--destaque); color: var(--destaque); font-weight: 600; }
+.chip .contagem { font-variant-numeric: tabular-nums; color: var(--suave); }
+
+.destaque-score { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 32px; align-items: center; border-left: 12px solid var(--suave); }
+.destaque-score.faixa-critico { border-left-color: var(--critica); } .destaque-score.faixa-alto { border-left-color: var(--alta); }
+.destaque-score.faixa-elevado { border-left-color: var(--media); } .destaque-score.faixa-moderado { border-left-color: var(--media); }
+.destaque-score.faixa-baixo { border-left-color: var(--baixa); }
+.destaque-score .numero { display: flex; flex-direction: column; align-items: flex-start; min-width: 170px; }
+.destaque-score .grande { font-size: 84px; font-weight: 800; line-height: 1; }
+.destaque-score .de, .numero-medio .de { color: var(--suave); font-size: 17px; font-weight: 400; }
+.destaque-score .contexto { margin-top: 6px; font-size: 15px; font-weight: 600; }
+.destaque-score .rotulo { font-size: 18px; margin: 0; }
+.destaque-score .frase { font-size: 19px; }
+.destaque-score .uma-coisa { border: 2px dashed var(--linha); border-radius: 10px; padding: 10px 14px; }
+
+.lateral-card h2 { font-size: 18px; margin: 0 0 10px; }
+.numero-medio { font-size: 44px; font-weight: 800; line-height: 1.1; margin: 0; }
+.lista-lateral { margin: 8px 0; padding-left: 20px; }
+.lista-lateral li { margin-bottom: 12px; }
+.prazo { font-weight: 600; color: var(--alta); }
+
+@media (max-width: 1180px) {
+    .com-lateral { grid-template-columns: minmax(0, 1fr); }
+    .coluna-direita { position: static; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+}
+@media (max-width: 700px) {
+    .destaque-score { grid-template-columns: 1fr; gap: 12px; }
+    .card-horizontal { grid-template-columns: 1fr; }
+    .card-icone { width: 48px; height: 48px; }
+}
+@media (max-width: 900px) {
+    /* Tabela larga rola dentro do próprio quadro, em vez de alargar a página inteira. */
+    table { display: block; overflow-x: auto; }
+    .topo { flex-wrap: wrap; }
+    .cabecalho-pagina h1 { font-size: 28px; overflow-wrap: anywhere; }
+    .busca { width: 100%; }
+}

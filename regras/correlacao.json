@@ -16,8 +16,8 @@
       "nome": "Um software concentra muitas falhas",
       "tipo": "pacote_concentra_vulnerabilidades",
       "parametros": { "minimoCves": 5, "severidadeMinima": "Alta" },
-      "titulo": "Atualizar {pacote} resolve {cves} falhas em {ativos} máquinas",
-      "justificativa": "O software {pacote} reúne {cves} falhas diferentes (a mais grave com nota CVSS {cvss}) em {ativos} máquinas. Uma única ação (atualizar esse software) elimina todas elas: é a correção com maior retorno por esforço.",
+      "titulo": "Atualizar {pacote} resolve {cves} falhas em {ativos}",
+      "justificativa": "O software {pacote} reúne {cves} falhas diferentes (a mais grave com nota CVSS {cvss}) em {ativos}. Uma única ação (atualizar esse software) elimina todas elas: é a correção com maior retorno por esforço.",
       "severidade": "maior_dos_eventos",
       "frameworks": { "mitre": [], "nist": ["PR.PS-02"], "cis": ["7.4"], "iso": ["A.8.8"] }
     },
@@ -47,7 +47,7 @@
       "tipo": "alerta_e_vulnerabilidade_no_mesmo_ativo",
       "parametros": { "severidadeMinima": "Alta" },
       "titulo": "{ativo} gerou alertas e tem falhas graves",
-      "justificativa": "A máquina {ativo} tem {quantidade} falhas graves e também aparece em {alertas} alertas. Uma máquina vulnerável que já está sendo alvo de atividade suspeita tem chance muito maior de ser invadida.",
+      "justificativa": "A máquina {ativo} tem {quantidade} e também aparece em {alertas}. Uma máquina vulnerável que já está sendo alvo de atividade suspeita tem chance muito maior de ser invadida.",
       "severidade": "Critica",
       "frameworks": { "mitre": [], "nist": ["ID.RA-01", "DE.AE-02"], "cis": ["7.4", "13.1"], "iso": ["A.8.8", "A.8.16"] }
     }

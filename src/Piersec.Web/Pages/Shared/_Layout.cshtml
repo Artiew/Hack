@@ -1,35 +1,89 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+@{
+    var logado = User.Identity?.IsAuthenticated == true;
+    var caminho = Context.Request.Path.Value ?? "/";
+    var tecnico = logado && Sessao.PodeEnviar(User);
+    var papel = User.IsInRole(Papeis.Admin) ? Papeis.Admin : User.IsInRole(Papeis.Analista) ? Papeis.Analista : Papeis.Executivo;
+    var emAchados = caminho.Contains("/Evento", StringComparison.OrdinalIgnoreCase) || caminho.StartsWith("/Buscar", StringComparison.OrdinalIgnoreCase);
+    var emVisaoGeral = !emAchados && (caminho == "/" || caminho.StartsWith("/Lote/", StringComparison.OrdinalIgnoreCase));
+    // Item ativo do menu: aria-current="page" (leitor de tela) + destaque azul-claro (CSS).
+    string? Ativo(string prefixo) => caminho.StartsWith(prefixo, StringComparison.OrdinalIgnoreCase) ? "page" : null;
+}
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>@ViewData["Title"] · Piersec</title>
+    <title>@ViewData["Title"] · Plataforma de risco</title>
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true">
 </head>
 <body>
-    <header class="topo">
-        <a class="marca" href="/">Plataforma de risco</a>
-        <span class="etiqueta">Protótipo · dados sintéticos</span>
-        @if (User.Identity?.IsAuthenticated == true)
+    @* Ícones próprios (SVG desenhado pela equipe), usados com <use href="#i-...">. Nada vem da internet. *@
+    <svg xmlns="http://www.w3.org/2000/svg" class="sprite" aria-hidden="true" focusable="false">
+        <symbol id="i-escudo" viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="m8.5 12 2.5 2.5 4.5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="i-painel" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/><rect x="14" y="3" width="7" height="5" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/><rect x="14" y="12" width="7" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/><rect x="3" y="16" width="7" height="5" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+        <symbol id="i-lupa" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+        <symbol id="i-lista" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="4.5" cy="6" r="1.5" fill="currentColor"/><circle cx="4.5" cy="12" r="1.5" fill="currentColor"/><circle cx="4.5" cy="18" r="1.5" fill="currentColor"/></symbol>
+        <symbol id="i-robo" viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 4v4M9 13h.01M15 13h.01M9 17h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="3.5" r="1.5" fill="currentColor"/></symbol>
+        <symbol id="i-pessoas" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.8c1.8.7 3 2.4 3.5 5.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+        <symbol id="i-prancheta" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+        <symbol id="i-chave" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="m11 12 9-9M17 6l2 2M15 8l2 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+        <symbol id="i-sair" viewBox="0 0 24 24"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 16l-4-4 4-4M6 12h10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="i-sev-critica" viewBox="0 0 24 24"><path d="M12 2.5 22 20.5H2L12 2.5Z" fill="currentColor"/><path d="M12 9v5M12 17h.01" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></symbol>
+        <symbol id="i-sev-alta" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor"/><path d="M12 7v6M12 16.5h.01" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></symbol>
+        <symbol id="i-sev-media" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4" fill="currentColor"/><path d="M8 12h8" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></symbol>
+        <symbol id="i-sev-baixa" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="m8 12.5 2.8 2.8L16.5 9.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="i-nuvem" viewBox="0 0 24 24"><path d="M7 18a5 5 0 0 1-.6-9.96A6 6 0 0 1 18 9a4.5 4.5 0 0 1 0 9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M12 12v8M9 15l3-3 3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    </svg>
+
+    <a class="pular" href="#conteudo">Pular para o conteúdo</a>
+    <div class="app @(logado ? "" : "sem-lateral")">
+        @if (logado)
         {
-            <nav class="menu">
-                <a href="/">Lotes</a>
-                <a href="/Automacao">Automação</a>
-                @if (User.IsInRole(Papeis.Admin))
+            <aside class="lateral" aria-label="Menu principal">
+                <a class="marca" href="/"><svg class="icone marca-icone"><use href="#i-escudo"/></svg><span>Plataforma de risco</span></a>
+                @if (tecnico)
                 {
-                    <a href="/Usuarios">Usuários</a>
-                    <a href="/Auditoria">Auditoria</a>
+                    <form class="busca" method="get" action="/Buscar" role="search">
+                        <svg class="icone"><use href="#i-lupa"/></svg>
+                        <label for="busca" class="so-leitor">Buscar no lote mais recente</label>
+                        <input id="busca" name="q" type="search" placeholder="Máquina, CVE ou programa" maxlength="100">
+                    </form>
                 }
-                <a href="/TrocarSenha">Trocar senha</a>
-                <span class="meta">@User.Identity.Name (@(User.IsInRole(Papeis.Admin) ? Papeis.Admin : User.IsInRole(Papeis.Analista) ? Papeis.Analista : Papeis.Executivo))</span>
-                <form method="post" action="/Sair" class="em-linha">
-                    <button type="submit" class="botao-discreto">Sair</button>
-                </form>
-            </nav>
+                <nav class="navegacao">
+                    <a href="/" aria-current="@(emVisaoGeral ? "page" : null)"><svg class="icone"><use href="#i-painel"/></svg>Visão geral</a>
+                    @if (tecnico)
+                    {
+                        <a href="/Buscar" aria-current="@(emAchados ? "page" : null)"><svg class="icone"><use href="#i-lista"/></svg>Achados</a>
+                    }
+                    <a href="/Automacao" aria-current="@Ativo("/Automacao")"><svg class="icone"><use href="#i-robo"/></svg>Automação</a>
+                    @if (User.IsInRole(Papeis.Admin))
+                    {
+                        <a href="/Usuarios" aria-current="@Ativo("/Usuarios")"><svg class="icone"><use href="#i-pessoas"/></svg>Usuários</a>
+                        <a href="/Auditoria" aria-current="@Ativo("/Auditoria")"><svg class="icone"><use href="#i-prancheta"/></svg>Auditoria</a>
+                    }
+                </nav>
+                <p class="etiqueta">Protótipo · dados sintéticos · tudo local</p>
+            </aside>
         }
-    </header>
-    <main class="conteudo">
-        @RenderBody()
-    </main>
+        <div class="principal">
+            @if (logado)
+            {
+                <header class="topo">
+                    <span class="selo-confidencial">Confidencial</span>
+                    <div class="usuario">
+                        <span><strong>@User.Identity!.Name</strong> <span class="meta">(@papel)</span></span>
+                        <a href="/TrocarSenha" class="botao-discreto" aria-current="@Ativo("/TrocarSenha")"><svg class="icone"><use href="#i-chave"/></svg>Trocar senha</a>
+                        <form method="post" action="/Sair" class="em-linha">
+                            <button type="submit" class="botao-discreto"><svg class="icone"><use href="#i-sair"/></svg>Sair</button>
+                        </form>
+                    </div>
+                </header>
+            }
+            <main id="conteudo" class="conteudo" tabindex="-1">
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+    @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

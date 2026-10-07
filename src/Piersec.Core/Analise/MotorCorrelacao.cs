@@ -118,7 +118,7 @@ public sealed class MotorCorrelacao
             {
                 ["pacote"] = g.Nome,
                 ["cves"] = Formatar.Numero(g.Cves),
-                ["ativos"] = Formatar.Numero(g.Ativos),
+                ["ativos"] = Formatar.Qtd(g.Ativos, "máquina", "máquinas"),
                 ["cvss"] = MaiorCvss(g.Eventos),
             }, g.Eventos)).ToList();
 
@@ -198,8 +198,8 @@ public sealed class MotorCorrelacao
                 return new Achado(g.Key, new Dictionary<string, string>
                 {
                     ["ativo"] = g.Key,
-                    ["quantidade"] = Formatar.Numero(g.Select(e => e.Cve ?? e.Id).Distinct().Count()),
-                    ["alertas"] = Formatar.Numero(alertas.Count),
+                    ["quantidade"] = Formatar.Qtd(g.Select(e => e.Cve ?? e.Id).Distinct().Count(), "falha grave", "falhas graves"),
+                    ["alertas"] = Formatar.Qtd(alertas.Count, "alerta", "alertas"),
                 }, [.. g, .. alertas]);
             }).ToList();
 

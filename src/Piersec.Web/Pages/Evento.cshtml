@@ -9,7 +9,7 @@
 }
 
 <p><a href="/Lote/@lote.Id/Eventos">← Todos os eventos do lote @lote.Id[..8]</a></p>
-<h1>@e.Id · <span class="sev @e.Severidade.ClasseCss()">@e.Severidade.Simbolo() @e.Severidade.Nome()</span></h1>
+<h1>@e.Id · @Visual.Selo(e.Severidade)</h1>
 <p><strong>@e.Descricao</strong></p>
 
 <section class="cartao origem">

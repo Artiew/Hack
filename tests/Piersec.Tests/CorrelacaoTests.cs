@@ -151,4 +151,21 @@ public class CorrelacaoTests
         Assert.Equal("CVE-9 está em 2 máquinas", c.Titulo);
         Assert.Equal("nota 9,8", c.Justificativa);
     }
+
+    [Fact]
+    public void Regras_reais_escrevem_o_plural_certo_com_uma_maquina_so()
+    {
+        // 5 falhas no mesmo programa em UMA máquina, que também gera alerta: antes saía "em 1 máquinas".
+        EventoSeguranca[] eventos =
+        [
+            .. Enumerable.Range(1, 5).Select(i => Fabrica.Vulnerabilidade($"EV-{i}", "SRV-01", $"CVE-2099-000{i}", "openssl")),
+            Fabrica.Alerta("EV-9", "SRV-01", "100", new DateTimeOffset(2026, 10, 7, 8, 0, 0, TimeSpan.Zero)),
+        ];
+
+        var titulos = Motor.Correlacionar(eventos, Fabrica.Regras.Correlacoes).Correlacoes.SelectMany(c => new[] { c.Titulo, c.Justificativa }).ToList();
+
+        Assert.Contains("Atualizar openssl resolve 5 falhas em 1 máquina", titulos);
+        Assert.Contains(titulos, t => t.Contains("tem 5 falhas graves e também aparece em 1 alerta."));
+        Assert.DoesNotContain(titulos, t => t.Contains("1 máquinas") || t.Contains("1 alertas"));
+    }
 }

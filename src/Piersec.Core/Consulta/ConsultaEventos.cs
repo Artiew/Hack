@@ -33,7 +33,7 @@ public sealed record FiltroEventos
     /// <summary>Número da ação do plano: os eventos que ela elimina.</summary>
     public int? Acao { get; init; }
 
-    /// <summary>Texto livre: procura na descrição, CVE e programa.</summary>
+    /// <summary>Texto livre: procura na descrição, CVE, programa e nome da máquina.</summary>
     public string? Texto { get; init; }
 
     public const int TamanhoMaximoTexto = 100;
@@ -96,7 +96,7 @@ public static class ConsultaEventos
             q = q.Where(e => Texto.NormalizarChave(e.Ativo).Contains(parte, StringComparison.Ordinal));
         }
         if (f.Texto is not null)
-            q = q.Where(e => Contem(e.Descricao, f.Texto) || Contem(e.Cve, f.Texto) || Contem(e.Pacote, f.Texto));
+            q = q.Where(e => Contem(e.Descricao, f.Texto) || Contem(e.Cve, f.Texto) || Contem(e.Pacote, f.Texto) || Contem(e.Ativo, f.Texto));
 
         return Agrupamentos.MaisGraves(q).ToList();
     }
