@@ -22,6 +22,9 @@ O briefing completo está em **`docs/PROMPT.md`** — leia antes de qualquer tar
 - Só marque ✅ em `docs/REQUISITOS.md` o que foi executado e provado.
 
 ## Estado atual
+> **Mantenha esta seção em dia.** Ao fim de cada sessão (ou antes de gerar um bundle), atualize o que foi feito,
+> o próximo passo e as pendências, e inclua no commit. É assim que a sessão no outro computador fica sabendo.
+
 - **Fases 1, 2 e 3 concluídas** (esqueleto, fontes reais + correlação, score + plano + relatório para leigo).
 - **Próximo passo aprovado pelo Vitor:** quando a confiança do score for baixa, mostrar o aviso **junto do número**
   na página 1 (ex.: "8 de 100 — risco baixo, mas só 20% foi medido") e explicar no relatório que enviar mais fontes pode
@@ -40,5 +43,6 @@ O briefing completo está em **`docs/PROMPT.md`** — leia antes de qualquer tar
 ## Trabalhar em dois computadores (pen drive)
 - **Levar daqui:** `git bundle create <PEN>:\piersec.bundle main` (commit tudo antes; o bundle leva só o que foi commitado).
 - **Na faculdade:** o Vitor abre o Claude Code e pede para ler `<PEN>:\CLAUDE-FACULDADE.md`.
-- **Trazer da faculdade:** `git pull <PEN>:\piersec-faculdade.bundle main`, depois rode os testes e confira `git log`.
+- **Trazer da faculdade:** `git pull <PEN>:\piersec-faculdade.bundle main`, depois rode os testes, leia `git log` dos commits
+  novos e a seção "Estado atual" acima, e resuma ao Vitor o que mudou.
 - Os CSVs do desafio **não** vão no pen drive sem autorização do mentor.
