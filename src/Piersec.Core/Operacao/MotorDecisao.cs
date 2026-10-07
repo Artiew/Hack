@@ -1,5 +1,6 @@
 using Piersec.Core.Analise;
 using Piersec.Core.Modelo;
+using Piersec.Core.Relatorio;
 
 namespace Piersec.Core.Operacao;
 
@@ -86,7 +87,7 @@ public static class MotorDecisao
             problemas.Add($"passou do limite do dia ({resultado.AutomaticasHoje} de {resultado.LimitePorDia})");
 
         return problemas.Count == 0
-            ? new(Id, Descricao, true, $"{resultado.Sozinho} ação(ões) feita(s) sozinha(s), todas dentro das travas; {resultado.AguardandoAprovacao} aguardando aprovação")
+            ? new(Id, Descricao, true, $"{Formatar.Qtd(resultado.Sozinho, "ação feita sozinha", "ações feitas sozinhas")}, dentro das travas; {Formatar.Numero(resultado.AguardandoAprovacao)} aguardando aprovação")
             : new(Id, Descricao, false, string.Join("; ", problemas.Take(5)));
     }
 }

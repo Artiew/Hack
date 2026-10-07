@@ -20,8 +20,8 @@
       "reversivel": true,
       "nivelParaAgirSozinho": 2,
       "maximoPorLote": 3,
-      "titulo": "Atualizar {pacote} em {maquinas} máquina(s)",
-      "motivo": "O programa {pacote} tem {falhas} falha(s) grave(s) já conhecida(s) em {maquinas} máquina(s). Atualizar elimina todas de uma vez.",
+      "titulo": "Atualizar {pacote} em {maquinas}",
+      "motivo": "O programa {pacote} soma {falhas} em {maquinas}. São falhas já conhecidas: atualizar o programa elimina todas de uma vez.",
       "passos": [
         "Testar a versão mais nova de {pacote} em uma máquina antes de distribuir.",
         "Distribuir a atualização pela ferramenta de atualização automática da empresa.",
@@ -39,8 +39,8 @@
       "reversivel": true,
       "nivelParaAgirSozinho": 3,
       "maximoPorLote": 5,
-      "titulo": "Aplicar as atualizações pendentes em {ativo} ({falhas} falhas graves)",
-      "motivo": "A máquina {ativo} ({tipo}) tem {falhas} falha(s) grave(s) em: {programas}. Aplicar as atualizações fecha essas portas de entrada.",
+      "titulo": "Aplicar as atualizações pendentes em {ativo} ({falhas})",
+      "motivo": "A máquina {ativo} ({tipo}) tem {falhas} em: {programas}. Aplicar as atualizações fecha essas portas de entrada.",
       "passos": [
         "Criar um ponto de restauração (ou cópia) de {ativo} antes de mexer.",
         "Atualizar, nesta ordem: {programas}.",

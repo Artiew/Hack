@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Http.Features;
 using Piersec.Core.Analise;
 using Piersec.Core.Armazenamento;
 using Piersec.Core.Coleta;
+using Piersec.Core.Operacao;
 using Piersec.Core.Padronizacao;
 using Piersec.Core.Pipeline;
 using Piersec.Core.Relatorio;
@@ -62,6 +63,9 @@ builder.Services.AddSingleton<ProcessadorLote>();
 builder.Services.AddSingleton<ValidadorLote>();
 builder.Services.AddSingleton(new GeradorRelatorioHtml(fuso, regras));
 builder.Services.AddSingleton(new ConversorPdf());
+// Operação automática (SOC simulado): chamados cifrados em var/operacao/. Regras em regras/automacao.json.
+builder.Services.AddSingleton(sp => new RepositorioChamados(pastaDados, sp.GetRequiredService<ICifrador>()));
+builder.Services.AddSingleton(sp => new ServicoOperacao(regras, sp.GetRequiredService<RepositorioChamados>(), sp.GetRequiredService<TimeProvider>(), fuso));
 builder.Services.AddSingleton<CicloAnalise>();
 
 // Acesso (RS1): usuários, auditoria e sessão por cookie protegido que expira.
@@ -154,6 +158,15 @@ app.MapGet("/lotes/{id}/relatorio.html", (string id, HttpContext ctx, Repositori
 app.MapGet("/lotes/{id}/relatorio.pdf", (string id, HttpContext ctx, RepositorioLotes repo, Auditoria auditoria) =>
     ArquivoRelatorio(ctx, repo, auditoria, id, "pdf", "application/pdf"));
 
+// Artefato do chamado (simulado): o texto que seria enviado ao sistema de chamados. A plataforma não envia; quem quiser, baixa.
+app.MapGet("/automacao/{numero}.txt", (string numero, HttpContext ctx, ServicoOperacao operacao, Auditoria auditoria) =>
+{
+    if (operacao.Artefato(numero) is not { } texto)
+        return Results.NotFound();
+    auditoria.Registrar(ctx.User.Identity?.Name, "artefato_baixado", numero);
+    return Results.File(new System.Text.UTF8Encoding(true).GetBytes(texto), "text/plain; charset=utf-8", numero + ".txt");
+});
+
 // O rodar.ps1 liga esta variável para o navegador abrir sozinho quando o site estiver no ar.
 if (Environment.GetEnvironmentVariable("PIERSEC_ABRIR_NAVEGADOR") == "1")
 {
@@ -166,7 +179,8 @@ if (Environment.GetEnvironmentVariable("PIERSEC_ABRIR_NAVEGADOR") == "1")
 }
 
 app.Logger.LogInformation("Dados da plataforma em {Pasta}", pastaDados);
-app.Logger.LogInformation("Regras carregadas de {Pasta}: {Correlacoes} regra(s) de correlação", pastaRegras, regras.Correlacoes.Count);
+app.Logger.LogInformation("Regras carregadas de {Pasta}: {Correlacoes} regra(s) de correlação, {Playbooks} playbook(s), autonomia nível {Nivel}{Ensaio}",
+    pastaRegras, regras.Correlacoes.Count, regras.Automacao.Playbooks.Count, regras.Automacao.NivelAutonomia, regras.Automacao.ModoEnsaio ? " (ENSAIO)" : "");
 app.Run();
 
 static IResult ArquivoRelatorio(HttpContext ctx, RepositorioLotes repo, Auditoria auditoria, string id, string extensao, string tipo)

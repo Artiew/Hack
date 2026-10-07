@@ -1,0 +1,185 @@
+@page
+@model AutomacaoModel
+@using Piersec.Core.Operacao
+@{
+    ViewData["Title"] = "Automação";
+    var fuso = Piersec.Core.Padronizacao.NormalizadorDatas.FusoBrasilia;
+    var cfg = Model.Config;
+    var chamados = Model.Estado.Chamados;
+    var aguardando = chamados.Where(c => c.Estado == EstadoChamado.AguardandoAprovacao).ToList();
+    var sugestoes = chamados.Where(c => c.Estado == EstadoChamado.Sugerido).ToList();
+    var abertos = chamados.Where(c => c.Estado == EstadoChamado.Aberto).ToList();
+    var encerrados = chamados.Where(c => !c.Estado.Ativo()).OrderByDescending(c => c.AtualizadoEmUtc).ToList();
+    var ultimo = Model.Estado.UltimoResultado;
+    var feitasHoje = Model.AutomaticasHoje;
+    var log = chamados.SelectMany(c => c.Historico.Select(h => (c.Numero, h))).OrderByDescending(x => x.h.QuandoUtc).ThenByDescending(x => x.Numero).Take(60).ToList();
+}
+
+<h1>Operação automática</h1>
+<p class="aviso-simulado"><strong>Tudo aqui é SIMULADO.</strong> A plataforma registra o chamado e gera o arquivo com o plano;
+    ela nunca envia nada a outro sistema nem mexe em nenhuma máquina.</p>
+
+@if (Model.Mensagem is not null)
+{
+    <p class="@(Model.MensagemOk ? "selo-ok" : "erro")" role="status">@Model.Mensagem</p>
+}
+
+<section class="cartao painel-op">
+    <div><span class="rotulo">Nível de autonomia</span><span class="valor">@cfg.NivelAutonomia de @RegrasAutomacao.NivelMaximo</span><span class="meta">@cfg.DescricaoNivel(cfg.NivelAutonomia)</span></div>
+    <div><span class="rotulo">Modo ensaio</span><span class="valor">@(cfg.ModoEnsaio ? "ligado" : "desligado")</span><span class="meta">@(cfg.ModoEnsaio ? "mostra o que faria e não grava nada" : "as decisões são gravadas")</span></div>
+    <div><span class="rotulo">Ações automáticas hoje</span><span class="valor">@feitasHoje de @cfg.LimiteAcoesPorDia</span><span class="meta">acima do limite, tudo espera uma pessoa</span></div>
+    <div><span class="rotulo">Aguardando aprovação</span><span class="valor">@aguardando.Count</span><span class="meta">@Formatar.Qtd(abertos.Count, "chamado aberto", "chamados abertos")</span></div>
+</section>
+
+<details class="travas">
+    <summary>Travas que valem em qualquer nível</summary>
+    <ul>
+        <li>Ação de <strong>alto impacto</strong> ou que <strong>não dá para desfazer</strong>: sempre espera aprovação humana.</li>
+        <li>Ação que mexe em <strong>@string.Join(" ou ", cfg.TiposCriticos.Select(t => t == "rede" ? "equipamento de rede" : t))</strong> (ativos críticos): sempre com uma pessoa no circuito.</li>
+        <li>Lote que não passou nas verificações de consistência: nada é feito sozinho.</li>
+        <li>No máximo <strong>@cfg.LimiteAcoesPorDia ações automáticas por dia</strong>.</li>
+        <li>O mesmo problema nunca gera dois chamados. Se ele sumir, o chamado fecha sozinho; se voltar, reabre. Sem dados para conferir, nada fecha.</li>
+        <li>O que uma pessoa rejeitou ou desfez, a plataforma não refaz sozinha. Toda decisão fica no log abaixo e na auditoria.</li>
+    </ul>
+    <p class="meta">Configuração em <code>regras/automacao.json</code> (validada quando a plataforma sobe).</p>
+</details>
+
+@if (chamados.Count == 0)
+{
+    <p class="vazio">Nenhum chamado ainda. Envie um lote na tela inicial: a operação roda sozinha logo depois da análise.</p>
+}
+
+<h2>Aguardando aprovação (@aguardando.Count)</h2>
+@if (aguardando.Count == 0)
+{
+    <p class="vazio">Nada esperando decisão.</p>
+}
+@foreach (var c in aguardando)
+{
+    <partial name="_CartaoChamado" model="(c, Model.PodeDecidir)" />
+}
+
+@if (sugestoes.Count > 0)
+{
+    <h2>Sugestões (@sugestoes.Count)</h2>
+    <p class="meta">A plataforma não age sobre sugestões. Uma pessoa pode transformá-las em chamado ou descartá-las.</p>
+    @foreach (var c in sugestoes)
+    {
+        <partial name="_CartaoChamado" model="(c, Model.PodeDecidir)" />
+    }
+}
+
+<h2>Chamados abertos (@abertos.Count)</h2>
+@if (abertos.Count == 0)
+{
+    <p class="vazio">Nenhum chamado aberto.</p>
+}
+else
+{
+    <table>
+        <thead><tr><th>Nº</th><th>O que fazer</th><th>Quem abriu</th><th>Confiança</th><th>Arquivo</th>@if (Model.PodeDecidir) { <th>Desfazer</th> }</tr></thead>
+        <tbody>
+            @foreach (var c in abertos)
+            {
+                var aprovador = c.Historico.LastOrDefault(h => h.Evento == ServicoOperacao.EventoAprovado)?.Quem;
+                <tr>
+                    <td><code>@c.Numero</code></td>
+                    <td>@c.Titulo<div class="meta">@Acoes.Nome(c.Acao) · @Formatar.Qtd(c.Ativos.Count, "máquina", "máquinas") · @Formatar.Qtd(c.EvidenciasTotal, "evento", "eventos")</div></td>
+                    <td>@(c.AgiuSozinho ? "a plataforma, sozinha" : $"aprovado por {aprovador}")</td>
+                    <td>@c.Confianca</td>
+                    <td><a href="/automacao/@(c.Numero).txt">@(c.Numero).txt</a></td>
+                    @if (Model.PodeDecidir)
+                    {
+                        <td>
+                            <form method="post" asp-page-handler="Desfazer" class="em-linha">
+                                <input type="hidden" name="numero" value="@c.Numero">
+                                <button type="submit" class="botao-discreto" title="@c.ComoDesfazer">Desfazer</button>
+                            </form>
+                        </td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (ultimo is not null)
+{
+    <h2>O que aconteceu no último lote</h2>
+    <p class="meta">Lote <a href="/Lote/@ultimo.LoteId">@ultimo.LoteId[..8]</a>, em @Formatar.DataHora(ultimo.QuandoUtc, fuso) · nível @ultimo.Nivel@(ultimo.Ensaio ? " · ENSAIO" : "")@(ultimo.LoteValidado ? "" : " · lote NÃO validado")</p>
+    <table>
+        <thead><tr><th>Nº</th><th>Chamado</th><th>Resultado</th><th>Por quê</th></tr></thead>
+        <tbody>
+            @foreach (var i in ultimo.Itens)
+            {
+                <tr class="@(i.AgiuSozinho ? "linha-sozinho" : "")">
+                    <td><code>@(i.Numero ?? "—")</code></td>
+                    <td>@i.Titulo</td>
+                    <td class="nowrap">@i.Resultado.Nome(ultimo.Ensaio)</td>
+                    <td>@i.Motivo <span class="meta">(confiança @i.Confianca)</span></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    @if (ultimo.SimulacaoPorNivel.Count > 0)
+    {
+        <h2>Ensaio: o que cada nível faria com esse lote</h2>
+        <p class="meta">Calculado sem gravar nada, como se fosse o primeiro lote. Mostra o efeito de mudar <code>nivelAutonomia</code>.</p>
+        <table class="estreita-media">
+            <thead><tr><th>Nível</th><th class="num">Faria sozinho</th><th class="num">Pediria aprovação</th><th class="num">Só sugeriria</th></tr></thead>
+            <tbody>
+                @foreach (var s in ultimo.SimulacaoPorNivel)
+                {
+                    <tr class="@(s.Nivel == cfg.NivelAutonomia ? "linha-atual" : "")">
+                        <td><strong>@s.Nivel</strong>@(s.Nivel == cfg.NivelAutonomia ? " (atual)" : "") <div class="meta">@cfg.DescricaoNivel(s.Nivel)</div></td>
+                        <td class="num">@s.Sozinho</td>
+                        <td class="num">@s.Aprovacao</td>
+                        <td class="num">@s.Sugestao</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+
+@if (encerrados.Count > 0)
+{
+    <h2>Encerrados (@encerrados.Count)</h2>
+    <table>
+        <thead><tr><th>Nº</th><th>Chamado</th><th>Situação</th><th>Quando</th><th>Arquivo</th></tr></thead>
+        <tbody>
+            @foreach (var c in encerrados)
+            {
+                <tr>
+                    <td><code>@c.Numero</code></td>
+                    <td>@c.Titulo</td>
+                    <td>@c.Estado.Nome()<div class="meta">@c.Historico[^1].Detalhe</div></td>
+                    <td class="nowrap">@Formatar.DataHora(c.AtualizadoEmUtc, fuso)</td>
+                    <td><a href="/automacao/@(c.Numero).txt">@(c.Numero).txt</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (log.Count > 0)
+{
+    <h2>Log de decisão</h2>
+    <p class="meta">As @log.Count decisões mais recentes: quem decidiu, o quê e por quê. A trilha completa de cada chamado está no arquivo dele.</p>
+    <table>
+        <thead><tr><th>Quando</th><th>Nº</th><th>Quem</th><th>O quê</th><th>Por quê</th></tr></thead>
+        <tbody>
+            @foreach (var (numero, h) in log)
+            {
+                <tr>
+                    <td class="nowrap">@Formatar.DataHora(h.QuandoUtc, fuso)</td>
+                    <td><code>@numero</code></td>
+                    <td>@h.Quem</td>
+                    <td class="nowrap">@h.Evento.Replace('_', ' ')</td>
+                    <td>@h.Detalhe</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

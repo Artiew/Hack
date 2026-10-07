@@ -97,8 +97,8 @@ public sealed class Gatilhos(ConjuntoRegras regras)
                     Valores = new Dictionary<string, string>
                     {
                         ["pacote"] = g.First().Pacote!.Trim(),
-                        ["falhas"] = Formatar.Numero(g.Count()),
-                        ["maquinas"] = Formatar.Numero(ativos.Count),
+                        ["falhas"] = Formatar.Qtd(g.Count(), "falha grave", "falhas graves"),
+                        ["maquinas"] = Formatar.Qtd(ativos.Count, "máquina", "máquinas"),
                     },
                     Ativos = ativos,
                     TiposAtivo = Tipos(g),
@@ -130,7 +130,7 @@ public sealed class Gatilhos(ConjuntoRegras regras)
                     {
                         ["ativo"] = g.Key,
                         ["tipo"] = regras.Ativos.Tipo(g.First().TipoAtivo).Singular,
-                        ["falhas"] = Formatar.Numero(g.Count()),
+                        ["falhas"] = Formatar.Qtd(g.Count(), "falha grave", "falhas graves"),
                         ["programas"] = textoProgramas,
                     },
                     Ativos = [g.Key],

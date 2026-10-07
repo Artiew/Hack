@@ -18,4 +18,7 @@ public static class Formatar
         utc is { } d ? TimeZoneInfo.ConvertTime(d, fuso).ToString("dd/MM/yyyy HH:mm", PtBr) : "—";
 
     public static string Numero(int n) => n.ToString("N0", PtBr);
+
+    /// <summary>"1 chamado", "3 chamados": plural certo, sem o "(s)" que confunde o leitor.</summary>
+    public static string Qtd(int n, string singular, string plural) => $"{Numero(n)} {(n == 1 ? singular : plural)}";
 }

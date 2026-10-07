@@ -323,6 +323,41 @@ public class OperacaoTests : IDisposable
     }
 
     [Fact]
+    public void Relatorio_tem_a_secao_do_que_a_plataforma_fez_sozinha()
+    {
+        var lote = Lote(Falhas("PC-01", "Windows 10", "openssl", 6));
+        lote = lote with { Operacao = Servico(nivel: 2).Processar(lote) };
+
+        var html = Fabrica.Gerador().Gerar(lote);
+
+        Assert.Contains("4. O que a plataforma fez sozinha", html);
+        Assert.Contains("5. O que esta análise não consegue dizer", html);
+        Assert.Contains("Tudo é simulado", html);
+        Assert.Contains("sozinha <strong>1 ação</strong>", html);                   // plural certo, sem "(s)"
+        Assert.Contains("CH-0001", html);
+        Assert.Contains("Ação de alto impacto", html);                              // o porquê de esperar aprovação
+    }
+
+    [Fact]
+    public async Task Ciclo_completo_roda_a_operacao_e_a_verificacao_V13()
+    {
+        var conversor = new Core.Relatorio.ConversorPdf();
+        Assert.SkipWhen(conversor.Navegador is null, "Nenhum Edge/Chrome nesta máquina.");
+        var ciclo = new CicloAnalise(Fabrica.ProcessadorReal(), new RepositorioLotes(_pasta), Fabrica.Gerador(), conversor, Fabrica.Validador(), Servico());
+
+        var resultado = await ciclo.ExecutarAsync([Fabrica.Exemplo("vulnerabilidades-ficticio.csv"), Fabrica.Exemplo("alertas-ficticio.csv")],
+            TestContext.Current.CancellationToken);
+
+        var lote = resultado.Lote;
+        Assert.NotNull(lote.Operacao);
+        Assert.True(lote.Operacao.Sozinho > 0);
+        var v13 = lote.Validacao!.Verificacoes.Single(v => v.Id == "V13");
+        Assert.True(v13.Aprovada, v13.Detalhe);
+        Assert.True(lote.Validacao.TudoCerto);
+        Assert.Equal("V12", lote.Validacao.Verificacoes[^1].Id);                    // o relatório final continua sendo o último a ser conferido
+    }
+
+    [Fact]
     public void Regras_de_automacao_invalidas_sao_apontadas()
     {
         var ok = Fabrica.Regras.Automacao;

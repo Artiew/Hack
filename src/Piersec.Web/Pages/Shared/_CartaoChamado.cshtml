@@ -1,0 +1,31 @@
+@model (Piersec.Core.Operacao.Chamado Chamado, bool PodeDecidir)
+@using Piersec.Core.Operacao
+@{
+    var c = Model.Chamado;
+    var sugestao = c.Estado == EstadoChamado.Sugerido;
+}
+<article class="cartao chamado">
+    <header>
+        <code>@c.Numero</code> <strong>@c.Titulo</strong>
+        <span class="meta">· @Acoes.Nome(c.Acao)</span>
+    </header>
+    <p><span class="rotulo-curto">Por quê</span> @c.Motivo</p>
+    <p><span class="rotulo-curto">@(sugestao ? "Por que é só sugestão" : "Por que espera uma pessoa")</span> @c.MotivoDecisao</p>
+    <p class="meta">Confiança @c.Confianca (@c.PorQueConfianca)@(c.Ativos.Count > 0 ? " · " + Formatar.Qtd(c.Ativos.Count, "máquina", "máquinas") : "")@(c.EvidenciasTotal > 0 ? " · " + Formatar.Qtd(c.EvidenciasTotal, "evento", "eventos") + " como evidência" : "") ·
+        <a href="/automacao/@(c.Numero).txt">ver o chamado completo</a></p>
+    @if (Model.PodeDecidir)
+    {
+        <div class="decisao">
+            <form method="post" asp-page-handler="Aprovar" class="em-linha">
+                <input type="hidden" name="numero" value="@c.Numero">
+                <button type="submit">@(sugestao ? "Transformar em chamado" : "Aprovar")</button>
+            </form>
+            <form method="post" asp-page-handler="Rejeitar" class="rejeitar">
+                <input type="hidden" name="numero" value="@c.Numero">
+                <input type="text" name="motivo" required minlength="3" maxlength="@ServicoOperacao.TamanhoMaximoMotivo"
+                       placeholder="Motivo (obrigatório)" aria-label="Motivo para @(sugestao ? "descartar" : "rejeitar") @c.Numero">
+                <button type="submit" class="botao-discreto">@(sugestao ? "Descartar" : "Rejeitar")</button>
+            </form>
+        </div>
+    }
+</article>

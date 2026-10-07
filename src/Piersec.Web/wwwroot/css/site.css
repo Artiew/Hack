@@ -130,3 +130,23 @@ ol li { margin-bottom: 10px; }
     .resumo { padding: 20px; gap: 16px; }
     table { display: block; overflow-x: auto; }
 }
+
+/* ---------- Automação (Fase 5) ---------- */
+.aviso-simulado { border-left: 6px solid var(--destaque); background: var(--superficie); padding: 12px 18px; border-radius: 6px; }
+.painel-op { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 24px; align-items: start; margin: 24px 0; }
+.painel-op > div { display: flex; flex-direction: column; gap: 2px; }
+.painel-op .rotulo { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--suave); }
+.painel-op .valor { font-size: 30px; font-weight: 800; line-height: 1.2; }
+.travas { margin: 8px 0 16px; }
+.travas summary { cursor: pointer; font-weight: 600; color: var(--destaque); }
+.chamado { display: block; margin: 0 0 16px; }
+.chamado header { font-size: 19px; margin-bottom: 8px; }
+.chamado p { margin: 6px 0; }
+.rotulo-curto { display: inline-block; min-width: 220px; font-weight: 600; color: var(--suave); }
+.decisao { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; margin-top: 14px; }
+.rejeitar { display: flex; gap: 8px; flex: 1; min-width: 320px; }
+.rejeitar input[type=text] { flex: 1; font: inherit; padding: 8px 12px; border: 1px solid var(--linha); border-radius: 8px; background: var(--fundo); color: var(--tinta); }
+.linha-sozinho td:first-child { border-left: 4px solid var(--baixa); }
+.linha-atual { outline: 2px solid var(--destaque); outline-offset: -2px; }
+.nowrap { white-space: nowrap; }
+table.estreita-media { max-width: 900px; }

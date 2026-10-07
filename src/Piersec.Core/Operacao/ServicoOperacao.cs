@@ -57,6 +57,20 @@ public sealed partial class ServicoOperacao
             return _repositorio.Carregar();
     }
 
+    /// <summary>Ações feitas sozinhas hoje (dia de Brasília), para comparar com o limite diário.</summary>
+    public int AutomaticasHoje()
+    {
+        lock (_trava)
+            return ContarAutomaticas(_repositorio.Carregar(), _relogio.GetUtcNow());
+    }
+
+    private int ContarAutomaticas(EstadoOperacao estado, DateTimeOffset agora)
+    {
+        var hoje = DataLocal(agora);
+        return estado.Chamados.SelectMany(c => c.Historico)
+            .Count(h => h.Quem == Chamado.Plataforma && h.Evento == EventoFeitoSozinho && DataLocal(h.QuandoUtc) == hoje);
+    }
+
     /// <summary>Roda a operação sobre um lote já analisado e validado. No modo ensaio, calcula tudo e não grava nada.</summary>
     public ResultadoOperacao Processar(Lote lote)
     {
@@ -84,9 +98,7 @@ public sealed partial class ServicoOperacao
     private (EstadoOperacao, ResultadoOperacao) Rodar(EstadoOperacao estado, Lote lote,
         IReadOnlyDictionary<string, IReadOnlyList<Ocorrencia>> ocorrencias, RegrasAutomacao config, DateTimeOffset agora)
     {
-        var hoje = DataLocal(agora);
-        var automaticasHoje = estado.Chamados.SelectMany(c => c.Historico)
-            .Count(h => h.Quem == Chamado.Plataforma && h.Evento == EventoFeitoSozinho && DataLocal(h.QuandoUtc) == hoje);
+        var automaticasHoje = ContarAutomaticas(estado, agora);
         var chamados = estado.Chamados.ToList();
         var porChave = chamados.Select((c, i) => (c.Chave, i)).ToDictionary(x => x.Chave, x => x.i, StringComparer.Ordinal);
         var proximo = estado.ProximoNumero;

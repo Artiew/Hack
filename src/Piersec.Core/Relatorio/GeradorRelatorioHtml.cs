@@ -4,6 +4,7 @@ using System.Text.Unicode;
 using Piersec.Core.Analise;
 using Piersec.Core.Coleta;
 using Piersec.Core.Modelo;
+using Piersec.Core.Operacao;
 
 namespace Piersec.Core.Relatorio;
 
@@ -53,6 +54,7 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
             PaginaDiretoria(sb, lote, avaliacao);
             SecaoScore(sb, avaliacao.Score);
             SecaoPlano(sb, avaliacao);
+            SecaoAutomacao(sb, lote.Operacao);
         }
         SecaoLimites(sb, lote);
 
@@ -262,7 +264,45 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
             """);
     }
 
-    // ================= 4. Limites =================
+    // ================= 4. Automação =================
+
+    private const int MaximoItensAutomacao = 20;
+
+    private void SecaoAutomacao(StringBuilder sb, ResultadoOperacao? op)
+    {
+        sb.Append("<section><h2>4. O que a plataforma fez sozinha</h2>");
+        if (op is null)
+        {
+            sb.Append("<p class=\"meta\">A operação automática não rodou neste lote.</p></section>");
+            return;
+        }
+        var feito = op.Ensaio ? "faria" : "fez";
+        sb.Append($"<p><strong>Tudo é simulado:</strong> a plataforma registra o chamado e gera o arquivo com o plano; ela não envia nada a outro sistema nem mexe em nenhuma máquina. " +
+                  $"Nível de autonomia {op.Nivel} de {RegrasAutomacao.NivelMaximo}: {H(op.DescricaoNivel)}.{(op.Ensaio ? " <strong>MODO ENSAIO: nada foi gravado.</strong>" : "")}</p>");
+        string Q(int n, string singular, string plural) => H(Formatar.Qtd(n, singular, plural));
+        sb.Append($"<p>Neste lote a plataforma {feito} sozinha <strong>{Q(op.Sozinho, "ação", "ações")}</strong>; " +
+                  $"<strong>{Q(op.AguardandoAprovacao, "chamado aguarda", "chamados aguardam")}</strong> aprovação de uma pessoa; " +
+                  $"{Q(op.Contar(ResultadoItem.Sugerido), "ficou como sugestão", "ficaram como sugestão")}; " +
+                  $"{Q(op.Contar(ResultadoItem.FechouSozinho), "chamado fechou sozinho", "chamados fecharam sozinhos")} porque o problema sumiu; " +
+                  $"{Q(op.Contar(ResultadoItem.Reaberto), "reabriu", "reabriram")}; " +
+                  $"{Q(op.Contar(ResultadoItem.JaExistia), "já existia e não foi duplicado", "já existiam e não foram duplicados")}." +
+                  $"{(op.LoteValidado ? "" : " <strong>O lote não passou nas verificações: nada foi feito sozinho.</strong>")}</p>");
+        sb.Append("<p class=\"meta\">Travas que valem em qualquer nível: alto impacto ou ação sem volta sempre esperam uma pessoa; servidores e equipamentos de rede sempre têm uma pessoa no circuito; " +
+                  $"no máximo {op.LimitePorDia} ações automáticas por dia; lote não validado não dispara nada sozinho. A verificação V13 (anexo H) confere isso por outro caminho.</p>");
+        var itens = op.Itens.Where(i => i.Resultado != ResultadoItem.JaExistia || i.Estado == EstadoChamado.AguardandoAprovacao)
+            .OrderByDescending(i => i.AgiuSozinho).ThenBy(i => i.Estado != EstadoChamado.AguardandoAprovacao).Take(MaximoItensAutomacao).ToList();
+        if (itens.Count > 0)
+        {
+            sb.Append("<table><thead><tr><th>Nº</th><th>Chamado</th><th>Resultado</th><th>Por quê (regra, evidência e confiança)</th></tr></thead><tbody>");
+            foreach (var i in itens)
+                sb.Append($"<tr><td class=\"id\"><code>{H(i.Numero ?? "—")}</code></td><td>{H(i.Titulo)}</td><td>{H(i.Resultado.Nome(op.Ensaio))}</td>" +
+                          $"<td>{H(i.Motivo)} <span class=\"meta\">Regra {H(i.PlaybookId)} · {H(Formatar.Qtd(i.Evidencias, "evento", "eventos"))} · confiança {H(i.Confianca)}</span></td></tr>");
+            sb.Append("</tbody></table>");
+        }
+        sb.Append("<p class=\"meta\">Aprovar, rejeitar e desfazer: tela Automação da plataforma. Cada decisão fica no histórico do chamado e na auditoria.</p></section>");
+    }
+
+    // ================= 5. Limites =================
 
     private void SecaoLimites(StringBuilder sb, Lote lote)
     {
@@ -277,7 +317,7 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
         itens.Add(regras.Ativos.Premissa);
         itens.Add("Os dados não informam cliente ou ambiente: cada arquivo foi tratado como um ambiente. Datas sem fuso foram consideradas no horário de Brasília.");
 
-        sb.Append("<section><h2>4. O que esta análise não consegue dizer</h2><ul>");
+        sb.Append("<section><h2>5. O que esta análise não consegue dizer</h2><ul>");
         foreach (var item in itens)
             sb.Append($"<li>{H(item)}</li>");
         sb.Append($"</ul><p class=\"meta\">Detalhes: {Formatar.Numero(lote.Lacunas.Count)} lacuna(s) listadas no anexo E.</p></section>");
