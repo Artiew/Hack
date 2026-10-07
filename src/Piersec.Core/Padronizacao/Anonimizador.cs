@@ -34,10 +34,12 @@ public static class ChaveAnonimizacao
     public const string VariavelAmbiente = "PIERSEC_CHAVE_ANONIMIZACAO";
 
     /// <summary>
-    /// 1º: variável de ambiente (base64). 2º: arquivo em var/segredos (criado na primeira execução).
+    /// 1º: variável de ambiente (base64). 2º: arquivo em var/segredos (criado na primeira execução),
+    /// gravado cifrado quando um <paramref name="cifrador"/> é informado (a plataforma sempre informa).
     /// </summary>
-    public static byte[] Obter(string pastaDados)
+    public static byte[] Obter(string pastaDados, Armazenamento.ICifrador? cifrador = null)
     {
+        cifrador ??= Armazenamento.SemCifra.Instancia;
         var doAmbiente = Environment.GetEnvironmentVariable(VariavelAmbiente);
         if (!string.IsNullOrWhiteSpace(doAmbiente))
         {
@@ -49,13 +51,20 @@ public static class ChaveAnonimizacao
             return chave;
         }
 
-        var arquivo = Path.Combine(pastaDados, "segredos", "chave-anonimizacao.bin");
+        var arquivo = Path.Combine(pastaDados, "segredos", "chave-anonimizacao.cifrado");
         if (File.Exists(arquivo))
-            return File.ReadAllBytes(arquivo);
+        {
+            try { return cifrador.Decifrar(File.ReadAllBytes(arquivo)); }
+            catch (CryptographicException)
+            {
+                throw new InvalidOperationException(
+                    $"Não foi possível abrir {arquivo} (chave de cifra diferente?). Rode 'rodar.cmd -DoZero' para recomeçar do zero.");
+            }
+        }
 
         Directory.CreateDirectory(Path.GetDirectoryName(arquivo)!);
         var nova = RandomNumberGenerator.GetBytes(Anonimizador.TamanhoMinimoChave);
-        File.WriteAllBytes(arquivo, nova);
+        File.WriteAllBytes(arquivo, cifrador.Cifrar(nova));
         return nova;
     }
 }

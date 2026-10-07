@@ -1,7 +1,7 @@
 # Matriz de requisitos
 
 Regra: ✅ só para o que foi **executado e provado**. ⚠️ parcial · ❌ não feito · ❓ depende de informação que ainda não temos.
-Atualizado ao fim da **Fase 3** (score, priorização, plano de ação, relatório para leigo). Números dos dados reais vêm de contagens (`docs/FONTES.md`).
+Atualizado ao fim da **Fase 4** (validação, login, auditoria, proteções do site, cifra em repouso). Números dos dados reais vêm de contagens (`docs/FONTES.md`).
 
 ## Requisitos funcionais (manual 4.1)
 
@@ -22,7 +22,7 @@ Atualizado ao fim da **Fase 3** (score, priorização, plano de ação, relatór
 |---|---|---|---|
 | RS1 | Autenticação | Nada abre sem login (páginas e relatórios → 302 para /Entrar). `admin` criado na 1ª execução com senha de `ADMIN_SENHA_INICIAL` (exatamente 8) ou sorteada e mostrada uma vez; troca obrigatória (toda página leva a /TrocarSenha); PBKDF2-SHA256 600 mil iterações; bloqueio após 5 erros por 15 min; erro idêntico para usuário inexistente/senha errada/bloqueado; sessão de 30 min; papéis admin/analista/executivo (executivo não envia nem vê tabelas técnicas; /Usuarios → /Negado). `SegurancaTests` (24) + teste de ponta a ponta com curl | ✅ |
 | RS2 | OWASP Top 10 | CSRF (POST sem token → 400; sair só por POST), escape de HTML (testes + PDF), path traversal (→ 404), validação de upload, CSP restrita no site e no relatório, `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `Cache-Control: no-store`, sem cabeçalho `Server`, cookie `__Host-` Secure/HttpOnly/SameSite=Strict, limite de 10 logins/min por endereço (429), erro sem detalhe técnico em produção | ✅ |
-| RS3 | Proteger dados em trânsito e em repouso | HTTPS local em `https://localhost:5001` com certificado confiável (`dotnet dev-certs https --check --trust` → confiável, válido até 07/10/2027). Em repouso: `var/` ainda não cifrado | ⚠️ |
+| RS3 | Proteger dados em trânsito e em repouso | Trânsito: HTTPS local com certificado confiável, cookie só HTTPS, HSTS em produção. Repouso: lote, resumo, relatório HTML e PDF e chave de anonimização gravados **cifrados** (`*.cifrado`, Data Protection AES-256 autenticado; chaves em `var/chaves` protegidas pelo DPAPI do Windows); arquivo alterado no disco é recusado; PDF gerado em `var/tmp` e apagado em seguida. `CifragemTests` + conferência dos arquivos reais (4/4 cifrados, 0 temporários). Limite: `usuarios.json` (só hashes) e `auditoria.jsonl` (sem dados sensíveis) ficam abertos | ✅ |
 | RS4 | Registrar atividades sem dados sensíveis | `var/auditoria.jsonl` (só acrescenta): entrada, falha, bloqueio, saída, troca de senha, usuário criado, lote processado, relatório aberto, envio negado; login inexistente vira "(desconhecido)". Página /Auditoria (admin). Teste: nenhuma senha usada aparece no log nem em `usuarios.json` | ✅ |
 | RS5 | Minimização / LGPD | Anonimização de usuário pronta (as fontes reais não trazem usuário); CSV bruto não é guardado | ⚠️ |
 | RS6 | Dependências confiáveis e atualizadas | Produção: **0 pacotes NuGet** (só .NET 10.0.401). Testes: xunit.v3 4.0.1, Test.Sdk 18.10.1, runner 4.0.0. `--vulnerable --include-transitive` = nenhum; `--outdated` = nenhum (07/10/2026, após a Fase 2) | ✅ |
@@ -52,7 +52,7 @@ Atualizado ao fim da **Fase 3** (score, priorização, plano de ação, relatór
 | Obrigatório: padronização legível com severidade | ✅ |
 | Obrigatório: score de risco geral | ✅ |
 | Obrigatório: relatório executivo gerado pela plataforma | ✅ (gerado sozinho, com resumo executivo, score, plano e anexos; validação na Fase 4) |
-| Obrigatório: RS4 a RS6 | ⚠️ |
+| Obrigatório: RS4 a RS6 | ⚠️ (RS4 e RS6 ✅; RS5: anonimização pronta, minimização a revisar) |
 | Desejável: trilha de evidências navegável | ⚠️ (ids e linhas no relatório; navegação na Fase 6) |
 | Desejável: recomendações automáticas | ✅ (plano gerado a partir dos dados; impacto calculado) |
 | Desejável: priorização por esforço e impacto | ✅ (matriz impacto × esforço, prazo por severidade; `Matriz_impacto_por_esforco`, `Plano_calcula_quanto_cada_acao_elimina`) |
@@ -63,7 +63,7 @@ Atualizado ao fim da **Fase 3** (score, priorização, plano de ação, relatór
 
 | Item | Status |
 |---|---|
-| Funciona de ponta a ponta | ⚠️ (3 arquivos reais → relatório com score e plano; faltam login, validação, automação) |
+| Funciona de ponta a ponta | ⚠️ (login → envio dos 3 arquivos reais → relatório validado e cifrado; falta a operação automatizada) |
 | Operação automatizada funciona | ❌ |
 | Relatório gerado pela plataforma | ✅ |
 | Resumo responde "como estamos / mais grave / o que fazer" | ✅ (página 1; teste + PDF conferido) |

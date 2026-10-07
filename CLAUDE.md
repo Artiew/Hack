@@ -31,7 +31,7 @@ O briefing completo está em **`docs/PROMPT.md`** — leia antes de qualquer tar
   - aviso de **empresas/ambientes possivelmente diferentes** quando dois arquivos do mesmo tipo não têm nenhuma máquina em
     comum (`VerificadorAmbientes`). É aviso, não erro. Nos dados reais aparece para SIEM-1 × SIEM-2.
   - 144 testes passando.
-- **Fase 4 em andamento** (plano: validação → login + auditoria + proteções do site → dados cifrados em repouso):
+- **Fase 4 concluída** (validação, login + auditoria + proteções do site, dados cifrados em repouso):
   - **Parte 1 feita:** validação RF8 (`Validacao/ValidadorLote`, 12 verificações, selo no relatório, "NÃO VALIDADO" se
     reprovar, relatório retido se sobrar credencial). Demo: `exemplos/alertas-corrompido-ficticio.csv` reprova a V04.
     Exemplos fictícios são gerados por `exemplos/gerar-exemplos.ps1`.
@@ -39,7 +39,13 @@ O briefing completo está em **`docs/PROMPT.md`** — leia antes de qualquer tar
     (`var/auditoria.jsonl`, página /Auditoria), cabeçalhos/CSP/cookie `__Host-`, limite de 10 logins/min, páginas
     Entrar/TrocarSenha/Sair/Usuarios/Auditoria/Negado. Executivo não envia e não vê tabelas técnicas.
     Para testar com senha conhecida: `$env:ADMIN_SENHA_INICIAL='8chars!!'` antes do `rodar.cmd -DoZero`.
-  - **Próximo:** parte 3 — cifrar lotes e relatórios em repouso (RS3) com Data Protection + DPAPI (sem biblioteca nova).
+  - **Parte 3 feita:** lotes, resumos, relatórios e chave de anonimização gravados cifrados (`ICifrador`, Web usa Data
+    Protection com chaves em `var/chaves` + DPAPI). PDF gerado em `var/tmp` e apagado. 192 testes passando.
+- **Próximo passo: Fase 5 — operação automatizada (30% da nota):** playbooks com níveis de autonomia 0–3, dry-run, nada
+  irreversível sem aprovação humana (ativos críticos sempre com humano), limite de ações por período, log de decisão,
+  chamados e remediação SIMULADOS (gerar o artefato, não enviar), idempotência e verificação contínua (chamado fecha
+  sozinho se o problema some, reabre se volta). Ver `docs/PROMPT.md` seção 5.2.
+- Atenção: `rodar.cmd -DoZero` apaga também usuários e chaves; na 1ª execução a senha do admin aparece UMA vez no terminal.
 - Ideia aprovada para a Fase 6: filtro por ambiente (cada arquivo separado) sem precisar reenviar.
 - Perguntas ao mentor ainda abertas: fim de `docs/FONTES.md` (inclui: SIEM-1 e SIEM-2 são empresas diferentes?).
 

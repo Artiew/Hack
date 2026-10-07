@@ -21,7 +21,7 @@ public sealed class LoteModel(RepositorioLotes repositorio, GeradorRelatorioHtml
         if (lote is null)
             return NotFound();
         Lote = lote;
-        PdfDisponivel = ConversorPdf.ArquivoEhPdf(repositorio.CaminhoRelatorio(id, "pdf"));
+        PdfDisponivel = repositorio.ExisteRelatorio(id, "pdf");
         AvisoConfianca = lote.Avaliacao is { } a ? gerador.AvisoConfianca(a.Score) : null;
         return Page();
     }

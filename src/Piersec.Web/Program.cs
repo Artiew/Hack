@@ -5,6 +5,7 @@ using System.Threading.RateLimiting;
 using Microsoft.Extensions.WebEncoders;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http.Features;
 using Piersec.Core.Analise;
 using Piersec.Core.Armazenamento;
@@ -40,11 +41,19 @@ var pastaRegras = Path.GetFullPath(builder.Configuration["Piersec:PastaRegras"]
     ?? Path.Combine(builder.Environment.ContentRootPath, "..", "..", "regras"));
 var regras = ConjuntoRegras.Carregar(pastaRegras);
 
+// Cifra em repouso (RS3): chaves em var/chaves, protegidas pelo Windows (DPAPI). Também protegem os cookies de sessão.
+var protecao = builder.Services.AddDataProtection()
+    .SetApplicationName("piersec")
+    .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(pastaDados, "chaves")));
+if (OperatingSystem.IsWindows())
+    protecao.ProtectKeysWithDpapi();
+builder.Services.AddSingleton<ICifrador, CifradorDataProtection>();
+
 // Peças do núcleo. Para adicionar uma fonte nova: mais uma linha AddSingleton<IAdaptadorFonte, ...>.
 var fuso = NormalizadorDatas.FusoBrasilia;
 builder.Services.AddSingleton(regras);
-builder.Services.AddSingleton(new RepositorioLotes(pastaDados));
-builder.Services.AddSingleton(new Anonimizador(ChaveAnonimizacao.Obter(pastaDados)));
+builder.Services.AddSingleton(sp => new RepositorioLotes(pastaDados, sp.GetRequiredService<ICifrador>()));
+builder.Services.AddSingleton(sp => new Anonimizador(ChaveAnonimizacao.Obter(pastaDados, sp.GetRequiredService<ICifrador>())));
 builder.Services.AddSingleton(new NormalizadorDatas(fuso));
 builder.Services.AddSingleton<IAdaptadorFonte, AdaptadorVulnerabilidades>();
 builder.Services.AddSingleton<IAdaptadorFonte, AdaptadorAlertasSiem>();
@@ -149,12 +158,9 @@ app.Run();
 
 static IResult ArquivoRelatorio(HttpContext ctx, RepositorioLotes repo, Auditoria auditoria, string id, string extensao, string tipo)
 {
-    if (!RepositorioLotes.IdValido(id))
-        return Results.NotFound();
-    var caminho = repo.CaminhoRelatorio(id, extensao);
-    if (!File.Exists(caminho))
+    if (!RepositorioLotes.IdValido(id) || repo.LerRelatorio(id, extensao) is not { } conteudo)
         return Results.NotFound();
     auditoria.Registrar(ctx.User.Identity?.Name, "relatorio_aberto", $"lote {id[..8]} · {extensao}");
     ctx.Response.Headers.ContentSecurityPolicy = CabecalhosSeguranca.CspRelatorio;
-    return TypedResults.PhysicalFile(caminho, tipo);
+    return Results.Bytes(conteudo, tipo); // decifrado só na memória, na hora de enviar
 }

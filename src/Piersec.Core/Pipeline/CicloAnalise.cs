@@ -34,11 +34,38 @@ public sealed class CicloAnalise(
         html = final.Aprovada ? gerador.Gerar(lote) : gerador.GerarRetido(lote);
 
         repositorio.Salvar(lote);
-        var caminhoHtml = repositorio.CaminhoRelatorio(lote.Id, "html");
-        await File.WriteAllTextAsync(caminhoHtml, html, new UTF8Encoding(false), ct);
+        repositorio.SalvarRelatorio(lote.Id, "html", new UTF8Encoding(false).GetBytes(html));
 
-        var pdf = await conversorPdf.GerarAsync(caminhoHtml, repositorio.CaminhoRelatorio(lote.Id, "pdf"), ct);
-        return new ResultadoCiclo(lote, pdf.Sucesso, pdf.Mensagem);
+        // O navegador precisa do HTML aberto para "imprimir" o PDF: arquivos temporários em var/tmp, apagados no fim.
+        var temporaria = repositorio.CriarPastaTemporaria();
+        try
+        {
+            var caminhoHtml = Path.Combine(temporaria, "relatorio.html");
+            var caminhoPdf = Path.Combine(temporaria, "relatorio.pdf");
+            await File.WriteAllTextAsync(caminhoHtml, html, new UTF8Encoding(false), ct);
+            var pdf = await conversorPdf.GerarAsync(caminhoHtml, caminhoPdf, ct);
+            if (pdf.Sucesso)
+                repositorio.SalvarRelatorio(lote.Id, "pdf", await File.ReadAllBytesAsync(caminhoPdf, ct));
+            return new ResultadoCiclo(lote, pdf.Sucesso, pdf.Mensagem);
+        }
+        finally
+        {
+            ApagarTemporaria(temporaria);
+        }
+    }
+
+    private static void ApagarTemporaria(string pasta)
+    {
+        for (var tentativa = 0; tentativa < 5; tentativa++)
+        {
+            try
+            {
+                Directory.Delete(pasta, recursive: true);
+                return;
+            }
+            catch (IOException) { Thread.Sleep(200); } // o navegador pode segurar o arquivo por instantes
+            catch (UnauthorizedAccessException) { Thread.Sleep(200); }
+        }
     }
 
     /// <summary>Tendência: quanto o score mudou e qual fator mais explica a mudança.</summary>

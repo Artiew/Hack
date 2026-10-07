@@ -14,10 +14,15 @@ Requisitos: Windows, [SDK do .NET 10](https://dot.net) e Microsoft Edge ou Googl
 
 ```powershell
 .\rodar.cmd           # compila, roda os testes, sobe o site e abre o navegador
-.\rodar.cmd -DoZero   # o mesmo, mas apagando antes os lotes, relatórios e a chave (var\)
+.\rodar.cmd -DoZero   # o mesmo, mas apagando antes tudo de var\ (lotes, relatórios, usuários, auditoria e chaves)
 ```
 
 O site fica em **https://localhost:5001**. Se algum teste falhar, o site não sobe.
+
+**Primeiro acesso:** na primeira execução (ou depois de `-DoZero`) é criado o usuário `admin`. A senha inicial, de
+8 caracteres, aparece **uma única vez** no terminal (ou vem da variável `ADMIN_SENHA_INICIAL`, se tiver exatamente
+8 caracteres). No primeiro login a troca de senha é obrigatória. O admin cria os outros usuários em **Usuários**
+(papéis: admin, analista, executivo).
 
 - **Dados do desafio:** coloque os CSVs em `dados/` (fora do git) e envie os três juntos pela tela.
 - **Sem os dados do desafio:** envie os arquivos de `exemplos/`. São **fictícios, criados por nós**, no mesmo formato das
@@ -50,5 +55,6 @@ var/                     dados gerados (fora do git)
 
 | Variável | Para quê |
 |---|---|
-| `PIERSEC_CHAVE_ANONIMIZACAO` | Chave (base64, ≥ 32 bytes) para anonimizar usuários. Sem ela, a chave é criada em `var/segredos/`. |
+| `ADMIN_SENHA_INICIAL` | Senha inicial do `admin` na primeira execução (exatamente 8 caracteres). Sem ela, é sorteada e mostrada no terminal. |
+| `PIERSEC_CHAVE_ANONIMIZACAO` | Chave (base64, ≥ 32 bytes) para anonimizar usuários. Sem ela, a chave é criada (cifrada) em `var/segredos/`. |
 | `PIERSEC_NAVEGADOR` | Caminho do Edge/Chrome, se não estiver no lugar padrão. |
