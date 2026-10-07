@@ -85,6 +85,21 @@ public sealed class ServicoAutenticacao(RepositorioUsuarios repositorio, TimePro
         return null;
     }
 
+    /// <summary>
+    /// Exclui um usuário (só o admin chama). Travas: ninguém exclui a si mesmo e o último admin não pode sumir,
+    /// senão a plataforma ficaria sem ninguém para administrá-la. Devolve o motivo da recusa, ou null se excluiu.
+    /// </summary>
+    public string? Excluir(string login, string quemPede)
+    {
+        if (repositorio.Obter(login) is not { } alvo)
+            return "Usuário não encontrado.";
+        if (string.Equals(alvo.Login, quemPede, StringComparison.OrdinalIgnoreCase))
+            return "Você não pode excluir o seu próprio usuário.";
+        if (alvo.Papel == Papeis.Admin && repositorio.Listar().Count(u => u.Papel == Papeis.Admin) <= 1)
+            return "Este é o último admin: crie outro admin antes de excluí-lo.";
+        return repositorio.Remover(alvo.Login) ? null : "Usuário não encontrado.";
+    }
+
     /// <summary>Cria um usuário com senha inicial aleatória (devolvida UMA vez para ser entregue à pessoa).</summary>
     public (Usuario Usuario, string SenhaInicial) Criar(string login, string papel)
     {

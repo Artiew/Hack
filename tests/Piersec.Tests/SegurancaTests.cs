@@ -17,6 +17,35 @@ public class SegurancaTests : IDisposable
 
     public void Dispose() => Directory.Delete(_pasta, recursive: true);
 
+    // ---------- excluir usuário ----------
+
+    [Fact]
+    public void Admin_exclui_outro_usuario_e_ele_nao_entra_mais()
+    {
+        _servico.GarantirAdmin("Adm1n#26");
+        var (_, senha) = _servico.Criar("bruno", Papeis.Analista);
+
+        Assert.Null(_servico.Excluir("bruno", Papeis.Admin));
+
+        Assert.Null(_repo.Obter("bruno"));
+        Assert.Null(_servico.Entrar("bruno", senha).Usuario);
+        Assert.Equal("Usuário não encontrado.", _servico.Excluir("bruno", Papeis.Admin));   // excluir de novo não quebra nada
+    }
+
+    [Fact]
+    public void Ninguem_exclui_a_si_mesmo_nem_o_ultimo_admin()
+    {
+        _servico.GarantirAdmin("Adm1n#26");
+        _servico.Criar("ana", Papeis.Admin);
+
+        Assert.Contains("próprio usuário", _servico.Excluir("ana", "ANA"));                      // sem diferença de maiúsculas
+        Assert.Null(_servico.Excluir("ana", Papeis.Admin));                                         // havia 2 admins: pode
+        Assert.Contains("próprio usuário", _servico.Excluir(Papeis.Admin, Papeis.Admin));
+        _servico.Criar("carla", Papeis.Executivo);
+        Assert.Contains("último admin", _servico.Excluir(Papeis.Admin, "carla"));                  // mesmo que outro tente
+        Assert.NotNull(_repo.Obter(Papeis.Admin));
+    }
+
     // ---------- hash ----------
 
     [Fact]

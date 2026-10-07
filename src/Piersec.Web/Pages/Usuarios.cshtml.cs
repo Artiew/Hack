@@ -15,7 +15,32 @@ public sealed class UsuariosModel(ServicoAutenticacao servico, RepositorioUsuari
     public (string Login, string Senha)? Criado { get; private set; }
     public DateTimeOffset Agora => relogio.GetUtcNow();
 
-    public void OnGet() => Usuarios = repositorio.Listar();
+    /// <summary>Usuário a confirmar a exclusão (passo 1: GET ?excluir=login mostra "Tem certeza?").</summary>
+    public Usuario? AConfirmar { get; private set; }
+
+    public string? Mensagem { get; private set; }
+
+    public void OnGet(string? excluir)
+    {
+        Usuarios = repositorio.Listar();
+        AConfirmar = excluir is null ? null : repositorio.Obter(excluir);
+    }
+
+    /// <summary>Passo 2: exclui de fato (POST com token). A sessão aberta da pessoa cai no próximo clique.</summary>
+    public IActionResult OnPostExcluir(string? login)
+    {
+        var quem = User.Identity!.Name!;
+        var erro = login is null ? "Usuário não encontrado." : servico.Excluir(login, quem);
+        if (erro is null)
+        {
+            auditoria.Registrar(quem, "usuario_excluido", login!);
+            Mensagem = $"Usuário {login} excluído. Se estava com o site aberto, perde o acesso no próximo clique.";
+        }
+        else
+            Erro = erro;
+        Usuarios = repositorio.Listar();
+        return Page();
+    }
 
     public IActionResult OnPost()
     {

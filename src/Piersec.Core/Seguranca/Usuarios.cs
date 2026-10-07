@@ -51,16 +51,34 @@ public sealed partial class RepositorioUsuarios(string pastaDados)
             return Ler().FirstOrDefault(u => u.Login == chave);
     }
 
+    /// <summary>Apaga o usuário. Devolve false se ele não existia.</summary>
+    public bool Remover(string login)
+    {
+        var chave = Normalizar(login);
+        lock (_trava)
+        {
+            var todos = Ler();
+            if (todos.RemoveAll(u => u.Login == chave) == 0)
+                return false;
+            Gravar(todos);
+            return true;
+        }
+    }
+
     public void Salvar(Usuario usuario)
     {
         lock (_trava)
         {
-            var todos = Ler().Where(u => u.Login != usuario.Login).Append(usuario).OrderBy(u => u.Login, StringComparer.Ordinal).ToList();
-            Directory.CreateDirectory(Path.GetDirectoryName(_arquivo)!);
-            var temporario = _arquivo + ".tmp";
-            File.WriteAllText(temporario, JsonSerializer.Serialize(todos, Json));
-            File.Move(temporario, _arquivo, overwrite: true); // grava inteiro ou não grava (nunca pela metade)
+            Gravar(Ler().Where(u => u.Login != usuario.Login).Append(usuario).OrderBy(u => u.Login, StringComparer.Ordinal).ToList());
         }
+    }
+
+    private void Gravar(List<Usuario> todos)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(_arquivo)!);
+        var temporario = _arquivo + ".tmp";
+        File.WriteAllText(temporario, JsonSerializer.Serialize(todos, Json));
+        File.Move(temporario, _arquivo, overwrite: true); // grava inteiro ou não grava (nunca pela metade)
     }
 
     private List<Usuario> Ler() =>

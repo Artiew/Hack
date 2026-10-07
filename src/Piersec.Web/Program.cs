@@ -3,6 +3,7 @@ using System.Text.Encodings.Web;
 using System.Text.Unicode;
 using System.Threading.RateLimiting;
 using Microsoft.Extensions.WebEncoders;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
@@ -86,6 +87,18 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         o.Cookie.HttpOnly = true;                  // script nenhum consegue ler
         o.Cookie.SecurePolicy = CookieSecurePolicy.Always;
         o.Cookie.SameSite = SameSiteMode.Strict;   // outro site não consegue usar a sessão
+        // A cada requisição: o usuário ainda existe e tem o mesmo papel? Se foi excluído (ou mudou de papel), a sessão cai
+        // na hora, em vez de continuar valendo até expirar.
+        o.Events.OnValidatePrincipal = async ctx =>
+        {
+            var login = ctx.Principal?.Identity?.Name;
+            var usuario = login is null ? null : ctx.HttpContext.RequestServices.GetRequiredService<RepositorioUsuarios>().Obter(login);
+            if (usuario is null || !ctx.Principal!.IsInRole(usuario.Papel))
+            {
+                ctx.RejectPrincipal();
+                await ctx.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            }
+        };
     });
 builder.Services.AddAuthorization(o =>
 {

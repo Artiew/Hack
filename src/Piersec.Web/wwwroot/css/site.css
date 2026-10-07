@@ -298,3 +298,10 @@ button:disabled { opacity: .6; cursor: progress; }
 .etapas .feito { color: var(--baixa); }
 .etapas .atual { font-weight: 700; color: var(--destaque); }
 .etapas .pendente { color: var(--suave); }
+
+/* ---------- Usuários: excluir com confirmação ---------- */
+.botao-perigo { background: var(--erro); }
+@media (prefers-color-scheme: dark) { .botao-perigo { color: #0d1117; } }
+.link-perigo { color: var(--erro); }
+.confirmar { border: 2px solid var(--erro); margin: 16px 0; }
+.confirmar h2 { margin-top: 0; }

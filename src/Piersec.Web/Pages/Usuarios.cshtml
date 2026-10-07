@@ -19,6 +19,25 @@
 {
     <p class="erro" role="alert">@Model.Erro</p>
 }
+@if (Model.Mensagem is not null)
+{
+    <p class="selo-ok" role="status">@Model.Mensagem</p>
+}
+@if (Model.AConfirmar is { } alvo)
+{
+    <section class="card confirmar" role="alertdialog" aria-labelledby="titulo-confirmar">
+        <h2 id="titulo-confirmar">Excluir o usuário @alvo.Login (@alvo.Papel)?</h2>
+        <p>A pessoa deixa de conseguir entrar, e se estiver com o site aberto perde o acesso no próximo clique.
+            Os lotes, relatórios e o histórico da auditoria continuam guardados. Não dá para desfazer: para voltar, crie o usuário de novo.</p>
+        <div class="acoes">
+            <form method="post" asp-page-handler="Excluir" class="em-linha">
+                <input type="hidden" name="login" value="@alvo.Login">
+                <button type="submit" class="botao-perigo">Sim, excluir</button>
+            </form>
+            <a href="/Usuarios">Cancelar</a>
+        </div>
+    </section>
+}
 
 <form method="post" class="cartao">
     <label for="login">Novo usuário (login)</label>
@@ -35,7 +54,7 @@
 
 <h2>Cadastrados</h2>
 <table>
-    <thead><tr><th>Login</th><th>Papel</th><th>Situação</th><th>Criado em</th></tr></thead>
+    <thead><tr><th>Login</th><th>Papel</th><th>Situação</th><th>Criado em</th><th></th></tr></thead>
     <tbody>
         @foreach (var u in Model.Usuarios)
         {
@@ -44,6 +63,16 @@
                 <td>@u.Papel</td>
                 <td>@(u.BloqueadoAteUtc > Model.Agora ? "bloqueado (muitas tentativas)" : u.TrocarSenha ? "aguardando troca da senha inicial" : "ativo")</td>
                 <td>@Formatar.DataHora(u.CriadoEmUtc, fuso)</td>
+                <td>
+                    @if (string.Equals(u.Login, User.Identity?.Name, StringComparison.OrdinalIgnoreCase))
+                    {
+                        <span class="meta">você</span>
+                    }
+                    else
+                    {
+                        <a href="/Usuarios?excluir=@Uri.EscapeDataString(u.Login)" class="link-perigo">Excluir…</a>
+                    }
+                </td>
             </tr>
         }
     </tbody>
