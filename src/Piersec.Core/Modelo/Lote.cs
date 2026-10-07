@@ -26,6 +26,9 @@ public sealed record ResultadoArquivo
 
     public int RegistrosLidos { get; init; }
     public int RegistrosRejeitados { get; init; }
+
+    /// <summary>Linhas idênticas a outra do mesmo arquivo, contadas uma vez só (não entram em <see cref="RegistrosLidos"/>).</summary>
+    public int RegistrosRepetidos { get; init; }
     public int Lacunas { get; init; }
 
     /// <summary>Ajustes feitos na leitura (ex.: linhas desembrulhadas, datas remontadas), para transparência.</summary>
@@ -50,6 +53,9 @@ public sealed record Lote
 
     /// <summary>Indícios de que o lote mistura empresas ou ambientes diferentes (aviso, não erro).</summary>
     public IReadOnlyList<string> AvisosAmbiente { get; init; } = [];
+
+    /// <summary>Tipos de arquivo que a plataforma sabe ler mas que não vieram no lote (ex.: faltou o de alertas).</summary>
+    public IReadOnlyList<string> FontesAusentes { get; init; } = [];
 
     /// <summary>Verificações de consistência feitas antes de emitir o relatório (RF8).</summary>
     public ResultadoValidacao? Validacao { get; init; }

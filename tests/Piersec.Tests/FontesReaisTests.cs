@@ -34,7 +34,7 @@ public class FontesReaisTests
         var linhas = Enumerable.Range(1, 30).Select(i => $"srv-{i},SO,p,1,CVE-2099-{i:0000},d,Critical,9.0,ref");
         var lote = Fabrica.ProcessadorReal().Processar([Fabrica.Csv("vuln.csv", [CabecalhoVuln, .. linhas])]);
 
-        var daFonte = lote.Lacunas.Where(l => l.Campo == "fonte").ToList();
+        var daFonte = lote.Lacunas.Where(l => l.Campo == "fonte" && l.Arquivo == "vuln.csv").ToList(); // a lacuna do lote ("faltou o arquivo de alertas") é outra
         Assert.Equal(new AdaptadorVulnerabilidades().LimitacoesDaFonte.Count, daFonte.Count);
         Assert.All(daFonte, l => Assert.Null(l.Linha));
     }

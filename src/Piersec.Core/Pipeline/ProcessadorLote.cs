@@ -61,6 +61,8 @@ public sealed class ProcessadorLote(
         var avaliacao = _planejador.Avaliar(eventos, correlacoes, tiposMedidos);
         var avisosAmbiente = VerificadorAmbientes.Verificar(eventos, coletado.Arquivos);
         lacunas.AddRange(avisosAmbiente.Select(a => new Lacuna(ArquivoDoLote, null, "ambiente", a)));
+        var fontesAusentes = FontesAusentes(coletado.Arquivos);
+        lacunas.AddRange(fontesAusentes.Select(f => new Lacuna(ArquivoDoLote, null, "fonte", f)));
 
         return new Lote
         {
@@ -73,6 +75,7 @@ public sealed class ProcessadorLote(
             RegrasAvaliadas = avaliadas,
             Avaliacao = avaliacao,
             AvisosAmbiente = avisosAmbiente,
+            FontesAusentes = fontesAusentes,
         };
     }
 
@@ -135,8 +138,16 @@ public sealed class ProcessadorLote(
                     $"o arquivo tem exatamente {Formatar.Numero(linhasDeDados)} linhas de dados: número redondo pode indicar que a exportação foi cortada no limite da ferramenta"));
 
             var contexto = new ContextoConversao(nome, sha!, Ambiente(nome), anonimizador, datas, () => $"EV-{++sequencia:00000}");
-            var convertidos = adaptador.Converter(tabela, contexto);
+            var (convertidos, repetidos) = SemRepetidos(adaptador.Converter(tabela, contexto));
             eventos.AddRange(convertidos);
+            if (repetidos.Count > 0)
+            {
+                var (repetida, primeira) = repetidos[0];
+                avisos.Add($"{Formatar.Qtd(repetidos.Count, "linha repetida foi contada", "linhas repetidas foram contadas")} uma vez só " +
+                           $"(ex.: a linha {repetida.Evidencia.Linha} é idêntica à linha {primeira.Evidencia.Linha})");
+                lacunasArquivo.AddRange(repetidos.Select(r => new Lacuna(nome, r.Repetido.Evidencia.Linha, "linha",
+                    MotivoLinhaRepetida)));
+            }
 
             lacunasArquivo.AddRange(tabela.Erros.Select(e => new Lacuna(nome, e.Linha, "linha", e.Motivo)));
             lacunasArquivo.AddRange(tabela.Desalinhadas.Select(l => new Lacuna(nome, l.Numero, "linha",
@@ -153,6 +164,7 @@ public sealed class ProcessadorLote(
                 TipoEvento = adaptador.TipoDeEvento,
                 RegistrosLidos = convertidos.Count,
                 RegistrosRejeitados = tabela.Erros.Count + tabela.Desalinhadas.Count,
+                RegistrosRepetidos = repetidos.Count,
                 Lacunas = lacunasArquivo.Count,
                 Avisos = avisos,
             });
@@ -163,6 +175,57 @@ public sealed class ProcessadorLote(
                 "nenhum arquivo foi reconhecido: não há dados para avaliar (isso NÃO significa ambiente sem problemas)"));
 
         return new Coleta(resultados, eventos, lacunas);
+    }
+
+    /// <summary>
+    /// Fonte esperada ausente (RF7): a plataforma sabe ler este tipo de arquivo, mas nenhum veio no lote.
+    /// Sem isso, "nenhum alerta" poderia ser lido como "nenhum ataque", quando na verdade ninguém olhou.
+    /// Só avisa se ALGUM arquivo foi reconhecido (lote todo sem dados já tem a sua própria lacuna).
+    /// </summary>
+    private List<string> FontesAusentes(IReadOnlyList<ResultadoArquivo> arquivos)
+    {
+        var recebidos = arquivos.Where(a => a.Fonte is not null && a.TipoEvento is not null).Select(a => a.TipoEvento!).ToHashSet();
+        if (recebidos.Count == 0)
+            return [];
+        return _adaptadores.Where(a => a.TipoDeEvento is not null && !recebidos.Contains(a.TipoDeEvento))
+            .GroupBy(a => a.TipoDeEvento!)
+            .Select(g =>
+            {
+                var fator = regras.Score.Fatores.FirstOrDefault(f => f.TipoDeEvento == g.Key);
+                var pergunta = fator is null ? "" : $" Sem ele, a análise não responde: \"{fator.Pergunta}\"";
+                return $"Faltou o arquivo de {TiposEvento.Descricao(g.Key)}.{pergunta} " +
+                       "Arquivo que não veio NÃO significa que não há problemas.";
+            }).ToList();
+    }
+
+    public const string MotivoLinhaRepetida =
+        "linha idêntica a uma linha anterior do mesmo arquivo: contada uma vez só para não inflar os números";
+
+    private static readonly Evidencia SemEvidencia = new("", "", 0);
+
+    /// <summary>
+    /// Duplicidade: duas linhas do mesmo arquivo que viram eventos idênticos em TUDO (máquina, falha, programa, versão,
+    /// nota, data, regra, descrição...) são o mesmo registro exportado duas vezes. Fica a primeira; as outras viram lacuna.
+    /// Linhas parecidas mas com qualquer campo diferente (ex.: outra data) continuam sendo eventos separados.
+    /// </summary>
+    public static (List<EventoSeguranca> Unicos, List<(EventoSeguranca Repetido, EventoSeguranca Original)> Repetidos)
+        SemRepetidos(IReadOnlyList<EventoSeguranca> eventos)
+    {
+        var unicos = new List<EventoSeguranca>(eventos.Count);
+        var repetidos = new List<(EventoSeguranca, EventoSeguranca)>();
+        var vistos = new Dictionary<EventoSeguranca, EventoSeguranca>();
+        foreach (var e in eventos)
+        {
+            var conteudo = e with { Id = "", Evidencia = SemEvidencia }; // compara só o conteúdo, não a posição no arquivo
+            if (vistos.TryGetValue(conteudo, out var original))
+                repetidos.Add((e, original));
+            else
+            {
+                vistos[conteudo] = e;
+                unicos.Add(e);
+            }
+        }
+        return (unicos, repetidos);
     }
 
     /// <summary>Premissa da Fase 2: os dados não trazem cliente/ambiente, então o ambiente é o nome do arquivo.</summary>

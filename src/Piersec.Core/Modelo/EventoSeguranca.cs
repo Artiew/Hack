@@ -8,6 +8,14 @@ public static class TiposEvento
 {
     public const string Vulnerabilidade = "vulnerabilidade";
     public const string Alerta = "alerta";
+
+    /// <summary>Nome para o leitor (ex.: "faltou o arquivo de alertas do firewall").</summary>
+    public static string Descricao(string tipo) => tipo switch
+    {
+        Vulnerabilidade => "vulnerabilidades (falhas nos programas das máquinas)",
+        Alerta => "alertas do firewall",
+        _ => tipo,
+    };
 }
 
 /// <summary>

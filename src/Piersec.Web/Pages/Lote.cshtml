@@ -69,7 +69,7 @@
         </div>
     </section>
 
-    @foreach (var avisoAmbiente in lote.AvisosAmbiente)
+    @foreach (var avisoAmbiente in lote.FontesAusentes.Concat(lote.AvisosAmbiente))
     {
         <p class="aviso-forte" role="alert">⚠ @avisoAmbiente</p>
     }
@@ -169,7 +169,7 @@ else
 <h2>Arquivos recebidos</h2>
 <table>
     <thead>
-        <tr><th>Arquivo</th><th>Tipo reconhecido</th><th class="num">Tamanho</th><th class="num">Lidos</th><th class="num">Rejeitados</th><th class="num">Lacunas</th><th>SHA-256</th></tr>
+        <tr><th>Arquivo</th><th>Tipo reconhecido</th><th class="num">Tamanho</th><th class="num">Lidos</th><th class="num">Rejeitados</th><th class="num">Repetidos</th><th class="num">Lacunas</th><th>SHA-256</th></tr>
     </thead>
     <tbody>
         @foreach (var a in lote.Arquivos)
@@ -187,6 +187,7 @@ else
                 <td class="num">@Formatar.Bytes(a.TamanhoBytes)</td>
                 <td class="num">@Formatar.Numero(a.RegistrosLidos)</td>
                 <td class="num">@Formatar.Numero(a.RegistrosRejeitados)</td>
+                <td class="num">@Formatar.Numero(a.RegistrosRepetidos)</td>
                 <td class="num">@Formatar.Numero(a.Lacunas)</td>
                 <td><code title="@a.Sha256">@(a.Sha256 is null ? "—" : a.Sha256[..16] + "…")</code></td>
             </tr>

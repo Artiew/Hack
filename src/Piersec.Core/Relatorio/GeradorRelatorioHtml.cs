@@ -156,7 +156,7 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
               </div>
             </div>
             """);
-        foreach (var avisoAmbiente in lote.AvisosAmbiente)
+        foreach (var avisoAmbiente in lote.FontesAusentes.Concat(lote.AvisosAmbiente))
             sb.Append($"<p class=\"aviso-forte\">⚠ {H(avisoAmbiente)}</p>");
 
         sb.Append("<h3>O que é mais grave</h3><div class=\"riscos\">");
@@ -306,7 +306,7 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
 
     private void SecaoLimites(StringBuilder sb, Lote lote)
     {
-        var itens = new List<string>(lote.AvisosAmbiente);
+        var itens = new List<string>(lote.FontesAusentes.Concat(lote.AvisosAmbiente));
         if (lote.Avaliacao is { } a)
             foreach (var f in a.Score.Fatores.Where(f => f.Valor is null))
                 itens.Add($"\"{f.Nome}\" não foi medido: {f.Explicacao.Replace("Não medido: ", "")}");
@@ -417,14 +417,14 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
             <section>
             <h2>D. Fontes recebidas</h2>
             <table><thead><tr><th>Arquivo</th><th>Fonte reconhecida</th><th class="num">Tamanho</th>
-            <th class="num">Lidos</th><th class="num">Rejeitados</th><th class="num">Lacunas</th><th>SHA-256 (início)</th></tr></thead><tbody>
+            <th class="num">Lidos</th><th class="num">Rejeitados</th><th class="num">Repetidos</th><th class="num">Lacunas</th><th>SHA-256 (início)</th></tr></thead><tbody>
             """);
         foreach (var a in lote.Arquivos)
         {
             var fonte = a.Fonte is not null ? H(a.Fonte) : $"<strong>Não processado:</strong> {H(a.MotivoNaoProcessado)}";
             var sha = a.Sha256 is null ? "—" : $"<code>{H(a.Sha256[..16])}…</code>";
             sb.Append($"<tr><td>{H(a.Nome)}</td><td>{fonte}</td><td class=\"num\">{H(Formatar.Bytes(a.TamanhoBytes))}</td>" +
-                      $"<td class=\"num\">{Formatar.Numero(a.RegistrosLidos)}</td><td class=\"num\">{Formatar.Numero(a.RegistrosRejeitados)}</td>" +
+                      $"<td class=\"num\">{Formatar.Numero(a.RegistrosLidos)}</td><td class=\"num\">{Formatar.Numero(a.RegistrosRejeitados)}</td><td class=\"num\">{Formatar.Numero(a.RegistrosRepetidos)}</td>" +
                       $"<td class=\"num\">{Formatar.Numero(a.Lacunas)}</td><td>{sha}</td></tr>");
         }
         sb.Append("</tbody></table>");
