@@ -137,5 +137,10 @@ Requisito afetado: nenhum (ambiente) · Impacto: bloqueia o trabalho na faculdad
   4. testes: `dotnet exec tests\Piersec.Tests\bin\Release\net10.0\Piersec.Tests.dll` (o `dotnet test` usa o `Piersec.Tests.exe`, que o xUnit v3 gera mesmo com `UseAppHost=false`);
   5. site: o mesmo `dotnet run` do `rodar.ps1` (com `UseAppHost=false` o site roda por `dotnet`).
 - **Verificação:** build ✔ · 251/251 testes ✔ · site no ar em https://localhost:5001 ✔.
+- **Depois: contorno automático no `rodar.ps1`** (o `Abrir Plataforma.cmd` falhava no PC da faculdade). O script agora:
+  (a) acha o .NET 10 fora do PATH (`$HOME\.dotnet` ou `<disco>:\.dotnet`, como no pen drive), porque o PATH do PC só tinha o .NET 6;
+  (b) testa o `csc.exe`; se falhar, liga os passos 1–4 acima sozinho (o `csc.cmd` fica em `var\contorno-cet`); em casa nada muda;
+  (c) se o site já está no ar em outra janela, só abre o navegador (antes dava erro de porta ocupada).
+  Verificação: `rodar.cmd` num PowerShell limpo → .NET achado, contorno ligado, 252/252 testes, site no ar ✔; segunda execução → "já está no ar" ✔.
 - **Correção de verdade:** instalar as atualizações do Windows (precisa de administrador, não é nosso PC). Em casa o problema não aparece.
 - **Aprendizado:** quando só o `.exe` falha e o `.dll` funciona, o problema é a "casca" do programa e o Windows, não o código.
