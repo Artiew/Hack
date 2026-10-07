@@ -43,9 +43,10 @@ public sealed class ProcessadorLote(
     /// Etapas: coleta e padronização (por arquivo) → severidade e tipo de máquina → correlação →
     /// score, riscos principais e plano de ação (no lote inteiro).
     /// </summary>
-    public Lote Processar(IReadOnlyList<ArquivoEnviado> arquivos)
+    public Lote Processar(IReadOnlyList<ArquivoEnviado> arquivos, Action<EtapaCiclo>? etapa = null)
     {
         var coletado = Coletar(arquivos);
+        etapa?.Invoke(EtapaCiclo.Analisando);
 
         var lacunas = new List<Lacuna>(coletado.Lacunas);
         var servicos = new ClassificadorServicos(regras.Servicos); // um por lote: o cache dele não é compartilhado entre envios

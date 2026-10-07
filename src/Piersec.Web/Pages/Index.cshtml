@@ -1,60 +1,88 @@
 @page
 @model IndexModel
 @{
-    ViewData["Title"] = "Enviar arquivos";
+    ViewData["Title"] = "Visão geral";
     var fuso = Piersec.Core.Padronizacao.NormalizadorDatas.FusoBrasilia;
+    var podeEnviar = Sessao.PodeEnviar(User);
 }
 
-@if (Sessao.PodeEnviar(User))
+<h1>Visão geral</h1>
+
+@if (podeEnviar)
 {
-    <h1>Enviar arquivos (.csv)</h1>
-    <p class="meta">
-        Os arquivos enviados juntos formam um <strong>lote</strong> e são analisados em conjunto, gerando um único relatório.
-        Até @ProcessadorLote.MaximoArquivos arquivos de no máximo @Formatar.Bytes(ProcessadorLote.TamanhoMaximoBytes) cada.
-    </p>
+    <section class="card envio" aria-labelledby="titulo-envio">
+        <h2 id="titulo-envio">Enviar arquivos para análise</h2>
+        <p class="meta">
+            Os arquivos enviados juntos formam um <strong>lote</strong> e são analisados em conjunto, gerando um único relatório.
+            Até @ProcessadorLote.MaximoArquivos arquivos .csv de no máximo @Formatar.Bytes(ProcessadorLote.TamanhoMaximoBytes) cada.
+            O conteúdo nunca é executado: só lido como texto.
+        </p>
 
-    @if (Model.Erro is not null)
-    {
-        <p class="erro" role="alert">@Model.Erro</p>
-    }
+        @if (Model.Erro is not null)
+        {
+            <p class="erro" role="alert">@Model.Erro</p>
+        }
 
-    <form method="post" enctype="multipart/form-data" class="cartao">
-        <label for="arquivos">Escolha um ou mais arquivos CSV</label>
-        <input id="arquivos" name="arquivos" type="file" accept=".csv,text/csv" multiple required>
-        <button type="submit">Enviar e analisar</button>
-    </form>
+        <form id="form-envio" method="post" enctype="multipart/form-data">
+            <label class="zona-soltar" id="zona-soltar" for="arquivos">
+                <svg class="icone grande-icone" aria-hidden="true"><use href="#i-nuvem"/></svg>
+                <strong>Arraste os arquivos CSV para cá</strong>
+                <span class="meta">ou clique para escolher (pode escolher vários de uma vez)</span>
+                <input id="arquivos" name="arquivos" type="file" accept=".csv,text/csv" multiple required>
+            </label>
+            <ul id="lista-arquivos" class="lista-arquivos" aria-live="polite"></ul>
+            <button type="submit" id="botao-enviar">Enviar e analisar</button>
+        </form>
+
+        <section id="progresso" class="progresso" hidden aria-live="polite" aria-labelledby="titulo-progresso">
+            <h3 id="titulo-progresso">Analisando o lote…</h3>
+            <ol id="etapas" class="etapas"></ol>
+            <p id="erro-envio" class="erro" role="alert" hidden></p>
+            <p class="meta">Pode levar alguns segundos. Ao terminar, o resumo abre sozinho.</p>
+        </section>
+    </section>
 }
 else
 {
-    <h1>Relatórios</h1>
     <p class="meta">Escolha um lote para ver o resumo e abrir o relatório.</p>
 }
 
-<h2>Lotes anteriores</h2>
+<h2>Lotes analisados</h2>
 @if (Model.Lotes.Count == 0)
 {
-    <p class="vazio">Nenhum lote ainda. Envie os arquivos acima para gerar o primeiro relatório.</p>
+    <section class="estado-vazio">
+        <svg class="icone grande-icone" aria-hidden="true"><use href="#i-painel"/></svg>
+        <p><strong>Nenhum lote ainda.</strong></p>
+        <p class="meta">@(podeEnviar ? "Envie os arquivos acima para gerar o primeiro relatório." : "Quando a equipe enviar os arquivos, os relatórios aparecem aqui.")</p>
+    </section>
 }
 else
 {
-    <table>
-        <thead>
-            <tr><th>Data</th><th class="num">Score</th><th>Validação</th><th class="num">Arquivos</th><th class="num">Eventos</th><th class="num">Correlações</th><th class="num">Lacunas</th><th></th></tr>
-        </thead>
-        <tbody>
-            @foreach (var lote in Model.Lotes)
-            {
-                <tr>
-                    <td>@Formatar.DataHora(lote.CriadoEmUtc, fuso)@if (lote.RevisaoDe is not null) { <div class="meta">revisão de @lote.RevisaoDe[..8] (@Formatar.Qtd(lote.Ajustes, "ajuste humano", "ajustes humanos"))</div> }</td>
-                    <td class="num">@(lote.Score is { } sc ? Math.Round(sc).ToString("0") : "—")</td>
-                    <td>@(lote.VerificacoesTotal is null ? "—" : lote.Validado ? $"✔ {lote.VerificacoesAprovadas}/{lote.VerificacoesTotal}" : $"✖ {lote.VerificacoesAprovadas}/{lote.VerificacoesTotal}")</td>
-                    <td class="num">@lote.Arquivos</td>
-                    <td class="num">@Formatar.Numero(lote.Eventos)</td>
-                    <td class="num">@Formatar.Numero(lote.Correlacoes)</td>
-                    <td class="num">@Formatar.Numero(lote.Lacunas)</td>
-                    <td><a asp-page="/Lote" asp-route-id="@lote.Id">Abrir</a></td>
-                </tr>
-            }
-        </tbody>
-    </table>
+    <section class="card">
+        <table>
+            <thead>
+                <tr><th>Data</th><th class="num">Score</th><th>Faixa</th><th>Validação</th><th class="num">Arquivos</th><th class="num">Eventos</th><th class="num">Correlações</th><th class="num">Lacunas</th><th></th></tr>
+            </thead>
+            <tbody>
+                @foreach (var lote in Model.Lotes)
+                {
+                    <tr>
+                        <td>@Formatar.DataHora(lote.CriadoEmUtc, fuso)@if (lote.RevisaoDe is not null) { <div class="meta">revisão de @lote.RevisaoDe[..8] (@Formatar.Qtd(lote.Ajustes, "ajuste humano", "ajustes humanos"))</div> }</td>
+                        <td class="num"><strong>@(lote.Score is { } sc ? Math.Round(sc).ToString("0") : "—")</strong></td>
+                        <td>@(lote.Faixa ?? "—")</td>
+                        <td>@(lote.VerificacoesTotal is null ? "—" : lote.Validado ? $"✔ {lote.VerificacoesAprovadas}/{lote.VerificacoesTotal}" : $"✖ {lote.VerificacoesAprovadas}/{lote.VerificacoesTotal} NÃO VALIDADO")</td>
+                        <td class="num">@lote.Arquivos</td>
+                        <td class="num">@Formatar.Numero(lote.Eventos)</td>
+                        <td class="num">@Formatar.Numero(lote.Correlacoes)</td>
+                        <td class="num">@Formatar.Numero(lote.Lacunas)</td>
+                        <td><a asp-page="/Lote" asp-route-id="@lote.Id">Abrir →</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </section>
+}
+
+@section Scripts {
+    <script src="~/js/envio.js" asp-append-version="true"></script>
 }

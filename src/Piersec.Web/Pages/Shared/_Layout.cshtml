@@ -73,7 +73,7 @@
                     <div class="usuario">
                         <span><strong>@User.Identity!.Name</strong> <span class="meta">(@papel)</span></span>
                         <a href="/TrocarSenha" class="botao-discreto" aria-current="@Ativo("/TrocarSenha")"><svg class="icone"><use href="#i-chave"/></svg>Trocar senha</a>
-                        <form method="post" action="/Sair" class="em-linha">
+                        <form method="post" asp-page="/Sair" class="em-linha">
                             <button type="submit" class="botao-discreto"><svg class="icone"><use href="#i-sair"/></svg>Sair</button>
                         </form>
                     </div>

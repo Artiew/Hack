@@ -12,6 +12,9 @@ public sealed record ResultadoCiclo(Lote Lote, bool PdfGerado, string MensagemPd
 /// <summary>Resposta a um pedido de "discordar da severidade": a revisão criada, ou por que não foi criada.</summary>
 public sealed record ResultadoRevisao(bool Ok, string Mensagem, ResultadoCiclo? Ciclo = null);
 
+/// <summary>Etapas do ciclo, para a tela mostrar o progresso ("lendo os arquivos…", "gerando o PDF…").</summary>
+public enum EtapaCiclo { Lendo, Analisando, Validando, Operando, Relatorio, Pdf }
+
 /// <summary>
 /// O ciclo completo, sem depender da tela: processa o lote, compara com o lote anterior, VALIDA, salva e gera o
 /// relatório (HTML + PDF). Se a validação reprovar, o relatório sai marcado como "não validado"; se o relatório
@@ -28,11 +31,13 @@ public sealed class CicloAnalise(
 {
     public const int TamanhoMinimoMotivo = 10;
 
-    public async Task<ResultadoCiclo> ExecutarAsync(IReadOnlyList<ArquivoEnviado> arquivos, CancellationToken ct = default)
+    public async Task<ResultadoCiclo> ExecutarAsync(IReadOnlyList<ArquivoEnviado> arquivos, CancellationToken ct = default,
+        Action<EtapaCiclo>? etapa = null)
     {
-        var lote = processador.Processar(arquivos);
+        etapa?.Invoke(EtapaCiclo.Lendo);
+        var lote = processador.Processar(arquivos, etapa);
         var anterior = repositorio.Listar().FirstOrDefault(r => r.Score is not null);
-        return await FinalizarAsync(lote, anterior, ct);
+        return await FinalizarAsync(lote, anterior, ct, etapa);
     }
 
     /// <summary>
@@ -61,15 +66,17 @@ public sealed class CicloAnalise(
         return new(true, $"Revisão criada com {ajustes.Count} ajuste(s) de severidade.", ciclo);
     }
 
-    private async Task<ResultadoCiclo> FinalizarAsync(Lote lote, ResumoLote? anterior, CancellationToken ct)
+    private async Task<ResultadoCiclo> FinalizarAsync(Lote lote, ResumoLote? anterior, CancellationToken ct, Action<EtapaCiclo>? etapa = null)
     {
         lote = lote with { Comparacao = Comparar(lote, anterior) };
+        etapa?.Invoke(EtapaCiclo.Validando);
         lote = lote with { Validacao = validador.Validar(lote) };
 
         // Operação automática (simulada): roda depois da validação, porque lote não validado não dispara nada sozinho.
         // Em seguida, V13 confere por outro caminho que nenhuma ação feita sozinha furou as travas.
         if (operacao is not null)
         {
+            etapa?.Invoke(EtapaCiclo.Operando);
             var resultado = operacao.Processar(lote);
             lote = lote with
             {
@@ -79,6 +86,7 @@ public sealed class CicloAnalise(
         }
 
         // Relatório gerado e relido por inteiro antes de sair (V12). Se algo escapou do filtro, é retido.
+        etapa?.Invoke(EtapaCiclo.Relatorio);
         var html = gerador.Gerar(lote);
         var final = ValidadorLote.ConferirRelatorioFinal(html);
         lote = lote with { Validacao = new ResultadoValidacao([.. lote.Validacao!.Verificacoes, final]) };
@@ -94,6 +102,7 @@ public sealed class CicloAnalise(
             var caminhoHtml = Path.Combine(temporaria, "relatorio.html");
             var caminhoPdf = Path.Combine(temporaria, "relatorio.pdf");
             await File.WriteAllTextAsync(caminhoHtml, html, new UTF8Encoding(false), ct);
+            etapa?.Invoke(EtapaCiclo.Pdf);
             var pdf = await conversorPdf.GerarAsync(caminhoHtml, caminhoPdf, ct);
             if (pdf.Sucesso)
                 repositorio.SalvarRelatorio(lote.Id, "pdf", await File.ReadAllBytesAsync(caminhoPdf, ct));

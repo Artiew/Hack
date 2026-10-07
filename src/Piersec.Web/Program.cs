@@ -68,6 +68,7 @@ builder.Services.AddSingleton(sp => new RepositorioChamados(pastaDados, sp.GetRe
 builder.Services.AddSingleton(sp => new ServicoOperacao(regras, sp.GetRequiredService<RepositorioChamados>(), sp.GetRequiredService<TimeProvider>(), fuso));
 builder.Services.AddSingleton<CicloAnalise>();
 builder.Services.AddSingleton<LotesEmMemoria>();
+builder.Services.AddSingleton<ServicoEnvios>();
 
 // Acesso (RS1): usuários, auditoria e sessão por cookie protegido que expira.
 builder.Services.AddSingleton(new RepositorioUsuarios(pastaDados));

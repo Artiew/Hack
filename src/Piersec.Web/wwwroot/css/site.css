@@ -278,3 +278,23 @@ table.estreita-media { max-width: 900px; }
     .cabecalho-pagina h1 { font-size: 28px; overflow-wrap: anywhere; }
     .busca { width: 100%; }
 }
+
+/* ---------- Envio: arrastar e soltar + progresso (Fase 7) ---------- */
+.envio h2 { margin-top: 0; }
+.zona-soltar {
+    position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center;
+    padding: 40px 24px; margin: 16px 0; border: 2px dashed var(--linha); border-radius: 16px; background: var(--fundo); cursor: pointer;
+}
+.zona-soltar:hover, .zona-soltar.arrastando { border-color: var(--destaque); background: var(--destaque-claro); }
+.zona-soltar:focus-within { outline: 3px solid var(--destaque); outline-offset: 2px; }
+.zona-soltar .grande-icone { color: var(--destaque); }
+.zona-soltar input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.lista-arquivos { list-style: none; padding: 0; margin: 0 0 16px; }
+.lista-arquivos li { padding: 6px 0; border-bottom: 1px solid var(--linha); }
+button:disabled { opacity: .6; cursor: progress; }
+.progresso { margin-top: 20px; border-top: 1px solid var(--linha); padding-top: 12px; }
+.etapas { list-style: none; padding: 0; margin: 8px 0; }
+.etapas li { padding: 6px 0; }
+.etapas .feito { color: var(--baixa); }
+.etapas .atual { font-weight: 700; color: var(--destaque); }
+.etapas .pendente { color: var(--suave); }

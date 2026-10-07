@@ -105,3 +105,19 @@ Atualizado ao fim da **Fase 6** (serviços e prejuízo, visão técnica com rast
 | Discordar da severidade com motivo e recálculo | Ver RF4 (`RevisaoTests`, ponta a ponta no site) | ✅ |
 | Linha do tempo por ativo / cadeia usuário→máquina→servidor | Os dados não trazem usuário nem ligação entre máquinas; a lista por máquina (filtro) ordena por gravidade, não por tempo | ❌ |
 | MITRE ATT&CK como tabela de dados | Aguarda o catálogo de regras do mentor | ❓ |
+
+## Interface em cards (PROMPT 5.1 tela 2 e 5.3 · Fase 7)
+
+| Item | Evidência | Status |
+|---|---|---|
+| Barra lateral (busca + itens com ícone, ativo em azul-claro) e barra superior | `_Layout.cshtml`, ícones SVG próprios (nada da internet); prints claro/escuro | ✅ |
+| Chips de filtro em pílula com contagem | Achados na tela do lote (Todos · Crítica · Alta · Média · Baixa) e contadores da visão técnica | ✅ |
+| Cards horizontais (ícone, meta `ID · ativo · fonte`, título, tags de frameworks, "Ver mais"); selecionado com borda azul 2px e sombra | Riscos e achados na tela do lote (print conferido) | ✅ |
+| Coluna direita: score atual, próximas ações com prazo, aguardando aprovação | Tela do lote (print conferido) | ✅ |
+| Severidade sempre cor + ícone + texto, mesmos nomes em tudo | `Visual.Selo`; ícone muda de forma (triângulo, círculo, quadrado, círculo vazado) | ✅ |
+| Número grande com contexto | "50 de 100 · pior/melhor/igual à análise anterior" ou "primeira análise" | ✅ |
+| Tema claro/escuro, foco visível, teclado, responsivo | Variáveis CSS; "pular para o conteúdo"; prints claro, escuro e 500 px | ✅ |
+| Envio: arrastar e soltar + botão, vários arquivos | `wwwroot/js/envio.js` (arquivo próprio, CSP `script-src 'self'`); sem JavaScript o formulário normal funciona | ✅ |
+| Progresso por etapa | Envio em segundo plano (`ServicoEnvios`), 6 etapas; só quem enviou vê; no máximo 2 simultâneos (ponta a ponta) | ✅ |
+| Estados vazio / carregando / erro | Sem lote → card explicativo; carregando → etapas; erro → mensagem e botão liberado; fonte ausente → aviso | ✅ |
+| Contraste AA medido por ferramenta | Cores escolhidas para contraste alto, mas sem medição automática | ⚠️ |

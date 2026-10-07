@@ -105,3 +105,12 @@ Requisito afetado: nenhum (transporte do projeto) · Impacto: bloqueia o trabalh
 - **Correção:** `git bundle create <PEN>:\piersec.bundle HEAD main` (aqui, no `CLAUDE.md` e nas instruções do pen drive). `git pull <bundle> main` já funcionava, porque diz o ramo.
 - **Verificação:** clone em pasta nova seguindo as instruções → ramo `main`, último commit, 248/248 testes ✔.
 - **Aprendizado:** testar o pacote do jeito que ele vai ser usado (clone do zero), não só com `git bundle verify`.
+
+## P-013 · Botão "Sair" dava erro 400 (sem token anti-CSRF)
+Requisito afetado: RS1/RS2 · Impacto: degrada nota (sair não funcionava; a sessão só caía sozinha em 30 min)
+- **Sintoma × Esperado:** clicar em "Sair" → 400 × voltar para "Entrar". Achado ao testar o envio como executivo: a página tinha 0 tokens.
+- **Causa:** `<form method="post" action="/Sair">` — com `action` escrito à mão, o ASP.NET **não** coloca o token anti-CSRF no formulário; o servidor recusa o POST sem token (como deve).
+- **Por que os testes não pegaram:** o teste de "sair só por POST" usava o token tirado de outro formulário da página (o de envio), não o do próprio botão.
+- **Correção:** `asp-page="/Sair"` (o ASP.NET gera a URL e o token). Conferidos os outros formulários com `action`: são buscas por GET, que não precisam de token.
+- **Verificação:** ponta a ponta como executivo, com o token da PRÓPRIA página: Sair → 302 /Entrar; depois disso, `/` → /Entrar ✔.
+- **Aprendizado:** testar cada botão com o que a página dele oferece, como um usuário faria.
