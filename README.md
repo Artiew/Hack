@@ -1,8 +1,9 @@
 # Plataforma de risco — Hackathon Piersec 2026
 
 Protótipo que recebe CSVs de ferramentas de segurança, padroniza os dados, classifica a severidade com justificativa,
-correlaciona eventos por regras declaradas e gera sozinho um relatório executivo (HTML e PDF).
-**Estado atual: Fase 2** (fontes reais, severidade com justificativa, correlação). O que está provado fica em
+correlaciona eventos, calcula um score de risco de 0 a 100, monta um plano de ação e gera sozinho um relatório
+executivo (HTML e PDF) cuja primeira página é escrita para quem não é da área.
+**Estado atual: Fase 3** (score, priorização, plano de ação, relatório para leigo). O que está provado fica em
 [`docs/REQUISITOS.md`](docs/REQUISITOS.md); o que sabemos dos dados, em [`docs/FONTES.md`](docs/FONTES.md).
 
 > Uso restrito ao ambiente do hackathon. Não publique este repositório: os dados do desafio não podem sair da máquina.
@@ -29,13 +30,13 @@ O site fica em **https://localhost:5001**. Se algum teste falhar, o site não so
 src/Piersec.Core/        regras de negócio, sem tela
   Coleta/                leitor de CSV + um adaptador por fonte (IAdaptadorFonte)
   Padronizacao/          datas → UTC, nomes de ativos, anonimização
-  Analise/               regras (JSON), severidade com justificativa, motor de correlação
+  Analise/               regras (JSON), severidade, correlação, tipo de máquina, score, plano de ação
   Pipeline/              lote: coleta → padronização → severidade → correlação; ciclo completo
   Armazenamento/         lotes salvos em var/lotes/{id}/
   Relatorio/             HTML do relatório e conversão para PDF pelo navegador
 src/Piersec.Web/         telas (ASP.NET Core Razor Pages)
 tests/Piersec.Tests/     testes automatizados (xUnit v3), sempre com dados fictícios
-regras/                  severidade.json, correlacao.json, frameworks.json (editáveis; validados ao subir)
+regras/                  severidade, correlacao, frameworks, ativos, score, plano (.json; editáveis; validados ao subir)
 exemplos/                CSVs fictícios para demonstração
 dados/                   CSVs do desafio (fora do git)
 var/                     dados gerados (fora do git)

@@ -1,0 +1,14 @@
+{
+  "descricao": "Como o plano de ação é montado. O impacto de cada ação é calculado contando as falhas que ela elimina; prazos e limites de esforço são premissas da equipe.",
+  "prazoDias": { "Critica": 7, "Alta": 30, "Media": 90, "Baixa": 180 },
+  "prazoInvestigacaoDias": 2,
+  "prazoMedicaoDias": 30,
+  "programasNaPrimeiraAcao": 3,
+  "maquinasNaSegundaAcao": 10,
+  "esforco": {
+    "baixoAteAtualizacoes": 400,
+    "medioAteAtualizacoes": 1500
+  },
+  "impactoAltoAPartirDePercentual": 25,
+  "impactoMedioAPartirDePercentual": 10
+}

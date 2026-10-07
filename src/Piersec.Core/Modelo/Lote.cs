@@ -18,6 +18,9 @@ public sealed record ResultadoArquivo
     /// <summary>Fonte reconhecida; nula quando o arquivo não foi processado.</summary>
     public string? Fonte { get; init; }
 
+    /// <summary>Tipo de evento que a fonte produz (ex.: "vulnerabilidade"), para saber o que foi medido.</summary>
+    public string? TipoEvento { get; init; }
+
     /// <summary>Por que o arquivo não foi processado (extensão, tamanho, cabeçalho desconhecido...).</summary>
     public string? MotivoNaoProcessado { get; init; }
 
@@ -42,21 +45,29 @@ public sealed record Lote
     public required IReadOnlyList<Lacuna> Lacunas { get; init; }
     public IReadOnlyList<Correlacao> Correlacoes { get; init; } = [];
     public IReadOnlyList<RegraAvaliada> RegrasAvaliadas { get; init; } = [];
+    public Avaliacao? Avaliacao { get; init; }
+    public ComparacaoLote? Comparacao { get; init; }
 
     /// <summary>Quantos eventos têm a severidade informada (null = sem severidade).</summary>
     public int ContarPorSeveridade(Severidade? severidade) =>
         Eventos.Count(e => e.Severidade == severidade);
 }
 
-/// <summary>Versão leve do lote para listas (não carrega os eventos).</summary>
+/// <summary>Versão leve do lote para listas e comparação (não carrega os eventos).</summary>
 public sealed record ResumoLote(
     string Id,
     DateTimeOffset CriadoEmUtc,
     int Arquivos,
     int Eventos,
     int Lacunas,
-    int Correlacoes)
+    int Correlacoes,
+    double? Score = null,
+    string? Faixa = null,
+    IReadOnlyDictionary<string, double?>? Fatores = null)
 {
     public static ResumoLote De(Lote lote) => new(
-        lote.Id, lote.CriadoEmUtc, lote.Arquivos.Count, lote.Eventos.Count, lote.Lacunas.Count, lote.Correlacoes.Count);
+        lote.Id, lote.CriadoEmUtc, lote.Arquivos.Count, lote.Eventos.Count, lote.Lacunas.Count, lote.Correlacoes.Count,
+        lote.Avaliacao?.Score.Valor,
+        lote.Avaliacao?.Score.Faixa,
+        lote.Avaliacao?.Score.Fatores.ToDictionary(f => f.Id, f => f.Valor));
 }

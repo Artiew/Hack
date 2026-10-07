@@ -17,6 +17,8 @@ public sealed class AdaptadorVulnerabilidades : IAdaptadorFonte
 
     public string Nome => "Vulnerabilidades (scanner)";
 
+    public string TipoDeEvento => TiposEvento.Vulnerabilidade;
+
     public IReadOnlyList<string> LimitacoesDaFonte =>
     [
         "a fonte não informa quando a falha foi detectada (sem data)",

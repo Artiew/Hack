@@ -90,6 +90,11 @@ button, .botao {
 
 .acoes { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 16px 0; }
 
+.resumo { align-items: flex-start; gap: 24px; }
+.resumo .score { min-width: 160px; }
+.resumo .grande { font-size: 56px; font-weight: 800; line-height: 1; }
+.resumo p { margin: 4px 0; }
+
 table { width: 100%; border-collapse: collapse; background: var(--superficie); }
 table.estreita { max-width: 360px; }
 th, td { border: 1px solid var(--linha); padding: 6px 10px; text-align: left; vertical-align: top; }

@@ -34,9 +34,14 @@ public sealed class ProcessadorLote(
 
     private readonly IReadOnlyList<IAdaptadorFonte> _adaptadores = adaptadores.ToList();
     private readonly ClassificadorSeveridade _classificador = new(regras.Severidade);
+    private readonly ClassificadorAtivos _tiposDeAtivo = new(regras.Ativos);
     private readonly MotorCorrelacao _motor = new();
+    private readonly PlanejadorAvaliacao _planejador = new(regras, new CalculadoraScore(regras.Score, regras.Ativos));
 
-    /// <summary>Etapas: coleta e padronização (por arquivo) → severidade → correlação (no lote inteiro).</summary>
+    /// <summary>
+    /// Etapas: coleta e padronização (por arquivo) → severidade e tipo de máquina → correlação →
+    /// score, riscos principais e plano de ação (no lote inteiro).
+    /// </summary>
     public Lote Processar(IReadOnlyList<ArquivoEnviado> arquivos)
     {
         var coletado = Coletar(arquivos);
@@ -46,12 +51,14 @@ public sealed class ProcessadorLote(
         foreach (var bruto in coletado.Eventos)
         {
             var (evento, lacuna) = _classificador.Classificar(bruto);
-            eventos.Add(evento);
+            eventos.Add(evento with { TipoAtivo = _tiposDeAtivo.Classificar(evento) });
             if (lacuna is not null)
                 lacunas.Add(lacuna);
         }
 
         var (correlacoes, avaliadas) = _motor.Correlacionar(eventos, regras.Correlacoes);
+        var tiposMedidos = coletado.Arquivos.Where(a => a.TipoEvento is not null).Select(a => a.TipoEvento!).ToHashSet();
+        var avaliacao = _planejador.Avaliar(eventos, correlacoes, tiposMedidos);
 
         return new Lote
         {
@@ -62,6 +69,7 @@ public sealed class ProcessadorLote(
             Lacunas = lacunas,
             Correlacoes = correlacoes,
             RegrasAvaliadas = avaliadas,
+            Avaliacao = avaliacao,
         };
     }
 
@@ -136,6 +144,7 @@ public sealed class ProcessadorLote(
                 TamanhoBytes = arquivo.Tamanho,
                 Sha256 = sha,
                 Fonte = adaptador.Nome,
+                TipoEvento = adaptador.TipoDeEvento,
                 RegistrosLidos = convertidos.Count,
                 RegistrosRejeitados = tabela.Erros.Count + tabela.Desalinhadas.Count,
                 Lacunas = lacunasArquivo.Count,

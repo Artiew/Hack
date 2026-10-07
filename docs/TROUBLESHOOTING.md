@@ -66,3 +66,19 @@ Requisito afetado: RF2 · Impacto: degrada nota (texto corrompido em silêncio)
 - **Teste que falha antes:** `Arquivo_em_Windows1252_mantem_aspas_curvas_e_acentos` (saía `"Ação teste  ok"`).
 - **Correção mínima:** plano B passa de Latin-1 para Windows-1252 (já vem no .NET).
 - **Verificação:** teste ✔ · suíte 105/105 ✔ · dados reais: 0 eventos com caractere invisível ✔.
+
+## P-008 · Score dizia "risco baixo" com 100% das máquinas com falha crítica
+Requisito afetado: RF5 / clareza para o executivo · Impacto: degrada nota (contradição na página 1)
+- **Sintoma × Esperado:** exemplos fictícios: "15 de 100 — risco baixo — poucos problemas" ao lado de "falhas graves em 100% das máquinas" × score coerente com os riscos.
+- **Isolamento:** etapa = score (fórmula do fator "Falhas nos programas").
+- **Causa:** cada falha crítica valia 10 pontos de 100 por máquina; uma máquina com 1 falha crítica (já invadível) ficava em 10.
+- **Correção:** a máquina recebe a nota da sua **pior** falha (crítica 70, alta 50, média 25, baixa 10) + 3 por falha a mais, até 100 (`regras/score.json`).
+- **Teste que trava:** `Score_e_coerente_com_os_riscos_quando_todas_as_maquinas_tem_falha_critica`, `Uma_falha_critica_ja_deixa_a_maquina_em_risco_alto`.
+- **Verificação:** exemplos: 50 (Elevado) · dados reais: 74 (Alto) · suíte 135/135 ✔.
+- **Aprendizado:** conferir o relatório como o leitor leria; testes de unidade não pegam contradição entre seções.
+
+## P-009 · Projeção "o score cairia para X" ignorava máquinas corrigidas
+Requisito afetado: plano de remediação · Impacto: degrada nota (número enganoso)
+- **Sintoma × Esperado:** ao simular as correções, máquinas sem falhas restantes sumiam da média (podendo até subir o score) × contar como 0.
+- **Correção:** `CalculadoraScore.Calcular(..., maquinasConhecidas)` mantém a população original na projeção.
+- **Teste:** `Na_projecao_maquina_corrigida_conta_como_zero_e_nao_some_da_media` ✔.

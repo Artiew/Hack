@@ -1,0 +1,32 @@
+{
+  "direcao": "0 = risco mínimo, 100 = risco máximo",
+  "descricao": "O score é a média ponderada dos fatores MEDIDOS. Fator sem dados aparece como 'não medido' e não entra na conta (não vira zero); por isso a confiança do score depende de quanto do peso foi medido.",
+  "fatores": [
+    { "id": "vulnerabilidades", "nome": "Falhas nos programas", "pergunta": "Os programas das máquinas têm falhas conhecidas?", "peso": 35, "tipoDeEvento": "vulnerabilidade",
+      "semDados": "nenhum arquivo do scanner de vulnerabilidades foi enviado neste lote" },
+    { "id": "ameacas", "nome": "Sinais de ataque", "pergunta": "Há tentativas de ataque sendo registradas?", "peso": 20, "tipoDeEvento": "alerta",
+      "semDados": "nenhum arquivo de alertas foi enviado neste lote" },
+    { "id": "exposicao", "nome": "Exposição à internet", "pergunta": "Quantas máquinas podem ser alcançadas direto pela internet?", "peso": 20,
+      "semDados": "nenhuma fonte informa quais máquinas estão abertas para a internet" },
+    { "id": "erroHumano", "nome": "Erro humano", "pergunta": "As pessoas caem em golpes, como e-mails falsos (phishing)?", "peso": 15,
+      "semDados": "não foram enviados dados de e-mail nem de simulação de phishing" },
+    { "id": "deteccao", "nome": "Detecção e resposta", "pergunta": "A empresa percebe e reage rápido quando algo acontece?", "peso": 10,
+      "semDados": "os dados não informam a cobertura do monitoramento nem o tempo de resposta" }
+  ],
+  "notaPelaPiorFalha": { "Critica": 70, "Alta": 50, "Media": 25, "Baixa": 10 },
+  "pontosPorFalhaAdicional": 3,
+  "tetoPorMaquina": 100,
+  "pesoPorAlerta": { "Critica": 1.0, "Alta": 1.0, "Media": 0.5, "Baixa": 0.0 },
+  "faixas": [
+    { "minimo": 80, "nome": "Crítico", "frase": "O ambiente está muito exposto: um ataque tem grandes chances de dar certo." },
+    { "minimo": 60, "nome": "Alto", "frase": "Há problemas graves e conhecidos espalhados; um ataque tem boas chances de dar certo." },
+    { "minimo": 40, "nome": "Elevado", "frase": "Há problemas importantes que precisam de um plano com prazo." },
+    { "minimo": 20, "nome": "Moderado", "frase": "Há pontos a corrigir, mas nada indica urgência imediata." },
+    { "minimo": 0, "nome": "Baixo", "frase": "Poucos problemas encontrados nas fontes analisadas." }
+  ],
+  "confianca": [
+    { "minimoPercentualMedido": 80, "nome": "alta" },
+    { "minimoPercentualMedido": 50, "nome": "média" },
+    { "minimoPercentualMedido": 0, "nome": "baixa" }
+  ]
+}

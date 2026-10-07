@@ -33,6 +33,9 @@ public sealed record EventoSeguranca
     /// <summary>Nome do ativo já normalizado (maiúsculas, sem espaços sobrando).</summary>
     public required string Ativo { get; init; }
 
+    /// <summary>Tipo do ativo (ex.: "servidor", "estacao", "rede"), deduzido por regras/ativos.json.</summary>
+    public string? TipoAtivo { get; init; }
+
     /// <summary>Usuário anonimizado na entrada (LGPD / RS5). O nome real nunca é guardado.</summary>
     public string? UsuarioAnonimo { get; init; }
 

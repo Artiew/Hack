@@ -24,6 +24,53 @@
     }
 </div>
 
+@if (lote.Avaliacao is { } av)
+{
+    var s = av.Score;
+    <section class="cartao resumo">
+        <div class="score">
+            <span class="grande">@(s.Valor is { } v ? Math.Round(v).ToString("0") : "—")</span><span class="meta"> de 100</span>
+            <div><strong>Risco @s.Faixa.ToLowerInvariant()</strong> <span class="meta">(100 = risco máximo · confiança @s.Confianca)</span></div>
+        </div>
+        <div>
+            <p><strong>@av.FraseSituacao</strong></p>
+            @if (lote.Comparacao is { } c)
+            {
+                <p class="meta">Antes: @Math.Round(c.ScoreAnterior).ToString("0") (@(c.Diferenca > 0 ? "+" : "")@Math.Round(c.Diferenca).ToString("0") ponto(s)) — @c.Motivo.</p>
+            }
+            @if (av.FraseUmaCoisa is not null)
+            {
+                <p>Se fizer só uma coisa: @av.FraseUmaCoisa</p>
+            }
+        </div>
+    </section>
+
+    <h2>O que é mais grave</h2>
+    <ol>
+        @foreach (var r in av.Riscos)
+        {
+            <li><strong>@r.Titulo.</strong> @r.OQueE <em>@r.ComoResolver</em></li>
+        }
+    </ol>
+
+    <h2>O que fazer agora</h2>
+    <table>
+        <thead><tr><th>#</th><th>Ação</th><th>Resultado esperado</th><th>Esforço</th><th>Prazo</th></tr></thead>
+        <tbody>
+            @foreach (var acao in av.Acoes)
+            {
+                <tr>
+                    <td class="num">@acao.Ordem</td>
+                    <td><strong>@acao.Titulo</strong><div class="meta">@acao.Quadrante</div></td>
+                    <td>@acao.Impacto</td>
+                    <td>@(acao.Esforco switch { Nivel.Alto => "alto", Nivel.Medio => "médio", _ => "baixo" })</td>
+                    <td>até @acao.PrazoDias dias</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
 <h2>Eventos por severidade</h2>
 <table class="estreita">
     <tbody>

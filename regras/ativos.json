@@ -1,0 +1,15 @@
+{
+  "premissa": "Os dados não dizem o que cada máquina faz. A plataforma deduz o tipo pelo sistema operacional informado pelo scanner; máquinas Linux foram tratadas como servidores (uso mais comum em empresas).",
+  "regras": [
+    { "sistemaContem": ["server"], "tipo": "servidor" },
+    { "sistemaContem": ["linux", "ubuntu", "debian", "centos", "red hat", "rhel", "rocky", "alma", "suse", "fedora", "amazon", "oracle"], "tipo": "servidor" },
+    { "sistemaContem": ["windows", "mac", "darwin"], "tipo": "estacao" }
+  ],
+  "tipoDosAlertas": "rede",
+  "tipos": {
+    "servidor": { "singular": "servidor", "plural": "servidores", "pesoNoScore": 2, "porQue": "um servidor sustenta sistemas usados por muitas pessoas; se ele cair ou for invadido, o impacto é maior" },
+    "estacao": { "singular": "computador de funcionário", "plural": "computadores de funcionários", "pesoNoScore": 1, "porQue": "costuma ser a porta de entrada de golpes e programas maliciosos" },
+    "rede": { "singular": "equipamento de rede", "plural": "equipamentos de rede", "pesoNoScore": 1, "porQue": "protege a entrada da rede (ex.: firewall)" },
+    "desconhecido": { "singular": "máquina de tipo desconhecido", "plural": "máquinas de tipo desconhecido", "pesoNoScore": 1, "porQue": "sem sistema operacional informado" }
+  }
+}

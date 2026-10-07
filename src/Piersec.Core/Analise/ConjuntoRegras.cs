@@ -98,12 +98,18 @@ public sealed partial class ConjuntoRegras
     public required IReadOnlyList<RegraCorrelacao> Correlacoes { get; init; }
     public required IReadOnlyDictionary<string, FrameworksDoTipo> FrameworksPorTipo { get; init; }
     public required IReadOnlyDictionary<string, string> NomesControles { get; init; }
+    public required RegrasAtivos Ativos { get; init; }
+    public required RegrasScore Score { get; init; }
+    public required RegrasPlano Plano { get; init; }
 
     public static ConjuntoRegras Carregar(string pasta)
     {
         var severidade = Ler<SeveridadeJson>(pasta, "severidade.json");
         var correlacao = Ler<CorrelacaoJson>(pasta, "correlacao.json");
         var frameworks = Ler<FrameworksJson>(pasta, "frameworks.json");
+        var ativos = Ler<RegrasAtivos>(pasta, "ativos.json");
+        var score = Ler<RegrasScore>(pasta, "score.json");
+        var plano = Ler<RegrasPlano>(pasta, "plano.json");
 
         var regras = new ConjuntoRegras
         {
@@ -116,6 +122,9 @@ public sealed partial class ConjuntoRegras
             Correlacoes = correlacao.Regras ?? throw Erro("correlacao.json", "falta 'regras'"),
             FrameworksPorTipo = frameworks.PorTipo ?? new Dictionary<string, FrameworksDoTipo>(),
             NomesControles = frameworks.Controles ?? new Dictionary<string, string>(),
+            Ativos = ativos,
+            Score = score,
+            Plano = plano,
         };
         regras.Validar();
         return regras;
@@ -123,6 +132,26 @@ public sealed partial class ConjuntoRegras
 
     private void Validar()
     {
+        if (!Ativos.Tipos.ContainsKey(RegrasAtivos.Desconhecido))
+            throw Erro("ativos.json", $"'tipos' precisa ter '{RegrasAtivos.Desconhecido}'");
+        foreach (var tipo in Ativos.Regras.Select(r => r.Tipo).Append(Ativos.TipoDosAlertas))
+            if (!Ativos.Tipos.ContainsKey(tipo))
+                throw Erro("ativos.json", $"o tipo '{tipo}' é usado mas não está em 'tipos'");
+
+        if (Score.Fatores.Count == 0 || Score.Fatores.Any(f => f.Peso <= 0))
+            throw Erro("score.json", "precisa de fatores, todos com peso maior que zero");
+        if (Score.Fatores.GroupBy(f => f.Id).Any(g => g.Count() > 1))
+            throw Erro("score.json", "fatores com id repetido");
+        foreach (var s in SeveridadeExtensoes.DoMaisGrave)
+        {
+            if (!Score.NotaPelaPiorFalha.ContainsKey(s) || !Score.PesoPorAlerta.ContainsKey(s))
+                throw Erro("score.json", $"'notaPelaPiorFalha' e 'pesoPorAlerta' precisam ter a severidade {s}");
+            if (!Plano.PrazoDias.ContainsKey(s))
+                throw Erro("plano.json", $"'prazoDias' precisa ter a severidade {s}");
+        }
+        if (Score.Faixas.Min(f => f.Minimo) != 0 || Score.Confianca.Min(c => c.MinimoPercentualMedido) != 0)
+            throw Erro("score.json", "a menor faixa e o menor nível de confiança precisam começar em 0");
+
         foreach (var s in SeveridadeExtensoes.DoMaisGrave)
             if (!Severidade.Textos.ContainsKey(s))
                 throw Erro("severidade.json", $"'textos' não tem a severidade {s}");

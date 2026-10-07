@@ -1,23 +1,23 @@
 agent.name,host.os.name,package.name,package.version,vulnerability.id,vulnerability.description,vulnerability.severity,vulnerability.score.base,vulnerability.reference
-FICT-SRV-01,Sistema Ficticio 1,pacote-alfa,1.0.2,CVE-2099-0001,"Falha ficticia no pacote-alfa, permite execucao remota",Critical,9.8,https://exemplo.invalid/CVE-2099-0001
-FICT-SRV-02,Sistema Ficticio 1,pacote-alfa,1.0.2,CVE-2099-0001,"Falha ficticia no pacote-alfa, permite execucao remota",Critical,9.8,https://exemplo.invalid/CVE-2099-0001
-FICT-SRV-03,Sistema Ficticio 1,pacote-alfa,1.0.2,CVE-2099-0001,"Falha ficticia no pacote-alfa, permite execucao remota",Critical,9.8,https://exemplo.invalid/CVE-2099-0001
-FICT-SRV-04,Sistema Ficticio 1,pacote-alfa,1.0.2,CVE-2099-0001,"Falha ficticia no pacote-alfa, permite execucao remota",Critical,9.8,https://exemplo.invalid/CVE-2099-0001
-FICT-SRV-05,Sistema Ficticio 1,pacote-alfa,1.0.2,CVE-2099-0001,"Falha ficticia no pacote-alfa, permite execucao remota",Critical,9.8,https://exemplo.invalid/CVE-2099-0001
-FICT-SRV-06,Sistema Ficticio 1,pacote-alfa,1.0.2,CVE-2099-0001,"Falha ficticia no pacote-alfa, permite execucao remota",Critical,9.8,https://exemplo.invalid/CVE-2099-0001
-FICT-SRV-07,Sistema Ficticio 1,pacote-alfa,1.0.2,CVE-2099-0001,"Falha ficticia no pacote-alfa, permite execucao remota",Critical,9.8,https://exemplo.invalid/CVE-2099-0001
-FICT-SRV-08,Sistema Ficticio 1,pacote-alfa,1.0.2,CVE-2099-0001,"Falha ficticia no pacote-alfa, permite execucao remota",Critical,9.8,https://exemplo.invalid/CVE-2099-0001
-FICT-SRV-09,Sistema Ficticio 1,pacote-alfa,1.0.2,CVE-2099-0001,"Falha ficticia no pacote-alfa, permite execucao remota",Critical,9.8,https://exemplo.invalid/CVE-2099-0001
-FICT-SRV-10,Sistema Ficticio 1,pacote-alfa,1.0.2,CVE-2099-0001,"Falha ficticia no pacote-alfa, permite execucao remota",Critical,9.8,https://exemplo.invalid/CVE-2099-0001
-FICT-SRV-11,Sistema Ficticio 1,pacote-alfa,1.0.2,CVE-2099-0001,"Falha ficticia no pacote-alfa, permite execucao remota",Critical,9.8,https://exemplo.invalid/CVE-2099-0001
-FICT-SRV-12,Sistema Ficticio 1,pacote-alfa,1.0.2,CVE-2099-0001,"Falha ficticia no pacote-alfa, permite execucao remota",Critical,9.8,https://exemplo.invalid/CVE-2099-0001
-FICT-SRV-01,Sistema Ficticio 1,pacote-beta,2.3,CVE-2099-0101,Falha ficticia 1 no pacote-beta,Critical,9.1,https://exemplo.invalid/CVE-2099-0101
-FICT-SRV-01,Sistema Ficticio 1,pacote-beta,2.3,CVE-2099-0102,Falha ficticia 2 no pacote-beta,Critical,9.4,https://exemplo.invalid/CVE-2099-0102
-FICT-SRV-01,Sistema Ficticio 1,pacote-beta,2.3,CVE-2099-0103,Falha ficticia 3 no pacote-beta,Critical,9.0,https://exemplo.invalid/CVE-2099-0103
-FICT-SRV-01,Sistema Ficticio 1,pacote-beta,2.3,CVE-2099-0104,Falha ficticia 4 no pacote-beta,Critical,9.9,https://exemplo.invalid/CVE-2099-0104
-FICT-SRV-01,Sistema Ficticio 1,pacote-beta,2.3,CVE-2099-0105,Falha ficticia 5 no pacote-beta,Critical,10,https://exemplo.invalid/CVE-2099-0105
-FICT-SRV-02,Sistema Ficticio 2,pacote-gama,3.1,CVE-2099-0201,Falha ficticia de nota alta,Critical,"7,5",https://exemplo.invalid/CVE-2099-0201
-FICT-SRV-03,Sistema Ficticio 2,pacote-gama,3.1,CVE-2099-0202,Falha ficticia de nota media,Critical,5.3,https://exemplo.invalid/CVE-2099-0202
-FICT-SRV-04,Sistema Ficticio 3,pacote-delta,0.9,CVE-2099-0203,Nota propositalmente invalida,Critical,n/a,https://exemplo.invalid/CVE-2099-0203
-,Sistema Ficticio 3,pacote-delta,0.9,CVE-2099-0204,Maquina propositalmente em branco,Critical,6.1,https://exemplo.invalid/CVE-2099-0204
-FICT-SRV-05,Sistema Ficticio 3,pacote-delta,0.9,CVE-2099-0205,"Texto malicioso de teste: <script>alert('xss')</script>",Critical,4.2,https://exemplo.invalid/CVE-2099-0205
+FICT-SRV-01,Microsoft Windows Server 2019 (ficticio),pacote-alfa,1.0.2,CVE-2099-0001,"Falha ficticia no pacote-alfa, permite execucao remota",Critical,9.8,https://exemplo.invalid/CVE-2099-0001
+FICT-SRV-02,Microsoft Windows Server 2019 (ficticio),pacote-alfa,1.0.2,CVE-2099-0001,"Falha ficticia no pacote-alfa, permite execucao remota",Critical,9.8,https://exemplo.invalid/CVE-2099-0001
+FICT-SRV-03,Microsoft Windows Server 2019 (ficticio),pacote-alfa,1.0.2,CVE-2099-0001,"Falha ficticia no pacote-alfa, permite execucao remota",Critical,9.8,https://exemplo.invalid/CVE-2099-0001
+FICT-SRV-04,Ubuntu 22.04 LTS (ficticio),pacote-alfa,1.0.2,CVE-2099-0001,"Falha ficticia no pacote-alfa, permite execucao remota",Critical,9.8,https://exemplo.invalid/CVE-2099-0001
+FICT-SRV-05,Microsoft Windows 10 Pro (ficticio),pacote-alfa,1.0.2,CVE-2099-0001,"Falha ficticia no pacote-alfa, permite execucao remota",Critical,9.8,https://exemplo.invalid/CVE-2099-0001
+FICT-SRV-06,Microsoft Windows 10 Pro (ficticio),pacote-alfa,1.0.2,CVE-2099-0001,"Falha ficticia no pacote-alfa, permite execucao remota",Critical,9.8,https://exemplo.invalid/CVE-2099-0001
+FICT-SRV-07,Microsoft Windows 10 Pro (ficticio),pacote-alfa,1.0.2,CVE-2099-0001,"Falha ficticia no pacote-alfa, permite execucao remota",Critical,9.8,https://exemplo.invalid/CVE-2099-0001
+FICT-SRV-08,Microsoft Windows 10 Pro (ficticio),pacote-alfa,1.0.2,CVE-2099-0001,"Falha ficticia no pacote-alfa, permite execucao remota",Critical,9.8,https://exemplo.invalid/CVE-2099-0001
+FICT-SRV-09,Microsoft Windows 10 Pro (ficticio),pacote-alfa,1.0.2,CVE-2099-0001,"Falha ficticia no pacote-alfa, permite execucao remota",Critical,9.8,https://exemplo.invalid/CVE-2099-0001
+FICT-SRV-10,Microsoft Windows 10 Pro (ficticio),pacote-alfa,1.0.2,CVE-2099-0001,"Falha ficticia no pacote-alfa, permite execucao remota",Critical,9.8,https://exemplo.invalid/CVE-2099-0001
+FICT-SRV-11,Microsoft Windows 10 Pro (ficticio),pacote-alfa,1.0.2,CVE-2099-0001,"Falha ficticia no pacote-alfa, permite execucao remota",Critical,9.8,https://exemplo.invalid/CVE-2099-0001
+FICT-SRV-12,Microsoft Windows 10 Pro (ficticio),pacote-alfa,1.0.2,CVE-2099-0001,"Falha ficticia no pacote-alfa, permite execucao remota",Critical,9.8,https://exemplo.invalid/CVE-2099-0001
+FICT-SRV-01,Microsoft Windows Server 2019 (ficticio),pacote-beta,2.3,CVE-2099-0101,Falha ficticia 1 no pacote-beta,Critical,9.1,https://exemplo.invalid/CVE-2099-0101
+FICT-SRV-01,Microsoft Windows Server 2019 (ficticio),pacote-beta,2.3,CVE-2099-0102,Falha ficticia 2 no pacote-beta,Critical,9.4,https://exemplo.invalid/CVE-2099-0102
+FICT-SRV-01,Microsoft Windows Server 2019 (ficticio),pacote-beta,2.3,CVE-2099-0103,Falha ficticia 3 no pacote-beta,Critical,9.0,https://exemplo.invalid/CVE-2099-0103
+FICT-SRV-01,Microsoft Windows Server 2019 (ficticio),pacote-beta,2.3,CVE-2099-0104,Falha ficticia 4 no pacote-beta,Critical,9.9,https://exemplo.invalid/CVE-2099-0104
+FICT-SRV-01,Microsoft Windows Server 2019 (ficticio),pacote-beta,2.3,CVE-2099-0105,Falha ficticia 5 no pacote-beta,Critical,10,https://exemplo.invalid/CVE-2099-0105
+FICT-SRV-02,Microsoft Windows Server 2019 (ficticio),pacote-gama,3.1,CVE-2099-0201,Falha ficticia de nota alta,Critical,"7,5",https://exemplo.invalid/CVE-2099-0201
+FICT-SRV-03,Microsoft Windows Server 2019 (ficticio),pacote-gama,3.1,CVE-2099-0202,Falha ficticia de nota media,Critical,5.3,https://exemplo.invalid/CVE-2099-0202
+FICT-SRV-04,Ubuntu 22.04 LTS (ficticio),pacote-delta,0.9,CVE-2099-0203,Nota propositalmente invalida,Critical,n/a,https://exemplo.invalid/CVE-2099-0203
+,Microsoft Windows 10 Pro (ficticio),pacote-delta,0.9,CVE-2099-0204,Maquina propositalmente em branco,Critical,6.1,https://exemplo.invalid/CVE-2099-0204
+FICT-SRV-05,Microsoft Windows 10 Pro (ficticio),pacote-delta,0.9,CVE-2099-0205,"Texto malicioso de teste: <script>alert('xss')</script>",Critical,4.2,https://exemplo.invalid/CVE-2099-0205

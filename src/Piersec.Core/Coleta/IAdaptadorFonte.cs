@@ -12,6 +12,12 @@ public interface IAdaptadorFonte
     string Nome { get; }
 
     /// <summary>
+    /// Tipo de evento que a fonte produz (ver <see cref="TiposEvento"/>). Serve para o score saber o que foi medido:
+    /// arquivo reconhecido com zero linhas = "medido, nada encontrado", diferente de "sem dados".
+    /// </summary>
+    string? TipoDeEvento => null;
+
+    /// <summary>
     /// O que esta fonte nunca informa (ex.: "não informa data"). Vira uma lacuna por arquivo,
     /// em vez de uma lacuna repetida em cada linha.
     /// </summary>

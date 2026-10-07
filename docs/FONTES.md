@@ -48,6 +48,11 @@ Cabeçalho: `timestamp, agent.name, rule.description, data.devname, rule.level, 
 - Correlações: 212 CVEs em ≥ 10 máquinas · 55 softwares com ≥ 5 falhas · 277 máquinas com ≥ 5 críticas · 4 picos de alerta · 0 máquinas em comum entre alertas e vulnerabilidades.
 - ⚠️ 277 de 374 máquinas acumulam ≥ 5 críticas: o limite atual quase não separa. Ajustar na priorização (Fase 3), sem esconder o número.
 
+## Resultado da avaliação (Fase 3, só contagens)
+- Máquinas por tipo (deduzido do sistema operacional): 41 servidores (32 Windows Server + 9 Linux), 333 computadores de funcionários, 1 equipamento de rede (firewall).
+- **Score 74 de 100 (Alto)**, confiança média: 2 de 5 fatores medidos (55% do peso). Falhas nos programas = 92; sinais de ataque = 42.
+- Plano: atualizar 3 programas elimina **67%** das falhas graves (285 máquinas, esforço baixo, 7 dias); corrigir as 10 máquinas mais vulneráveis elimina mais **20%**; score previsto após as duas ações: **39 (Moderado)**.
+
 ## Perguntas em aberto (mentor)
 1. "≥ 3 fontes" significa 3 arquivos, 3 formatos ou 3 ferramentas?
 2. SIEM-1 e SIEM-2 são ambientes/clientes diferentes, datas diferentes ou um arquivo partido?

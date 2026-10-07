@@ -18,6 +18,8 @@ public sealed partial class AdaptadorAlertasSiem : IAdaptadorFonte
 
     public string Nome => "Alertas do SIEM";
 
+    public string TipoDeEvento => TiposEvento.Alerta;
+
     public IReadOnlyList<string> LimitacoesDaFonte =>
     [
         "a fonte não informa usuário",

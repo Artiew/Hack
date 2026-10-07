@@ -1,5 +1,5 @@
 {
-  "descricao": "Como a plataforma decide a severidade. Ordem: 1) nota CVSS, quando existe; 2) nível do alerta, quando existe; 3) texto de severidade da fonte. O contexto (exposição, serviço de negócio) entra na Fase 3.",
+  "descricao": "Como a plataforma decide a severidade de cada evento. Ordem: 1) nota CVSS, quando existe; 2) nível do alerta, quando existe; 3) texto de severidade da fonte. O contexto (tipo de máquina, acúmulo de falhas, repetição) entra no score e na priorização, não na severidade do evento isolado.",
   "textos": {
     "Critica": ["critica", "critico", "critical"],
     "Alta": ["alta", "alto", "high"],

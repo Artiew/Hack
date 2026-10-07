@@ -75,7 +75,10 @@ public class RelatorioTests
     [Fact]
     public void Lote_vazio_avisa_que_zero_eventos_nao_e_ambiente_limpo()
     {
-        Assert.Contains("<strong>não</strong> significa ambiente sem problemas", GerarHtml());
+        var html = GerarHtml();
+
+        Assert.Contains("não calculado", html, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("NÃO significa que o ambiente esteja seguro", html);
     }
 }
 
