@@ -10,6 +10,14 @@ O briefing completo está em **`docs/PROMPT.md`** — leia antes de qualquer tar
 - Responda em português. Para cada conceito, comando ou termo novo: 2–3 linhas simples (o que é, por que existe, o que vai fazer).
 - Comece com 1–2 frases do que vai fazer; termine com **feito / evidência / próximo passo**. Se estiver adivinhando, diga.
 - Antes de cada fase: plano em 5 linhas e o que ele vai conseguir mostrar no fim.
+- Texto que o EXECUTIVO lê (página 1, tela do lote, frases-resumo): linguagem de diretoria — "problema" (não "achado"),
+  cada item como ação ("Atualizar o programa X, que está em N máquinas"), efeito em faixa ("de alto para moderado") com
+  números entre parênteses; sem número de regra, CVE ou "pontos do score" (isso vai em letra pequena ou nos anexos).
+  Quando o número não sustenta a mensagem, diga com todas as letras (ex.: "o risco está espalhado"). O Vitor aprovou esse padrão.
+- Plural sempre certo ("1 máquina", "3 máquinas"): use `Formatar.Qtd`, nunca "(s)".
+- Formulário com POST: sempre com destino explícito (`asp-page` / `asp-page-handler`); nunca `action="/..."` escrito à mão
+  (perde o token anti-CSRF — P-013) nem sem destino numa página com handlers (cai no handler errado — P-014).
+- Teste de ponta a ponta: refaça o caminho como o usuário faria (token da própria página, endereço que o formulário indica).
 
 ## Regras inegociáveis
 - **Nunca leia o conteúdo dos CSVs do desafio** (`dados/`, `var/`, arquivos `Eventos SIEM-*.csv`) nem os relatórios gerados a partir deles.
@@ -70,8 +78,15 @@ O briefing completo está em **`docs/PROMPT.md`** — leia antes de qualquer tar
   - Feito: moldura com barra lateral (busca, ícones SVG próprios), tela do lote em cards (riscos, achados com chips,
     card selecionado azul, coluna direita com score/próximas ações/aprovações), severidade = cor + ícone + texto
     (`Visual.Selo`), envio com arrastar-e-soltar e progresso por etapa (`ServicoEnvios` + `wwwroot/js/envio.js`; sem JS
-    o formulário normal funciona). P-013: o botão Sair não tinha token (corrigido com `asp-page`). 249 testes.
-  - Falta: Automação e visão técnica no mesmo visual de cards/chips, tela de login, revisão de linguagem, conferir PDF.
+    o formulário normal funciona). P-013: o botão Sair não tinha token (corrigido com `asp-page`).
+  - Usuários: admin **exclui** usuários (confirmação; não exclui a si mesmo nem o último admin); sessão do excluído cai
+    no próximo clique (`OnValidatePrincipal` no cookie). P-014: criar depois de excluir caía no handler errado (corrigido).
+    O Vitor NÃO quer botão de "nova senha temporária" (pediu só excluir). 251 testes.
+  - **Falta, nesta ordem (recomendada ao Vitor):** 1) Automação no visual de cards/chips (vale 30% da nota);
+    2) conferir o PDF página por página; 3) revisão de linguagem; 4) visão técnica (chips na lista de eventos,
+    detalhe em cards); 5) telas Entrar/Trocar senha. Estimativa: 2 a 3 horas.
+  - Prints de conferência: o Edge headless não fica mais estreito que ~500 px (print de 390 px corta; use 500).
+    PDF → imagem: script PowerShell com `Windows.Data.Pdf` (não há poppler na máquina).
 - Pendentes pequenos: linha do tempo por máquina (ordenar por data), severidade usando a criticidade do serviço (RF4),
   rodar com os 3 arquivos reais e conferir contagens. Pen drive: gerar com `git bundle create <PEN>:\piersec.bundle HEAD main`.
 - Atenção: `rodar.cmd -DoZero` apaga também usuários e chaves; na 1ª execução a senha do admin aparece UMA vez no terminal.
