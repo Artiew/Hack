@@ -66,9 +66,14 @@ O briefing completo está em **`docs/PROMPT.md`** — leia antes de qualquer tar
   - Discordar da severidade: no detalhe do evento; cria REVISÃO (`ProcessadorLote.Revisar`, `CicloAnalise.RevisarAsync`),
     o original não muda; aviso na página 1 + anexo I; V14 (serviços) e V15 (ajustes). 248 testes.
   - Texto para executivo: ação + faixa, sem jargão (ver memória/feedback do Vitor).
-- **Próximo passo: Fase 7** — polimento visual (cards da `docs/referencia-ui.png`, arrastar-e-soltar no envio, progresso
-  por etapa), linguagem, PDF. Pendentes pequenos: linha do tempo por máquina (ordenar por data), severidade usando a
-  criticidade do serviço (RF4), rodar com os 3 arquivos reais e conferir contagens.
+- **Fase 7 em andamento (07/10/2026):**
+  - Feito: moldura com barra lateral (busca, ícones SVG próprios), tela do lote em cards (riscos, achados com chips,
+    card selecionado azul, coluna direita com score/próximas ações/aprovações), severidade = cor + ícone + texto
+    (`Visual.Selo`), envio com arrastar-e-soltar e progresso por etapa (`ServicoEnvios` + `wwwroot/js/envio.js`; sem JS
+    o formulário normal funciona). P-013: o botão Sair não tinha token (corrigido com `asp-page`). 249 testes.
+  - Falta: Automação e visão técnica no mesmo visual de cards/chips, tela de login, revisão de linguagem, conferir PDF.
+- Pendentes pequenos: linha do tempo por máquina (ordenar por data), severidade usando a criticidade do serviço (RF4),
+  rodar com os 3 arquivos reais e conferir contagens. Pen drive: gerar com `git bundle create <PEN>:\piersec.bundle HEAD main`.
 - Atenção: `rodar.cmd -DoZero` apaga também usuários e chaves; na 1ª execução a senha do admin aparece UMA vez no terminal.
 - Ideia aprovada para a Fase 6: filtro por ambiente (cada arquivo separado) sem precisar reenviar.
 - Perguntas ao mentor ainda abertas: fim de `docs/FONTES.md` (inclui: SIEM-1 e SIEM-2 são empresas diferentes?).
