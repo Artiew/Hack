@@ -46,7 +46,9 @@ if ($SemTestes) {
     if ($LASTEXITCODE -ne 0) { throw 'Testes falharam. O site NAO foi iniciado.' }
 }
 
-Etapa "4/4 Subindo o site em $url  (Ctrl+C para parar)"
+Etapa "4/4 Subindo o site em $url"
+Write-Host '    NAO feche esta janela enquanto usar o site: fechar (ou Ctrl+C) desliga o site.' -ForegroundColor Yellow
+Write-Host '    Nao clique dentro desta janela: o Windows pausa o programa (aperte Esc para continuar).' -ForegroundColor Yellow
 $env:Piersec__PastaDados = Join-Path $raiz 'var'
 $env:PIERSEC_ABRIR_NAVEGADOR = '1'
 & dotnet run --project (Join-Path $raiz 'src\Piersec.Web') -c Release --no-build --no-launch-profile --urls $url
