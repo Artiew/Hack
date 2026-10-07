@@ -103,6 +103,7 @@ public sealed partial class ConjuntoRegras
     public required RegrasScore Score { get; init; }
     public required RegrasPlano Plano { get; init; }
     public required RegrasAutomacao Automacao { get; init; }
+    public required RegrasServicos Servicos { get; init; }
 
     public static ConjuntoRegras Carregar(string pasta)
     {
@@ -113,6 +114,7 @@ public sealed partial class ConjuntoRegras
         var score = Ler<RegrasScore>(pasta, "score.json");
         var plano = Ler<RegrasPlano>(pasta, "plano.json");
         var automacao = Ler<RegrasAutomacao>(pasta, "automacao.json");
+        var servicos = Ler<RegrasServicos>(pasta, "servicos.json");
 
         var regras = new ConjuntoRegras
         {
@@ -129,6 +131,7 @@ public sealed partial class ConjuntoRegras
             Score = score,
             Plano = plano,
             Automacao = automacao,
+            Servicos = servicos,
         };
         regras.Validar();
         return regras;
@@ -160,6 +163,8 @@ public sealed partial class ConjuntoRegras
             if (!Severidade.Textos.ContainsKey(s))
                 throw Erro("severidade.json", $"'textos' não tem a severidade {s}");
 
+        if (Servicos.Problemas(Ativos).FirstOrDefault() is { } problemaServicos)
+            throw Erro("servicos.json", problemaServicos);
         if (Automacao.Problemas(Ativos).FirstOrDefault() is { } problemaAutomacao)
             throw Erro("automacao.json", problemaAutomacao);
 

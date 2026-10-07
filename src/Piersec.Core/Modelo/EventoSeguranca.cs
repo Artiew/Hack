@@ -44,6 +44,9 @@ public sealed record EventoSeguranca
     /// <summary>Tipo do ativo (ex.: "servidor", "estacao", "rede"), deduzido por regras/ativos.json.</summary>
     public string? TipoAtivo { get; init; }
 
+    /// <summary>Serviço da empresa que a máquina atende (premissa de regras/servicos.json, ex.: "faturamento").</summary>
+    public string? Servico { get; init; }
+
     /// <summary>Usuário anonimizado na entrada (LGPD / RS5). O nome real nunca é guardado.</summary>
     public string? UsuarioAnonimo { get; init; }
 

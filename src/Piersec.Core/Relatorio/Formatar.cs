@@ -21,4 +21,20 @@ public static class Formatar
 
     /// <summary>"1 chamado", "3 chamados": plural certo, sem o "(s)" que confunde o leitor.</summary>
     public static string Qtd(int n, string singular, string plural) => $"{Numero(n)} {(n == 1 ? singular : plural)}";
+
+    /// <summary>Valor em reais arredondado para leitura: "R$ 800", "R$ 500 mil", "R$ 1,2 milhão", "R$ 12 milhões".</summary>
+    public static string Dinheiro(decimal valor)
+    {
+        if (valor >= 1_000_000)
+        {
+            var milhoes = Math.Round(valor / 1_000_000, 1);
+            return $"R$ {milhoes.ToString("0.#", PtBr)} {(milhoes < 2 ? "milhão" : "milhões")}";
+        }
+        if (valor >= 1_000)
+            return $"R$ {Math.Round(valor / 1_000).ToString("0", PtBr)} mil";
+        return $"R$ {valor.ToString("0", PtBr)}";
+    }
+
+    /// <summary>"entre R$ 500 mil e R$ 5 milhões".</summary>
+    public static string FaixaDinheiro(decimal minimo, decimal maximo) => $"entre {Dinheiro(minimo)} e {Dinheiro(maximo)}";
 }

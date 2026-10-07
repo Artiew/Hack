@@ -57,6 +57,12 @@ public sealed record Lote
     /// <summary>Tipos de arquivo que a plataforma sabe ler mas que não vieram no lote (ex.: faltou o de alertas).</summary>
     public IReadOnlyList<string> FontesAusentes { get; init; } = [];
 
+    /// <summary>Risco de cada serviço da empresa (premissa declarada em regras/servicos.json).</summary>
+    public IReadOnlyList<RiscoServico> Servicos { get; init; } = [];
+
+    /// <summary>Prejuízo potencial em faixa, somando os serviços em risco; nulo quando nenhum está em risco.</summary>
+    public ResumoImpacto? Impacto { get; init; }
+
     /// <summary>Verificações de consistência feitas antes de emitir o relatório (RF8).</summary>
     public ResultadoValidacao? Validacao { get; init; }
 

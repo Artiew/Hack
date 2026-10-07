@@ -244,7 +244,7 @@ public class ScoreEPlanoTests
         var html = Fabrica.Gerador().Gerar(lote);
 
         var inicio = html.IndexOf("Resumo para a diretoria", StringComparison.Ordinal);
-        var fim = html.IndexOf("2. Entendendo o score", StringComparison.Ordinal);
+        var fim = html.IndexOf("2. Serviços da empresa", StringComparison.Ordinal);
         Assert.True(inicio > 0 && fim > inicio);
         var pagina1 = html[inicio..fim];
 

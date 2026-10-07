@@ -82,6 +82,38 @@
         }
     </ol>
 
+    @if (lote.Servicos.Count > 0)
+    {
+        <h2>Serviços da empresa</h2>
+        <p>
+            @if (GeradorRelatorioHtml.FrasePrejuizo(lote) is { } prejuizo)
+            {
+                <strong>Em risco: @GeradorRelatorioHtml.ServicosEmRisco(lote, int.MaxValue).</strong> @prejuizo
+            }
+            else
+            {
+                <strong>Nenhum serviço está em risco elevado ou pior</strong> <span>nas fontes analisadas.</span>
+            }
+        </p>
+        <table>
+            <thead><tr><th>Serviço</th><th>Situação</th><th class="num">Máquinas com falha grave</th><th class="num">Alertas que merecem análise</th><th>Prejuízo se for atingido</th></tr></thead>
+            <tbody>
+                @foreach (var servico in lote.Servicos)
+                {
+                    <tr>
+                        <td><strong>@servico.Nome</strong></td>
+                        <td>@if (servico.EmRisco) { <strong>@servico.Faixa</strong> } else { @servico.Faixa }</td>
+                        <td class="num">@Formatar.Numero(servico.MaquinasComFalhaGrave) de @Formatar.Numero(servico.Maquinas)</td>
+                        <td class="num">@Formatar.Numero(servico.AlertasRelevantes)</td>
+                        <td>@(servico.Impacto is { } i ? Formatar.FaixaDinheiro(i.Minimo, i.Maximo) : "não estimado")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <p class="meta">Premissa: os dados não dizem que serviço cada máquina atende; a equipe ligou pelo nome e pelo tipo da máquina.
+            Os valores são faixas de referência deste exercício, não números da empresa (detalhes na seção 2 do relatório).</p>
+    }
+
     @if (Model.FraseAchados is { } fraseAchados)
     {
         <h2>@GeradorRelatorioHtml.TituloAchados(av)</h2>

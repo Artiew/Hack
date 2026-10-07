@@ -34,6 +34,7 @@ public sealed class ValidadorLote(ConjuntoRegras regras, TimeProvider relogio)
             v.Add(MaquinasPorTipo(lote, a));
         }
         v.Add(SemCredenciais(lote));
+        v.Add(ServicosConferem(lote));
         return new ResultadoValidacao(v);
     }
 
@@ -176,6 +177,31 @@ public sealed class ValidadorLote(ConjuntoRegras regras, TimeProvider relogio)
         var soma = a.MaquinasPorTipo.Values.Sum();
         return new("V10", "As máquinas por tipo somam o total de máquinas",
             soma == distintas, $"soma {Formatar.Numero(soma)} · total {Formatar.Numero(distintas)}");
+    }
+
+    /// <summary>
+    /// Toda máquina caiu em algum serviço, a soma das máquinas por serviço bate com os eventos e o prejuízo potencial
+    /// é a soma das faixas dos serviços em risco (recalculado aqui, por outro caminho).
+    /// </summary>
+    private static Verificacao ServicosConferem(Lote lote)
+    {
+        var comAtivo = lote.Eventos.Where(e => e.Ativo != ContextoConversao.NaoInformado).ToList();
+        var semServico = comAtivo.Count(e => e.Servico is null || lote.Servicos.All(s => s.Id != e.Servico));
+        var pares = comAtivo.Where(e => e.Servico is not null).Select(e => (e.Servico, e.Ativo)).Distinct().Count();
+        var somaMaquinas = lote.Servicos.Sum(s => s.Maquinas);
+        var emRisco = lote.Servicos.Where(s => s.EmRisco && s.Impacto is not null).ToList();
+        var impactoConfere = emRisco.Count == 0
+            ? lote.Impacto is null
+            : lote.Impacto is { } i && i.Minimo == emRisco.Sum(s => s.Impacto!.Minimo) && i.Maximo == emRisco.Sum(s => s.Impacto!.Maximo);
+
+        var problemas = new List<string>();
+        if (semServico > 0) problemas.Add($"{Formatar.Numero(semServico)} evento(s) sem serviço");
+        if (somaMaquinas != pares) problemas.Add($"máquinas por serviço somam {somaMaquinas}, eventos indicam {pares}");
+        if (!impactoConfere) problemas.Add("prejuízo potencial não bate com a soma dos serviços em risco");
+        return new("V14", "Toda máquina está ligada a um serviço e o prejuízo potencial é a soma dos serviços em risco",
+            problemas.Count == 0,
+            problemas.Count == 0 ? $"{Formatar.Numero(pares)} máquina(s) em {lote.Servicos.Count} serviço(s); {emRisco.Count} em risco somados no prejuízo"
+                                 : string.Join("; ", problemas));
     }
 
     private static Verificacao SemCredenciais(Lote lote)

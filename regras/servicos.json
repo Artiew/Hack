@@ -1,0 +1,62 @@
+{
+  "premissa": "Os dados não dizem que serviço da empresa cada máquina atende. Este mapa é uma PREMISSA da equipe: a máquina é ligada ao serviço pelo nome (ex.: 'DB' ou 'SQL' = dados de clientes) e, se o nome não disser nada, pelo tipo (servidor = sistemas internos; computador = estações dos funcionários; firewall = proteção da rede). A primeira regra que combinar vence.",
+  "premissaImpacto": "Os valores de prejuízo são FAIXAS de referência definidas pela equipe para este exercício (custo de parada, resposta ao incidente, multas e perda de clientes), não números da empresa. Devem ser trocados pelos valores do financeiro. O prejuízo potencial soma só os serviços em risco elevado ou pior, e indica quanto pode custar SE um incidente atingir esses serviços, não quanto vai custar.",
+  "faixaEmRiscoAPartirDe": 40,
+  "servicos": [
+    {
+      "id": "dados-clientes",
+      "nome": "Dados de clientes",
+      "criticidade": "Alta",
+      "nomeContem": ["db", "sql", "banco", "dados", "data", "crm", "oracle", "mongo", "postgres", "mysql"],
+      "impacto": { "minimo": 500000, "maximo": 5000000, "premissa": "vazamento de dados de clientes: avisar os clientes, possível multa da LGPD (até 2% do faturamento, limitada a R$ 50 milhões por infração), atendimento e perda de clientes" }
+    },
+    {
+      "id": "faturamento",
+      "nome": "Faturamento e pagamentos",
+      "criticidade": "Alta",
+      "nomeContem": ["erp", "financ", "fatur", "pagamento", "payment", "sap", "totvs"],
+      "impacto": { "minimo": 200000, "maximo": 2000000, "premissa": "faturamento e pagamentos parados de 1 a 5 dias" }
+    },
+    {
+      "id": "email",
+      "nome": "E-mail e comunicação",
+      "criticidade": "Media",
+      "nomeContem": ["mail", "exch", "smtp", "outlook"],
+      "impacto": { "minimo": 50000, "maximo": 500000, "premissa": "e-mail parado ou usado para aplicar golpes por 1 a 3 dias" }
+    },
+    {
+      "id": "site",
+      "nome": "Site e sistemas na internet",
+      "criticidade": "Media",
+      "nomeContem": ["web", "www", "site", "portal", "api"],
+      "impacto": { "minimo": 100000, "maximo": 1000000, "premissa": "site ou sistema na internet fora do ar ou adulterado por 1 a 3 dias" }
+    },
+    {
+      "id": "rede",
+      "nome": "Proteção da rede (firewall)",
+      "criticidade": "Alta",
+      "tipoAtivo": ["rede"],
+      "impacto": { "minimo": 100000, "maximo": 1000000, "premissa": "firewall comprometido deixa a rede inteira exposta; custo de investigar e conter o incidente" }
+    },
+    {
+      "id": "sistemas-internos",
+      "nome": "Sistemas internos",
+      "criticidade": "Media",
+      "tipoAtivo": ["servidor"],
+      "impacto": { "minimo": 100000, "maximo": 1000000, "premissa": "sistemas internos parados de 1 a 3 dias e custo de recuperar os servidores" }
+    },
+    {
+      "id": "estacoes",
+      "nome": "Computadores dos funcionários",
+      "criticidade": "Baixa",
+      "tipoAtivo": ["estacao"],
+      "impacto": { "minimo": 20000, "maximo": 300000, "premissa": "limpeza das máquinas e horas paradas; o maior risco é virarem porta de entrada para o resto" }
+    },
+    {
+      "id": "nao-identificado",
+      "nome": "Serviço não identificado",
+      "criticidade": "Media",
+      "tipoAtivo": ["desconhecido"]
+    }
+  ]
+}

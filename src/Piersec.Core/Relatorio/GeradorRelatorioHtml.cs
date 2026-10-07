@@ -52,6 +52,7 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
         if (lote.Avaliacao is { } avaliacao)
         {
             PaginaDiretoria(sb, lote, avaliacao);
+            SecaoServicos(sb, lote);
             SecaoScore(sb, avaliacao);
             SecaoPlano(sb, avaliacao);
             SecaoAutomacao(sb, lote.Operacao);
@@ -141,6 +142,9 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
               $"{Formatar.DataHora(c.DataAnterior, fusoExibicao)} ({Inteiro(c.ScoreAnterior)} de 100) — principal motivo: {c.Motivo}."
             : "Primeira análise: ainda não há uma anterior para comparar.";
         var avisoConfianca = AvisoConfianca(s) is { } aviso ? $"<p class=\"aviso-forte\">⚠ {H(aviso)}</p>" : "";
+        var servicos = ServicosEmRisco(lote) is { } emRisco
+            ? $"<p><strong>Serviços em risco:</strong> {H(emRisco)}. {H(FrasePrejuizo(lote) ?? "")} <span class=\"meta\">(premissas na seção 2)</span></p>"
+            : "";
 
         sb.Append($"""
             <section class="diretoria">
@@ -151,8 +155,9 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
                 <p class="rotulo">COMO ESTAMOS: <strong>risco {H(s.Faixa.ToLowerInvariant())}</strong> <span class="meta">(0 = sem risco · 100 = risco máximo)</span></p>
                 {avisoConfianca}
                 <p class="frase">{H(a.FraseSituacao)}</p>
+                {servicos}
                 <p>{H(s.FraseFaixa)}</p>
-                <p class="meta">{H(comparacao)}<br>Confiança {H(s.Confianca)}: o score usa {s.PercentualMedido:0}% do que deveria medir ({s.Fatores.Count(f => f.Valor is not null)} de {s.Fatores.Count} fatores) — ver seção 2.</p>
+                <p class="meta">{H(comparacao)}<br>Confiança {H(s.Confianca)}: o score usa {s.PercentualMedido:0}% do que deveria medir ({s.Fatores.Count(f => f.Valor is not null)} de {s.Fatores.Count} fatores) — ver seção 3.</p>
               </div>
             </div>
             """);
@@ -197,14 +202,68 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
         sb.Append("</section>");
     }
 
-    // ================= 2. Score =================
+    // ================= 2. Serviços da empresa e prejuízo potencial =================
+
+    /// <summary>"Faturamento (alto), Dados de clientes (crítico) e mais 1": os serviços em risco, para a página 1.</summary>
+    public static string? ServicosEmRisco(Lote lote, int maximo = 3)
+    {
+        var emRisco = lote.Servicos.Where(s => s.EmRisco).ToList();
+        if (emRisco.Count == 0)
+            return null;
+        var nomes = emRisco.Take(maximo).Select(s => $"{s.Nome} ({s.Faixa.ToLowerInvariant()})").ToList();
+        if (emRisco.Count > maximo)
+            nomes.Add($"mais {emRisco.Count - maximo}");
+        return nomes.Count == 1 ? nomes[0] : string.Join(", ", nomes[..^1]) + " e " + nomes[^1];
+    }
+
+    /// <summary>"Se forem atingidos, o prejuízo pode ficar entre R$ 700 mil e R$ 7 milhões." (null sem serviço em risco)</summary>
+    public static string? FrasePrejuizo(Lote lote) => lote.Impacto is { } i
+        ? $"Se {(i.ServicosEmRisco == 1 ? "esse serviço for atingido" : "esses serviços forem atingidos")}, o prejuízo pode ficar {Formatar.FaixaDinheiro(i.Minimo, i.Maximo)}."
+        : null;
+
+    private void SecaoServicos(StringBuilder sb, Lote lote)
+    {
+        sb.Append("<section class=\"quebra\"><h2>2. Serviços da empresa e prejuízo potencial</h2>");
+        if (lote.Servicos.Count == 0)
+        {
+            sb.Append("<p>Nenhuma máquina identificada nos dados: não dá para dizer quais serviços estão em risco.</p></section>");
+            return;
+        }
+        sb.Append(FrasePrejuizo(lote) is { } fraseGeral
+            ? $"<p class=\"frase\"><strong>Serviços em risco: {H(ServicosEmRisco(lote, int.MaxValue))}.</strong> {H(fraseGeral)}</p>"
+            : "<p class=\"frase\"><strong>Nenhum serviço está em risco elevado ou pior</strong> nas fontes analisadas.</p>");
+        sb.Append("<table><thead><tr><th>Serviço</th><th>Importância para o negócio</th><th>Situação</th><th class=\"num\">Máquinas com falha grave</th>" +
+                  "<th class=\"num\">Alertas que merecem análise</th><th>Prejuízo se for atingido</th></tr></thead><tbody>");
+        foreach (var s in lote.Servicos)
+        {
+            var prejuizo = s.Impacto is { } i
+                ? $"{H(Formatar.FaixaDinheiro(i.Minimo, i.Maximo))}<br><span class=\"pequeno\">{H(i.Premissa)}</span>"
+                : "<em>não estimado</em>";
+            sb.Append($"<tr><td><strong>{H(s.Nome)}</strong></td><td>{H(NomeImportancia(s.Criticidade))}</td>" +
+                      $"<td>{(s.EmRisco ? "<strong>" : "")}{H(s.Faixa)}{(s.Nota is { } n ? $" ({Inteiro(n)})" : "")}{(s.EmRisco ? "</strong>" : "")}</td>" +
+                      $"<td class=\"num\">{Formatar.Numero(s.MaquinasComFalhaGrave)} de {Formatar.Numero(s.Maquinas)}</td>" +
+                      $"<td class=\"num\">{Formatar.Numero(s.AlertasRelevantes)}</td><td>{prejuizo}</td></tr>");
+        }
+        sb.Append("</tbody></table>");
+        sb.Append($"<p class=\"meta\"><strong>Premissas.</strong> {H(regras.Servicos.Premissa)} {H(regras.Servicos.PremissaImpacto)} " +
+                  $"Um serviço conta como \"em risco\" a partir da nota {Inteiro(regras.Servicos.FaixaEmRiscoAPartirDe)} (mesma escala do score).</p></section>");
+    }
+
+    private static string NomeImportancia(Severidade criticidade) => criticidade switch
+    {
+        Severidade.Critica or Severidade.Alta => "alta",
+        Severidade.Media => "média",
+        _ => "baixa",
+    };
+
+    // ================= 3. Score =================
 
     private void SecaoScore(StringBuilder sb, Avaliacao a)
     {
         var s = a.Score;
         sb.Append($"""
             <section class="quebra">
-            <h2>2. Entendendo o score</h2>
+            <h2>3. Entendendo o score</h2>
             <p>{H(regras.Score.Descricao)}</p>
             <p><strong>Por que o score pode mudar quando chegam mais fontes:</strong> ele é a média dos fatores medidos.
             Uma fonte nova acrescenta um fator à conta: se esse fator estiver bom, o score cai; se estiver ruim, sobe.
@@ -252,7 +311,7 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
     {
         sb.Append("""
             <section>
-            <h2>3. Plano de ação completo</h2>
+            <h2>4. Plano de ação completo</h2>
             <p>O resultado de cada ação é <strong>calculado</strong> contando as falhas que ela elimina. Prazos e esforço seguem as premissas do anexo F.</p>
             <table><thead><tr><th>#</th><th>Ação e como fazer</th><th>Resultado esperado</th><th>Impacto</th><th>Esforço</th><th>Prazo</th></tr></thead><tbody>
             """);
@@ -278,13 +337,13 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
             """);
     }
 
-    // ================= 4. Automação =================
+    // ================= 5. Automação =================
 
     private const int MaximoItensAutomacao = 20;
 
     private void SecaoAutomacao(StringBuilder sb, ResultadoOperacao? op)
     {
-        sb.Append("<section><h2>4. O que a plataforma fez sozinha</h2>");
+        sb.Append("<section><h2>5. O que a plataforma fez sozinha</h2>");
         if (op is null)
         {
             sb.Append("<p class=\"meta\">A operação automática não rodou neste lote.</p></section>");
@@ -316,7 +375,7 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
         sb.Append("<p class=\"meta\">Aprovar, rejeitar e desfazer: tela Automação da plataforma. Cada decisão fica no histórico do chamado e na auditoria.</p></section>");
     }
 
-    // ================= 5. Limites =================
+    // ================= 6. Limites =================
 
     private void SecaoLimites(StringBuilder sb, Lote lote)
     {
@@ -331,7 +390,7 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
         itens.Add(regras.Ativos.Premissa);
         itens.Add("Os dados não informam cliente ou ambiente: cada arquivo foi tratado como um ambiente. Datas sem fuso foram consideradas no horário de Brasília.");
 
-        sb.Append("<section><h2>5. O que esta análise não consegue dizer</h2><ul>");
+        sb.Append("<section><h2>6. O que esta análise não consegue dizer</h2><ul>");
         foreach (var item in itens)
             sb.Append($"<li>{H(item)}</li>");
         sb.Append($"</ul><p class=\"meta\">Detalhes: {Formatar.Numero(lote.Lacunas.Count)} lacuna(s) listadas no anexo E.</p></section>");
@@ -705,7 +764,13 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
         td.origem{min-width:120px}td.origem code{word-break:normal;overflow-wrap:anywhere}
         footer{margin-top:40px;border-top:1px solid var(--linha);padding-top:8px;color:var(--suave);font-size:12px}
         @page{size:A4;margin:14mm}
-        @media print{body{padding:0;max-width:none}h2,h3{break-after:avoid}tr{break-inside:avoid}.quebra{break-before:page}}
+        @media print{body{padding:0;max-width:none}h2,h3{break-after:avoid}tr{break-inside:avoid}.quebra{break-before:page}
+          /* Página 1 numa folha só (regra do corredor): capa e resumo mais compactos só no papel. */
+          h1{font-size:22px;margin:6px 0 2px}.capa .meta{font-size:11px;margin:2px 0}.selo-ok{margin:2px 0 0;padding:2px 8px}
+          .diretoria{font-size:12px;line-height:1.35}.diretoria h2{font-size:17px;margin:10px 0 4px}.diretoria h3{font-size:13px;margin:8px 0 4px}
+          .score-caixa{padding:6px 12px;margin:4px 0}.grande{font-size:48px}.rotulo{font-size:13px}.frase{font-size:14px}
+          .riscos{gap:4px}.risco{padding:3px 8px}.risco p{margin:1px 0}.titulo-risco{font-size:13px}
+          .aviso-forte{padding:4px 8px;margin:4px 0}.uma-coisa{font-size:12px;padding:5px 10px;margin:6px 0}}
         @media screen{
         body{max-width:1280px;padding:48px 56px 80px;font-size:17px;line-height:1.6}
         .selo{font-size:14px;padding:6px 14px}

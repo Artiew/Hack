@@ -55,7 +55,7 @@ public class AvisosTests
         var lote = Fabrica.ProcessadorReal().Processar([Vuln("empresa-a.csv", "A1", "A2", "A3"), Vuln("empresa-b.csv", "B1", "B2", "B3")]);
         var html = Fabrica.Gerador().Gerar(lote);
 
-        var pagina1 = html[html.IndexOf("Resumo para a diretoria", StringComparison.Ordinal)..html.IndexOf("2. Entendendo o score", StringComparison.Ordinal)];
+        var pagina1 = html[html.IndexOf("Resumo para a diretoria", StringComparison.Ordinal)..html.IndexOf("2. Serviços da empresa", StringComparison.Ordinal)];
         Assert.Contains("empresas ou ambientes diferentes", pagina1);
     }
 

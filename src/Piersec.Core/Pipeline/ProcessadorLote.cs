@@ -37,6 +37,7 @@ public sealed class ProcessadorLote(
     private readonly ClassificadorAtivos _tiposDeAtivo = new(regras.Ativos);
     private readonly MotorCorrelacao _motor = new();
     private readonly PlanejadorAvaliacao _planejador = new(regras, new CalculadoraScore(regras.Score, regras.Ativos));
+    private readonly AnalisadorServicos _analisadorServicos = new(regras);
 
     /// <summary>
     /// Etapas: coleta e padronização (por arquivo) → severidade e tipo de máquina → correlação →
@@ -47,11 +48,13 @@ public sealed class ProcessadorLote(
         var coletado = Coletar(arquivos);
 
         var lacunas = new List<Lacuna>(coletado.Lacunas);
+        var servicos = new ClassificadorServicos(regras.Servicos); // um por lote: o cache dele não é compartilhado entre envios
         var eventos = new List<EventoSeguranca>(coletado.Eventos.Count);
         foreach (var bruto in coletado.Eventos)
         {
             var (evento, lacuna) = _classificador.Classificar(bruto);
-            eventos.Add(evento with { TipoAtivo = _tiposDeAtivo.Classificar(evento) });
+            var tipo = _tiposDeAtivo.Classificar(evento);
+            eventos.Add(evento with { TipoAtivo = tipo, Servico = evento.Ativo == ContextoConversao.NaoInformado ? null : servicos.Classificar(evento.Ativo, tipo) });
             if (lacuna is not null)
                 lacunas.Add(lacuna);
         }
@@ -61,6 +64,7 @@ public sealed class ProcessadorLote(
         var avaliacao = _planejador.Avaliar(eventos, correlacoes, tiposMedidos);
         var avisosAmbiente = VerificadorAmbientes.Verificar(eventos, coletado.Arquivos);
         lacunas.AddRange(avisosAmbiente.Select(a => new Lacuna(ArquivoDoLote, null, "ambiente", a)));
+        var (riscoServicos, impacto) = _analisadorServicos.Analisar(eventos);
         var fontesAusentes = FontesAusentes(coletado.Arquivos);
         lacunas.AddRange(fontesAusentes.Select(f => new Lacuna(ArquivoDoLote, null, "fonte", f)));
 
@@ -75,6 +79,8 @@ public sealed class ProcessadorLote(
             RegrasAvaliadas = avaliadas,
             Avaliacao = avaliacao,
             AvisosAmbiente = avisosAmbiente,
+            Servicos = riscoServicos,
+            Impacto = impacto,
             FontesAusentes = fontesAusentes,
         };
     }

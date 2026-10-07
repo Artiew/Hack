@@ -346,8 +346,8 @@ public class OperacaoTests : IDisposable
 
         var html = Fabrica.Gerador().Gerar(lote);
 
-        Assert.Contains("4. O que a plataforma fez sozinha", html);
-        Assert.Contains("5. O que esta análise não consegue dizer", html);
+        Assert.Contains("5. O que a plataforma fez sozinha", html);
+        Assert.Contains("6. O que esta análise não consegue dizer", html);
         Assert.Contains("Tudo é simulado", html);
         Assert.Contains("sozinha <strong>1 ação</strong>", html);                   // plural certo, sem "(s)"
         Assert.Contains("CH-0001", html);
