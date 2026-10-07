@@ -288,7 +288,23 @@ public class OperacaoTests : IDisposable
         Assert.Contains("1. Testar a versão mais nova de openssl", texto);
         Assert.Contains("feito sozinho", texto);
         Assert.Contains("Confiança: alta", texto);
+        Assert.Contains("Ação:        abrir chamado", texto);
+        Assert.Contains("Eventos: 2 no lote", texto);
         Assert.Null(servico.Artefato("..\\x"));
+    }
+
+    [Fact]
+    public void Artefato_de_sugestao_nao_repete_a_acao_nem_mostra_zero_eventos()
+    {
+        var servico = Servico();
+        var r = servico.Processar(Lote(Falhas("PC-01", "Windows 10", "openssl", 2)));
+
+        var texto = servico.Artefato(r.Itens.First(i => i.PlaybookId == "PB-MEDIR-FONTES").Numero!)!;
+
+        Assert.Contains("Situação:    sugestão", texto);
+        Assert.DoesNotContain("Ação:", texto);
+        Assert.DoesNotContain("Eventos: 0", texto);
+        Assert.Contains("Eventos: não se aplica: o problema é justamente a falta de dados deste tipo", texto);
     }
 
     // ---------- guarda, verificação e regras ----------

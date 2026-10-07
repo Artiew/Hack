@@ -1,6 +1,7 @@
 using Piersec.Core.Analise;
 using Piersec.Core.Modelo;
 using Piersec.Core.Pipeline;
+using Piersec.Core.Relatorio;
 
 namespace Piersec.Tests;
 
@@ -255,5 +256,77 @@ public class ScoreEPlanoTests
         Assert.DoesNotContain("CVE-", pagina1);           // nada de código técnico na página da diretoria
         Assert.DoesNotContain("CVSS", pagina1);
         Assert.Contains("G. Glossário", html);
+    }
+
+    // ---------- "3 achados explicam X% do risco" ----------
+
+    private static Lote LoteVuln(params string[] linhas) =>
+        Fabrica.ProcessadorReal().Processar([Fabrica.Csv("vuln.csv", [CabecalhoVuln, .. linhas])]);
+
+    [Fact]
+    public void Um_unico_achado_explica_todo_o_risco_e_nao_aparece_duas_vezes()
+    {
+        // A máquina e o programa são as MESMAS falhas: um achado só, não dois.
+        var a = LoteVuln("PC-01,Windows 10,openssl,1.0,CVE-2099-0001,d,Critical,9.8,ref").Avaliacao!;
+
+        var achado = Assert.Single(a.AchadosPrincipais);
+        Assert.Equal(100, a.PercentualExplicado);
+        Assert.Equal(0, a.ScoreSemAchados);
+        Assert.Equal(a.Score.Valor, achado.Pontos);
+        Assert.Equal("1 achado explica 100% do risco: sem ele, o score cairia de 70 para 0.", GeradorRelatorioHtml.FraseAchados(a));
+    }
+
+    [Fact]
+    public void Achados_principais_sao_os_que_mais_derrubam_o_score_e_o_percentual_e_recalculado()
+    {
+        var a = LoteVuln([
+            .. Enumerable.Range(1, 4).Select(i => $"SRV-{i},Windows Server 2019,openssl,1.0,CVE-2099-000{i},d,Critical,9.8,ref"),
+            .. Enumerable.Range(1, 3).Select(i => $"PC-{i},Windows 10,java,8.0,CVE-2099-010{i},d,High,7.5,ref"),
+            .. Enumerable.Range(1, 6).Select(i => $"PC-{i},Windows 10,zoom,5.0,CVE-2099-020{i},d,Low,2.0,ref")]).Avaliacao!;
+
+        Assert.InRange(a.AchadosPrincipais.Count, 1, PlanejadorAvaliacao.QuantidadeAchadosPrincipais);
+        Assert.Contains("openssl", a.AchadosPrincipais[0].Descricao);                 // servidores com falha crítica pesam mais
+        Assert.Equal(a.AchadosPrincipais.Select(x => x.Pontos).OrderDescending(), a.AchadosPrincipais.Select(x => x.Pontos));
+        Assert.InRange(a.PercentualExplicado!.Value, 0.1, 100);
+        // o percentual e o "score sem eles" contam a mesma história
+        Assert.Equal(a.Score.Valor!.Value * (1 - a.PercentualExplicado.Value / 100), a.ScoreSemAchados!.Value, 0.2);
+        Assert.Contains("achados explicam", GeradorRelatorioHtml.FraseAchados(a));
+    }
+
+    [Fact]
+    public void Quando_o_risco_esta_espalhado_a_frase_diz_isso_e_nao_promete_atalho()
+    {
+        // 20 máquinas iguais, cada uma com 6 falhas críticas em programas só dela: nenhum achado resolve muito.
+        var a = LoteVuln([.. from m in Enumerable.Range(1, 20)
+                             from p in Enumerable.Range(1, 6)
+                             select $"PC-{m:00},Windows 10,prog-{m}-{p},1.0,CVE-2099-{m:00}{p},d,Critical,9.8,ref"]).Avaliacao!;
+
+        Assert.False(GeradorRelatorioHtml.RiscoConcentrado(a));
+        Assert.InRange(a.PercentualExplicado!.Value, 1, GeradorRelatorioHtml.PercentualRiscoConcentrado - 1);
+        var frase = GeradorRelatorioHtml.FraseAchados(a)!;
+        Assert.StartsWith("O risco está espalhado: os 3 achados que mais pesam explicam só 15%", frase);
+        Assert.Contains("Não há atalho", frase);
+    }
+
+    [Fact]
+    public void Ambiente_limpo_nao_tem_achados_principais()
+    {
+        var a = LoteVuln().Avaliacao!;
+
+        Assert.Empty(a.AchadosPrincipais);
+        Assert.Null(a.PercentualExplicado);
+        Assert.Null(GeradorRelatorioHtml.FraseAchados(a));
+    }
+
+    [Fact]
+    public void Relatorio_mostra_os_achados_principais_na_secao_do_score()
+    {
+        var lote = LoteVuln("PC-01,Windows 10,openssl,1.0,CVE-2099-0001,d,Critical,9.8,ref");
+
+        var html = Fabrica.Gerador().Gerar(lote with { Validacao = Fabrica.Validador().Validar(lote) });
+
+        Assert.Contains("Poucos achados explicam boa parte do risco", html);
+        Assert.Contains("1 achado explica 100% do risco", html);
+        Assert.Contains("tira 70 pontos do score", html);
     }
 }

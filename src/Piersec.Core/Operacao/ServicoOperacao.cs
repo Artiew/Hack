@@ -382,7 +382,8 @@ public sealed partial class ServicoOperacao
         sb.AppendLine(new string('=', 72));
         sb.AppendLine($"Título:      {c.Titulo}");
         sb.AppendLine($"Situação:    {c.Estado.Nome()}{(c.Estado == EstadoChamado.Aberto ? (c.AgiuSozinho ? " (feito sozinho pela plataforma)" : " (aprovado por uma pessoa)") : "")}");
-        sb.AppendLine($"Ação:        {Acoes.Nome(c.Acao)}");
+        if (c.Acao != Acoes.Sugerir) // numa sugestão, "Ação: sugestão" só repetiria a situação
+            sb.AppendLine($"Ação:        {Acoes.Nome(c.Acao)}");
         sb.AppendLine($"Regra:       {c.PlaybookId}{(playbook is null ? "" : $" - {playbook.Nome}")}");
         sb.AppendLine($"Aberto em:   {Formatar.DataHora(c.CriadoEmUtc, _fuso)} (Brasília)");
         sb.AppendLine($"Atualizado:  {Formatar.DataHora(c.AtualizadoEmUtc, _fuso)} (Brasília)");
@@ -403,8 +404,11 @@ public sealed partial class ServicoOperacao
         sb.AppendLine("EVIDÊNCIAS");
         if (c.Ativos.Count > 0)
             sb.AppendLine($"Máquinas ({Formatar.Numero(c.Ativos.Count)}): {string.Join(", ", c.Ativos.Take(50))}{(c.Ativos.Count > 50 ? $" e mais {c.Ativos.Count - 50}" : "")}");
-        sb.AppendLine($"Eventos: {Formatar.Numero(c.EvidenciasTotal)} no lote {c.LoteUltimaVez[..8]}"
-            + (c.EvidenciaIds.Count > 0 ? $"; exemplos: {string.Join(", ", c.EvidenciaIds)}" : ""));
+        if (c.EvidenciasTotal == 0) // ex.: "passar a medir": o problema é justamente não haver eventos desse tipo
+            sb.AppendLine($"Eventos: não se aplica: o problema é justamente a falta de dados deste tipo no lote {c.LoteUltimaVez[..8]}.");
+        else
+            sb.AppendLine($"Eventos: {Formatar.Numero(c.EvidenciasTotal)} no lote {c.LoteUltimaVez[..8]}"
+                + (c.EvidenciaIds.Count > 0 ? $"; exemplos: {string.Join(", ", c.EvidenciaIds)}" : ""));
         if (c.CorrelacaoIds.Count > 0)
             sb.AppendLine($"Correlações: {string.Join(", ", c.CorrelacaoIds)}");
         var controles = c.Frameworks.Nist.Select(x => "NIST " + x).Concat(c.Frameworks.Cis.Select(x => "CIS " + x)).Concat(c.Frameworks.Iso.Select(x => "ISO 27001 " + x)).ToList();

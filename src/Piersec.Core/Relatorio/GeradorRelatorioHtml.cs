@@ -52,7 +52,7 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
         if (lote.Avaliacao is { } avaliacao)
         {
             PaginaDiretoria(sb, lote, avaliacao);
-            SecaoScore(sb, avaliacao.Score);
+            SecaoScore(sb, avaliacao);
             SecaoPlano(sb, avaliacao);
             SecaoAutomacao(sb, lote.Operacao);
         }
@@ -199,8 +199,9 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
 
     // ================= 2. Score =================
 
-    private void SecaoScore(StringBuilder sb, ScoreRisco s)
+    private void SecaoScore(StringBuilder sb, Avaliacao a)
     {
+        var s = a.Score;
         sb.Append($"""
             <section class="quebra">
             <h2>2. Entendendo o score</h2>
@@ -220,6 +221,15 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
                       $"<td>{situacao}</td><td class=\"num\">{f.Peso:0}</td><td class=\"num\">{(f.Valor is null ? "—" : f.Contribuicao.ToString("0.0", Formatar.PtBr))}</td></tr>");
         }
         sb.Append($"<tr><th colspan=\"3\">Score (soma dos pontos)</th><th class=\"num\">{(s.Valor is { } total ? total.ToString("0.0", Formatar.PtBr) : "—")}</th></tr></tbody></table>");
+
+        if (FraseAchados(a) is { } frase)
+        {
+            sb.Append($"<h3>{(RiscoConcentrado(a) ? "Poucos achados explicam boa parte do risco" : "O risco está espalhado")}</h3><p><strong>{H(frase)}</strong></p><ol>");
+            foreach (var achado in a.AchadosPrincipais)
+                sb.Append($"<li>{H(achado.Descricao)}: sozinho, resolver isso tira {H(Pontos(achado.Pontos))} do score.</li>");
+            sb.Append("</ol><p class=\"meta\">Calculado refazendo a conta do score sem cada achado (máquinas corrigidas continuam na média, valendo 0). " +
+                      "Juntos, o efeito é menor que a soma, porque um mesmo evento pode estar em dois achados.</p>");
+        }
 
         sb.Append("<h3>Faixas</h3><table><thead><tr><th>Score</th><th>Faixa</th><th>O que significa</th></tr></thead><tbody>");
         var faixas = regras.Score.Faixas.OrderByDescending(f => f.Minimo).ToList();
@@ -571,6 +581,32 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
         return $"Atenção: só {medidos} de {s.Fatores.Count} fatores {verbo} ({s.PercentualMedido:0}%). " +
                $"Faltam dados de: {lista}. {conclusao}";
     }
+
+    /// <summary>Abaixo disso, os maiores achados explicam pouco: o risco está espalhado e não há atalho.</summary>
+    public const double PercentualRiscoConcentrado = 30;
+
+    /// <summary>O risco está concentrado em poucos achados? (decide o título e o tom da frase)</summary>
+    public static bool RiscoConcentrado(Avaliacao a) => a.PercentualExplicado >= PercentualRiscoConcentrado;
+
+    /// <summary>
+    /// "3 achados explicam 58% do risco: sem eles, o score cairia de 74 para 31." Quando explicam pouco, diz isso
+    /// com todas as letras (risco espalhado), em vez de sugerir um atalho que não existe. Null quando não se aplica.
+    /// </summary>
+    public static string? FraseAchados(Avaliacao a)
+    {
+        if (a.AchadosPrincipais.Count == 0 || a.PercentualExplicado is not { } pct || a.Score.Valor is not { } atual || a.ScoreSemAchados is not { } sem)
+            return null;
+        var quantos = Formatar.Qtd(a.AchadosPrincipais.Count, "achado explica", "achados explicam");
+        var eles = a.AchadosPrincipais.Count == 1 ? "ele" : "eles";
+        return RiscoConcentrado(a)
+            ? $"{quantos} {Inteiro(pct)}% do risco: sem {eles}, o score cairia de {Inteiro(atual)} para {Inteiro(sem)}."
+            : $"O risco está espalhado: {(a.AchadosPrincipais.Count == 1 ? "o achado que mais pesa explica" : $"os {a.AchadosPrincipais.Count} achados que mais pesam explicam")} " +
+              $"só {Inteiro(pct)}% (sem {eles}, o score iria de {Inteiro(atual)} para {Inteiro(sem)}). Não há atalho: é preciso corrigir máquina por máquina.";
+    }
+
+    private static string Pontos(double valor) => valor < 1
+        ? $"{valor.ToString("0.0", Formatar.PtBr)} ponto"
+        : $"{Inteiro(valor)} {(Inteiro(valor) == "1" ? "ponto" : "pontos")}";
 
     private static string Inteiro(double valor) => Math.Round(valor, MidpointRounding.AwayFromZero).ToString("0", Formatar.PtBr);
 

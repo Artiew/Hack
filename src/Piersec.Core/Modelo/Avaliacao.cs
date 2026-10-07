@@ -92,9 +92,24 @@ public sealed record Avaliacao
     /// <summary>Score esperado se as ações que removem falhas forem feitas.</summary>
     public double? ScorePrevisto { get; init; }
 
+    /// <summary>Os achados que mais pesam no score ("3 achados explicam X% do risco"), do que mais pesa para o que menos pesa.</summary>
+    public IReadOnlyList<AchadoPrincipal> AchadosPrincipais { get; init; } = [];
+
+    /// <summary>Quanto do score (0 a 100%) some se esses achados forem resolvidos juntos. Nulo quando não se aplica.</summary>
+    public double? PercentualExplicado { get; init; }
+
+    /// <summary>Score se esses achados forem resolvidos juntos.</summary>
+    public double? ScoreSemAchados { get; init; }
+
     /// <summary>Quantas máquinas de cada tipo (ex.: "servidores" → 41).</summary>
     public required IReadOnlyDictionary<string, int> MaquinasPorTipo { get; init; }
 }
 
 /// <summary>Comparação com o lote anterior (tendência).</summary>
 public sealed record ComparacaoLote(string LoteAnteriorId, DateTimeOffset DataAnterior, double ScoreAnterior, double Diferenca, string Motivo);
+
+/// <summary>
+/// Um dos achados que mais pesam no score: um programa, uma máquina ou um grupo de alertas.
+/// <paramref name="Pontos"/> = quanto o score cairia se só este achado fosse resolvido (calculado, não estimado).
+/// </summary>
+public sealed record AchadoPrincipal(string Descricao, double Pontos, int Eventos);

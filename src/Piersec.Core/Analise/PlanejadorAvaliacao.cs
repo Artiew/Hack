@@ -27,15 +27,19 @@ public sealed class PlanejadorAvaliacao(ConjuntoRegras regras, CalculadoraScore 
         var acoes = MontarAcoes(eventos, graves, correlacoes, score, out var removidas);
         var riscos = MontarRiscos(eventos, graves, correlacoes, score, acoes);
 
+        // Máquinas que continuam na média (valendo 0) quando as falhas delas são "resolvidas" numa simulação.
+        var populacao = eventos.Where(e => e.Tipo == TiposEvento.Vulnerabilidade && e.Ativo != ContextoConversao.NaoInformado)
+            .GroupBy(e => e.Ativo, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => g.First().TipoAtivo, StringComparer.Ordinal);
+
         double? previsto = null;
         if (removidas.Count > 0)
         {
             var restantes = eventos.Where(e => !removidas.Contains(e.Id)).ToList();
-            var populacao = eventos.Where(e => e.Tipo == TiposEvento.Vulnerabilidade && e.Ativo != ContextoConversao.NaoInformado)
-                .GroupBy(e => e.Ativo, StringComparer.Ordinal)
-                .ToDictionary(g => g.Key, g => g.First().TipoAtivo, StringComparer.Ordinal);
             previsto = calculadora.Calcular(restantes, tiposMedidos, populacao).Valor;
         }
+
+        var (achados, percentualExplicado, scoreSemAchados) = AchadosQueMaisPesam(eventos, tiposMedidos, score, populacao);
 
         return new Avaliacao
         {
@@ -45,10 +49,76 @@ public sealed class PlanejadorAvaliacao(ConjuntoRegras regras, CalculadoraScore 
             Acoes = acoes,
             FraseUmaCoisa = FraseUmaCoisa(acoes),
             ScorePrevisto = previsto,
+            AchadosPrincipais = achados,
+            PercentualExplicado = percentualExplicado,
+            ScoreSemAchados = scoreSemAchados,
             MaquinasPorTipo = eventos.Where(e => e.Ativo != ContextoConversao.NaoInformado)
                 .GroupBy(e => e.TipoAtivo ?? RegrasAtivos.Desconhecido)
                 .ToDictionary(g => regras.Ativos.Tipo(g.Key).Plural, g => g.Select(e => e.Ativo).Distinct().Count()),
         };
+    }
+
+    // ---------------- "3 achados explicam X% do risco" ----------------
+
+    public const int QuantidadeAchadosPrincipais = 3;
+
+    /// <summary>
+    /// Para cada candidato (programa, máquina ou grupo de alertas), recalcula o score SEM ele e mede a queda.
+    /// Os 3 que mais derrubam o score são os achados principais; o X% vem de recalcular sem os 3 juntos
+    /// (não é a soma das quedas, porque um mesmo evento pode estar em dois achados). Mesma calculadora do score:
+    /// nada é estimado. Para não pesar, só os candidatos mais fortes de cada tipo entram na conta.
+    /// </summary>
+    private (List<AchadoPrincipal>, double?, double?) AchadosQueMaisPesam(IReadOnlyList<EventoSeguranca> eventos,
+        IReadOnlySet<string> tiposMedidos, ScoreRisco score, IReadOnlyDictionary<string, string?> populacao)
+    {
+        if (score.Valor is not { } total || total <= 0)
+            return ([], null, null);
+
+        var candidatos = new List<(string Descricao, HashSet<string> Ids)>();
+        HashSet<string> Ids(IEnumerable<EventoSeguranca> g) => g.Select(e => e.Id).ToHashSet(StringComparer.Ordinal);
+        var vulnerabilidades = eventos.Where(e => e.Tipo == TiposEvento.Vulnerabilidade && e.Ativo != ContextoConversao.NaoInformado).ToList();
+
+        foreach (var g in vulnerabilidades.Where(e => !string.IsNullOrWhiteSpace(e.Pacote))
+                     .GroupBy(e => e.Pacote!.Trim().ToLowerInvariant(), StringComparer.Ordinal)
+                     .OrderByDescending(g => g.Count(e => e.Severidade >= Severidade.Alta)).ThenByDescending(g => g.Count()).ThenBy(g => g.Key, StringComparer.Ordinal)
+                     .Take(10))
+            candidatos.Add(($"falhas no programa {g.First().Pacote!.Trim()} ({Qtd(g.Select(e => e.Ativo).Distinct().Count(), "máquina", "máquinas")})", Ids(g)));
+
+        foreach (var g in vulnerabilidades.GroupBy(e => e.Ativo, StringComparer.Ordinal)
+                     .OrderByDescending(g => calculadora.PontosDaMaquina(g) * regras.Ativos.Tipo(g.First().TipoAtivo).PesoNoScore)
+                     .ThenByDescending(g => g.Count()).ThenBy(g => g.Key, StringComparer.Ordinal)
+                     .Take(5))
+            candidatos.Add(($"a máquina {g.Key} ({regras.Ativos.Tipo(g.First().TipoAtivo).Singular}, {Qtd(g.Count(), "falha", "falhas")})", Ids(g)));
+
+        foreach (var g in eventos.Where(e => e.Tipo == TiposEvento.Alerta && e.Severidade is { } s && regras.Score.PesoPorAlerta[s] > 0)
+                     .GroupBy(e => (e.Ativo, Regra: e.RegraOrigem ?? "?"))
+                     .OrderByDescending(g => g.Sum(e => regras.Score.PesoPorAlerta[e.Severidade!.Value]))
+                     .ThenBy(g => g.Key.Ativo, StringComparer.Ordinal).ThenBy(g => g.Key.Regra, StringComparer.Ordinal)
+                     .Take(5))
+            candidatos.Add(($"{Qtd(g.Count(), "alerta", "alertas")} da regra {g.Key.Regra} em {g.Key.Ativo}", Ids(g)));
+
+        double ScoreSem(HashSet<string> ids) =>
+            calculadora.Calcular(eventos.Where(e => !ids.Contains(e.Id)).ToList(), tiposMedidos, populacao).Valor ?? 0;
+
+        var principais = new List<(string Descricao, HashSet<string> Ids, double Queda)>();
+        foreach (var c in candidatos
+                     .Select(c => (c.Descricao, c.Ids, Queda: total - ScoreSem(c.Ids)))
+                     .Where(c => c.Queda >= 0.1)
+                     .OrderByDescending(c => c.Queda).ThenBy(c => c.Descricao, StringComparer.Ordinal))
+        {
+            // "o programa X" e "a máquina Y" podem ser exatamente as mesmas falhas: conta uma vez só.
+            if (principais.Any(p => p.Ids.SetEquals(c.Ids)))
+                continue;
+            principais.Add(c);
+            if (principais.Count == QuantidadeAchadosPrincipais)
+                break;
+        }
+        if (principais.Count == 0)
+            return ([], null, null);
+
+        var semTodos = Math.Round(ScoreSem(principais.SelectMany(c => c.Ids).ToHashSet(StringComparer.Ordinal)), 1);
+        var percentual = Math.Round(100 * (total - semTodos) / total, 1);
+        return (principais.Select(c => new AchadoPrincipal(c.Descricao, Math.Round(c.Queda, 1), c.Ids.Count)).ToList(), percentual, semTodos);
     }
 
     // ---------------- plano de ação ----------------

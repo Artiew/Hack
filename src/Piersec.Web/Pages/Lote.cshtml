@@ -66,6 +66,10 @@
             {
                 <p>Se fizer só uma coisa: @av.FraseUmaCoisa</p>
             }
+            @if (GeradorRelatorioHtml.FraseAchados(av) is { } fraseAchados)
+            {
+                <p>@fraseAchados <span class="meta">(@string.Join("; ", av.AchadosPrincipais.Select(x => x.Descricao)))</span></p>
+            }
         </div>
     </section>
 

@@ -55,6 +55,8 @@ O briefing completo está em **`docs/PROMPT.md`** — leia antes de qualquer tar
   - Tela **/Automacao** (fila de aprovação, sugestões, abertos com desfazer, último lote, ensaio por nível, log de
     decisão); `/automacao/CH-NNNN.txt`; resumo na tela do lote; seção 4 do relatório (limites viraram seção 5).
     Executivo só vê; admin/analista decidem; tudo na auditoria. 212 testes passando.
+- **Depois da Fase 5:** linhas repetidas contam uma vez só (lacuna com a linha); "faltou o arquivo de alertas/vulnerabilidades"
+  (RF7); "3 achados explicam X% do risco" (ou "risco espalhado"); `.txt` do chamado sem "Eventos: 0". 224 testes.
 - **Próximo passo: Fase 6** — visões executiva e técnica com navegação entre elas, números clicáveis até a linha do CSV
   (RG2), tabela técnica filtrável, filtro por ambiente, "discordar da severidade". Ver `docs/PROMPT.md` seção 5.1.
 - Atenção: `rodar.cmd -DoZero` apaga também usuários e chaves; na 1ª execução a senha do admin aparece UMA vez no terminal.
