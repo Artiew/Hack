@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using Piersec.Core.Modelo;
+using Piersec.Core.Operacao;
 using Piersec.Core.Padronizacao;
 
 namespace Piersec.Core.Analise;
@@ -101,6 +102,7 @@ public sealed partial class ConjuntoRegras
     public required RegrasAtivos Ativos { get; init; }
     public required RegrasScore Score { get; init; }
     public required RegrasPlano Plano { get; init; }
+    public required RegrasAutomacao Automacao { get; init; }
 
     public static ConjuntoRegras Carregar(string pasta)
     {
@@ -110,6 +112,7 @@ public sealed partial class ConjuntoRegras
         var ativos = Ler<RegrasAtivos>(pasta, "ativos.json");
         var score = Ler<RegrasScore>(pasta, "score.json");
         var plano = Ler<RegrasPlano>(pasta, "plano.json");
+        var automacao = Ler<RegrasAutomacao>(pasta, "automacao.json");
 
         var regras = new ConjuntoRegras
         {
@@ -125,6 +128,7 @@ public sealed partial class ConjuntoRegras
             Ativos = ativos,
             Score = score,
             Plano = plano,
+            Automacao = automacao,
         };
         regras.Validar();
         return regras;
@@ -155,6 +159,9 @@ public sealed partial class ConjuntoRegras
         foreach (var s in SeveridadeExtensoes.DoMaisGrave)
             if (!Severidade.Textos.ContainsKey(s))
                 throw Erro("severidade.json", $"'textos' não tem a severidade {s}");
+
+        if (Automacao.Problemas(Ativos).FirstOrDefault() is { } problemaAutomacao)
+            throw Erro("automacao.json", problemaAutomacao);
 
         var repetidos = Correlacoes.GroupBy(r => r.Id).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
         if (repetidos.Count > 0)

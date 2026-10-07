@@ -1,6 +1,7 @@
 using System.Text;
 using Piersec.Core.Armazenamento;
 using Piersec.Core.Modelo;
+using Piersec.Core.Operacao;
 using Piersec.Core.Relatorio;
 using Piersec.Core.Validacao;
 
@@ -18,7 +19,8 @@ public sealed class CicloAnalise(
     RepositorioLotes repositorio,
     GeradorRelatorioHtml gerador,
     ConversorPdf conversorPdf,
-    ValidadorLote validador)
+    ValidadorLote validador,
+    ServicoOperacao? operacao = null)
 {
     public async Task<ResultadoCiclo> ExecutarAsync(IReadOnlyList<ArquivoEnviado> arquivos, CancellationToken ct = default)
     {
@@ -26,6 +28,18 @@ public sealed class CicloAnalise(
         var anterior = repositorio.Listar().FirstOrDefault(r => r.Score is not null);
         lote = lote with { Comparacao = Comparar(lote, anterior) };
         lote = lote with { Validacao = validador.Validar(lote) };
+
+        // Operação automática (simulada): roda depois da validação, porque lote não validado não dispara nada sozinho.
+        // Em seguida, V13 confere por outro caminho que nenhuma ação feita sozinha furou as travas.
+        if (operacao is not null)
+        {
+            var resultado = operacao.Processar(lote);
+            lote = lote with
+            {
+                Operacao = resultado,
+                Validacao = new ResultadoValidacao([.. lote.Validacao!.Verificacoes, MotorDecisao.Conferir(resultado, operacao.Config)]),
+            };
+        }
 
         // Relatório gerado e relido por inteiro antes de sair (V12). Se algo escapou do filtro, é retido.
         var html = gerador.Gerar(lote);

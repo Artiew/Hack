@@ -54,6 +54,9 @@ public sealed record Lote
     /// <summary>Verificações de consistência feitas antes de emitir o relatório (RF8).</summary>
     public ResultadoValidacao? Validacao { get; init; }
 
+    /// <summary>O que a operação automática fez (ou faria, no ensaio) com este lote.</summary>
+    public Operacao.ResultadoOperacao? Operacao { get; init; }
+
     /// <summary>Quantos eventos têm a severidade informada (null = sem severidade).</summary>
     public int ContarPorSeveridade(Severidade? severidade) =>
         Eventos.Count(e => e.Severidade == severidade);

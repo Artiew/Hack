@@ -1,0 +1,107 @@
+{
+  "descricao": "Operação automatizada (SOC simulado). Toda ação é SIMULADA: a plataforma registra o chamado e gera o arquivo do plano, nunca executa nada em outro sistema. Travas que valem em QUALQUER nível: ação de alto impacto ou irreversível sempre espera aprovação humana; ação que mexe em servidor ou equipamento de rede (ativos críticos) sempre espera aprovação humana; lote que não passou na validação não dispara nada sozinho.",
+  "nivelAutonomia": 2,
+  "niveis": {
+    "0": "só sugere: nada é feito sozinho",
+    "1": "prepara as ações, mas uma pessoa aprova todas",
+    "2": "faz sozinho o que é reversível e de baixo impacto (abrir chamado); o resto espera aprovação",
+    "3": "faz sozinho também o que é reversível e de impacto médio, fora dos ativos críticos; alto impacto continua esperando aprovação"
+  },
+  "modoEnsaio": false,
+  "limiteAcoesPorDia": 20,
+  "tiposCriticos": ["servidor", "rede"],
+  "playbooks": [
+    {
+      "id": "PB-ATUALIZAR-PROGRAMA",
+      "nome": "Atualizar programa com falhas graves",
+      "gatilho": "programa_com_falhas_graves",
+      "acao": "abrir_chamado",
+      "impacto": "baixo",
+      "reversivel": true,
+      "nivelParaAgirSozinho": 2,
+      "maximoPorLote": 3,
+      "titulo": "Atualizar {pacote} em {maquinas} máquina(s)",
+      "motivo": "O programa {pacote} tem {falhas} falha(s) grave(s) já conhecida(s) em {maquinas} máquina(s). Atualizar elimina todas de uma vez.",
+      "passos": [
+        "Testar a versão mais nova de {pacote} em uma máquina antes de distribuir.",
+        "Distribuir a atualização pela ferramenta de atualização automática da empresa.",
+        "Conferir no próximo lote: se as falhas sumirem, a plataforma fecha este chamado sozinha."
+      ],
+      "comoDesfazer": "Cancelar o chamado. Nada foi alterado em nenhuma máquina.",
+      "frameworks": { "mitre": [], "nist": ["PR.PS-02"], "cis": ["7.4"], "iso": ["A.8.8"] }
+    },
+    {
+      "id": "PB-CORRIGIR-MAQUINA",
+      "nome": "Plano de correção de uma máquina vulnerável",
+      "gatilho": "maquina_com_falhas_graves",
+      "acao": "aplicar_correcao",
+      "impacto": "medio",
+      "reversivel": true,
+      "nivelParaAgirSozinho": 3,
+      "maximoPorLote": 5,
+      "titulo": "Aplicar as atualizações pendentes em {ativo} ({falhas} falhas graves)",
+      "motivo": "A máquina {ativo} ({tipo}) tem {falhas} falha(s) grave(s) em: {programas}. Aplicar as atualizações fecha essas portas de entrada.",
+      "passos": [
+        "Criar um ponto de restauração (ou cópia) de {ativo} antes de mexer.",
+        "Atualizar, nesta ordem: {programas}.",
+        "Reiniciar {ativo} fora do horário de uso e conferir se tudo funciona.",
+        "Conferir no próximo lote: se as falhas sumirem, a plataforma fecha este chamado sozinha."
+      ],
+      "comoDesfazer": "Voltar {ativo} ao ponto de restauração criado no passo 1.",
+      "frameworks": { "mitre": [], "nist": ["PR.PS-02", "RS.MI-02"], "cis": ["7.3", "7.4"], "iso": ["A.8.8"] }
+    },
+    {
+      "id": "PB-ISOLAR-MAQUINA",
+      "nome": "Isolar da rede máquina com muitas falhas críticas",
+      "gatilho": "maquina_acumula_falhas",
+      "acao": "isolar_maquina",
+      "impacto": "alto",
+      "reversivel": true,
+      "nivelParaAgirSozinho": 3,
+      "maximoPorLote": 3,
+      "titulo": "Isolar {ativo} da rede até corrigir as {quantidade} falhas críticas",
+      "motivo": "A máquina {ativo} ({tipo}) acumula {quantidade} falhas críticas. Isolar reduz o risco de ela virar porta de entrada, mas interrompe o que ela faz: por isso sempre exige aprovação humana.",
+      "passos": [
+        "Avisar o responsável por {ativo} sobre a parada.",
+        "Mover {ativo} para a rede de quarentena (no firewall ou na ferramenta de proteção da máquina).",
+        "Aplicar as atualizações pendentes e devolver {ativo} à rede normal."
+      ],
+      "comoDesfazer": "Devolver {ativo} à rede de origem.",
+      "frameworks": { "mitre": [], "nist": ["RS.MI-01"], "cis": ["7.3", "7.4"], "iso": ["A.8.8", "A.5.26"] }
+    },
+    {
+      "id": "PB-INVESTIGAR-PICO",
+      "nome": "Investigar pico de alertas",
+      "gatilho": "pico_de_alertas",
+      "acao": "abrir_chamado",
+      "impacto": "baixo",
+      "reversivel": true,
+      "nivelParaAgirSozinho": 2,
+      "maximoPorLote": 5,
+      "titulo": "Investigar {quantidade} alertas da regra {regra} em poucos minutos ({ativo})",
+      "motivo": "O equipamento {ativo} registrou {quantidade} alertas da regra {regra} em até {janela} minutos. Volume concentrado assim costuma indicar atividade em andamento, como varredura ou tentativas repetidas.",
+      "passos": [
+        "Abrir o console de {ativo} e localizar os alertas da regra {regra} no horário do pico.",
+        "Confirmar se as tentativas foram bloqueadas e de onde vieram.",
+        "Se houver sinal de sucesso, escalar para resposta a incidente."
+      ],
+      "comoDesfazer": "Cancelar o chamado. Nada foi alterado em nenhum equipamento.",
+      "frameworks": { "mitre": [], "nist": ["DE.AE-02", "RS.MA-01"], "cis": ["13.1"], "iso": ["A.5.25"] }
+    },
+    {
+      "id": "PB-MEDIR-FONTES",
+      "nome": "Passar a medir o que falta",
+      "gatilho": "fator_nao_medido",
+      "acao": "sugerir",
+      "impacto": "baixo",
+      "reversivel": true,
+      "nivelParaAgirSozinho": 3,
+      "maximoPorLote": 5,
+      "titulo": "Incluir dados de \"{fator}\" nas próximas análises",
+      "motivo": "O fator \"{fator}\" não foi medido neste lote. Sem esses dados, o score não consegue responder: {pergunta}",
+      "passos": [ "Identificar a ferramenta que tem esses dados e exportá-los em CSV junto com os próximos lotes." ],
+      "comoDesfazer": "Descartar a sugestão.",
+      "frameworks": { "mitre": [], "nist": ["ID.AM-03"], "cis": ["8.2"], "iso": ["A.8.16"] }
+    }
+  ]
+}
