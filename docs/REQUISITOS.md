@@ -103,6 +103,7 @@ Atualizado ao fim da **Fase 6** (serviços e prejuízo, visão técnica com rast
 | Navegação executivo → técnico | Serviços, riscos, ações e contagens da tela do lote levam aos eventos; cada evento mostra o serviço afetado | ✅ |
 | Filtro por ambiente sem trocar o consolidado | Tabela "Por ambiente" e filtro na visão técnica (ambiente = arquivo, premissa) | ✅ |
 | Discordar da severidade com motivo e recálculo | Ver RF4 (`RevisaoTests`, ponta a ponta no site) | ✅ |
+| Relatório do executivo só com o que ele usa | Versão da diretoria (HTML e PDF, cifrados) gerada a cada lote: resumo, 2. serviços e prejuízo, 3. score, 4. plano completo e glossário; sem automação, limites e anexos, e sem citar anexo que ele não recebe. Executivo recebe sempre essa versão (mesmo pedindo a completa); admin/analista recebem a completa e têm o botão "Versão da diretoria". Avisos de confiança, ambientes, fonte ausente e "não validado" continuam na página 1. `Versao_da_diretoria_tem_so_...`, `Ciclo_completo_...`; ponta a ponta com admin e executivo (PDF do executivo = PDF da diretoria) | ✅ |
 | Linha do tempo por ativo / cadeia usuário→máquina→servidor | Os dados não trazem usuário nem ligação entre máquinas; a lista por máquina (filtro) ordena por gravidade, não por tempo | ❌ |
 | MITRE ATT&CK como tabela de dados | Aguarda o catálogo de regras do mentor | ❓ |
 

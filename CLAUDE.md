@@ -82,6 +82,11 @@ O briefing completo está em **`docs/PROMPT.md`** — leia antes de qualquer tar
   - Usuários: admin **exclui** usuários (confirmação; não exclui a si mesmo nem o último admin); sessão do excluído cai
     no próximo clique (`OnValidatePrincipal` no cookie). P-014: criar depois de excluir caía no handler errado (corrigido).
     O Vitor NÃO quer botão de "nova senha temporária" (pediu só excluir). 251 testes.
+  - **Relatório da diretoria (pedido do Vitor, na faculdade):** o executivo recebe só Resumo, 2. Serviços e prejuízo,
+    3. Score, 4. Plano completo e Glossário (`VersaoRelatorio.Diretoria`, arquivos `relatorio-diretoria.*`). Admin e
+    analista continuam com o relatório completo + botão "Versão da diretoria". Lotes antigos não têm essa versão: o
+    executivo vê um aviso para reenviar. 252 testes.
+  - PC da faculdade: Windows sem atualização quebra os .exe do .NET 10 (P-015); contorno em `docs/TROUBLESHOOTING.md`.
   - **Falta, nesta ordem (recomendada ao Vitor):** 1) Automação no visual de cards/chips (vale 30% da nota);
     2) conferir o PDF página por página; 3) revisão de linguagem; 4) visão técnica (chips na lista de eventos,
     detalhe em cards); 5) telas Entrar/Trocar senha. Estimativa: 2 a 3 horas.
