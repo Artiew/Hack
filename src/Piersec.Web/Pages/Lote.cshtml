@@ -6,6 +6,9 @@
     var fuso = Piersec.Core.Padronizacao.NormalizadorDatas.FusoBrasilia;
     var correlacoes = Agrupamentos.CorrelacoesMaisGraves(lote.Correlacoes).Take(20).ToList();
     var lacunas = Agrupamentos.Lacunas(lote.Lacunas);
+    // Números clicáveis (RG2) só para quem vê a visão técnica; o executivo fica na visão executiva.
+    var tecnico = !User.IsInRole(Papeis.Executivo);
+    string Ev(FiltroEventos f) => Links.Eventos(lote.Id, f);
 }
 
 <p><a href="/">← Enviar outro lote</a></p>
@@ -78,7 +81,12 @@
     <ol>
         @foreach (var r in av.Riscos)
         {
-            <li><strong>@r.Titulo.</strong> @r.OQueE <em>@r.ComoResolver</em></li>
+            <li><strong>@r.Titulo.</strong> @r.OQueE <em>@r.ComoResolver</em>
+                @if (tecnico && r.CorrelacaoIds.Count > 0)
+                {
+                    <a href="@Ev(new FiltroEventos { Correlacao = string.Join(",", r.CorrelacaoIds) })">ver evidências →</a>
+                }
+            </li>
         }
     </ol>
 
@@ -101,7 +109,7 @@
                 @foreach (var servico in lote.Servicos)
                 {
                     <tr>
-                        <td><strong>@servico.Nome</strong></td>
+                        <td>@if (tecnico) { <a href="@Ev(new FiltroEventos { Servico = servico.Id })"><strong>@servico.Nome</strong></a> } else { <strong>@servico.Nome</strong> }</td>
                         <td>@if (servico.EmRisco) { <strong>@servico.Faixa</strong> } else { @servico.Faixa }</td>
                         <td class="num">@Formatar.Numero(servico.MaquinasComFalhaGrave) de @Formatar.Numero(servico.Maquinas)</td>
                         <td class="num">@Formatar.Numero(servico.AlertasRelevantes)</td>
@@ -134,7 +142,12 @@
             {
                 <tr>
                     <td class="num">@acao.Ordem</td>
-                    <td><strong>@acao.Titulo</strong><div class="meta">@acao.Quadrante</div></td>
+                    <td><strong>@acao.Titulo</strong><div class="meta">@acao.Quadrante</div>
+                        @if (tecnico && acao.EventoIds.Count > 0)
+                        {
+                            <a href="@Ev(new FiltroEventos { Acao = acao.Ordem })">ver @Formatar.Qtd(acao.EventoIds.Count, "falha", "falhas") →</a>
+                        }
+                    </td>
                     <td>@acao.Impacto</td>
                     <td>@(acao.Esforco switch { Nivel.Alto => "alto", Nivel.Medio => "médio", _ => "baixo" })</td>
                     <td>até @acao.PrazoDias dias</td>
@@ -161,17 +174,41 @@
 @if (!User.IsInRole(Papeis.Executivo))
 {
 <div class="tecnico">
+<h2>Visão técnica</h2>
+<p><a class="botao" href="@Ev(new FiltroEventos())">Ver todos os eventos e filtrar →</a>
+    <span class="meta">Todo número abaixo é clicável e leva aos eventos que o formam; cada evento mostra o arquivo e a linha de origem.</span></p>
+
 <h2>Eventos por severidade</h2>
 <table class="estreita">
     <tbody>
         @foreach (var severidade in SeveridadeExtensoes.DoMaisGrave)
         {
             Severidade? s = severidade;
-            <tr><td><span class="sev @s.ClasseCss()"><span aria-hidden="true">@s.Simbolo()</span> @s.Nome()</span></td><td class="num">@Formatar.Numero(lote.ContarPorSeveridade(severidade))</td></tr>
+            <tr><td><span class="sev @s.ClasseCss()"><span aria-hidden="true">@s.Simbolo()</span> @s.Nome()</span></td>
+                <td class="num"><a href="@Ev(new FiltroEventos { Severidade = severidade.ToString() })">@Formatar.Numero(lote.ContarPorSeveridade(severidade))</a></td></tr>
         }
-        <tr><td><span class="sev sev-nenhuma">Sem severidade</span></td><td class="num">@Formatar.Numero(lote.ContarPorSeveridade(null))</td></tr>
+        <tr><td><span class="sev sev-nenhuma">Sem severidade</span></td>
+            <td class="num"><a href="@Ev(new FiltroEventos { Severidade = ConsultaEventos.SemSeveridade })">@Formatar.Numero(lote.ContarPorSeveridade(null))</a></td></tr>
     </tbody>
-    <tfoot><tr><th>Total</th><th class="num">@Formatar.Numero(lote.Eventos.Count)</th></tr></tfoot>
+    <tfoot><tr><th>Total</th><th class="num"><a href="@Ev(new FiltroEventos())">@Formatar.Numero(lote.Eventos.Count)</a></th></tr></tfoot>
+</table>
+
+<h2>Por ambiente</h2>
+<p class="meta">Cada arquivo é tratado como um ambiente (premissa: os dados não trazem cliente nem ambiente). O consolidado acima continua valendo; aqui dá para olhar um de cada vez.</p>
+<table>
+    <thead><tr><th>Ambiente</th><th>Fonte</th><th class="num">Eventos</th><th class="num">Máquinas</th><th class="num">Críticos ou altos</th></tr></thead>
+    <tbody>
+        @foreach (var amb in lote.Eventos.GroupBy(e => (e.Ambiente, e.Fonte)).OrderBy(g => g.Key.Ambiente, StringComparer.Ordinal))
+        {
+            <tr>
+                <td><a href="@Ev(new FiltroEventos { Ambiente = amb.Key.Ambiente })">@amb.Key.Ambiente</a></td>
+                <td>@amb.Key.Fonte</td>
+                <td class="num">@Formatar.Numero(amb.Count())</td>
+                <td class="num">@Formatar.Numero(amb.Select(e => e.Ativo).Distinct().Count())</td>
+                <td class="num">@Formatar.Numero(amb.Count(e => e.Severidade >= Severidade.Alta))</td>
+            </tr>
+        }
+    </tbody>
 </table>
 
 <h2>Correlações (@Formatar.Numero(lote.Correlacoes.Count))</h2>
@@ -189,7 +226,7 @@ else
             {
                 Severidade? s = c.Severidade;
                 <tr>
-                    <td><code>@c.Id</code></td>
+                    <td><a href="@Ev(new FiltroEventos { Correlacao = c.Id })"><code>@c.Id</code></a></td>
                     <td><span class="sev @s.ClasseCss()"><span aria-hidden="true">@s.Simbolo()</span> @s.Nome()</span></td>
                     <td title="@c.Justificativa">@c.Titulo</td>
                     <td class="num">@Formatar.Numero(c.Ativos.Count)</td>
@@ -229,7 +266,7 @@ else
                     }
                 </td>
                 <td class="num">@Formatar.Bytes(a.TamanhoBytes)</td>
-                <td class="num">@Formatar.Numero(a.RegistrosLidos)</td>
+                <td class="num">@if (a.Fonte is not null) { <a href="@Ev(new FiltroEventos { Arquivo = a.Nome })">@Formatar.Numero(a.RegistrosLidos)</a> } else { @Formatar.Numero(a.RegistrosLidos) }</td>
                 <td class="num">@Formatar.Numero(a.RegistrosRejeitados)</td>
                 <td class="num">@Formatar.Numero(a.RegistrosRepetidos)</td>
                 <td class="num">@Formatar.Numero(a.Lacunas)</td>

@@ -150,3 +150,14 @@ ol li { margin-bottom: 10px; }
 .linha-atual { outline: 2px solid var(--destaque); outline-offset: -2px; }
 .nowrap { white-space: nowrap; }
 table.estreita-media { max-width: 900px; }
+
+/* ---------- Visão técnica (Fase 6) ---------- */
+.filtros { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px 24px; align-items: end; margin: 16px 0 24px; }
+.filtros label { display: flex; flex-direction: column; gap: 4px; font-weight: 600; font-size: 15px; width: auto; }
+.filtros select, .filtros input[type=text] { font: inherit; font-weight: 400; padding: 8px 10px; border: 1px solid var(--linha); border-radius: 8px; background: var(--fundo); color: var(--tinta); }
+.acoes-filtro { display: flex; gap: 20px; align-items: center; }
+.resumo-filtro { display: flex; flex-wrap: wrap; gap: 24px; margin: 8px 0; }
+.resumo-filtro a { text-decoration: none; }
+.paginas { display: flex; gap: 24px; align-items: center; margin: 20px 0; }
+.origem h2 { margin-top: 0; }
+.origem { display: block; }

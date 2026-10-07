@@ -1,0 +1,61 @@
+@page "/Lote/{id}/Evento/{eventoId}"
+@model EventoModel
+@using Piersec.Core.Consulta
+@{
+    var lote = Model.Lote;
+    var e = Model.Evento;
+    ViewData["Title"] = e.Id;
+    var fuso = Piersec.Core.Padronizacao.NormalizadorDatas.FusoBrasilia;
+}
+
+<p><a href="/Lote/@lote.Id/Eventos">← Todos os eventos do lote @lote.Id[..8]</a></p>
+<h1>@e.Id · <span class="sev @e.Severidade.ClasseCss()">@e.Severidade.Simbolo() @e.Severidade.Nome()</span></h1>
+<p><strong>@e.Descricao</strong></p>
+
+<section class="cartao origem">
+    <h2>De onde veio</h2>
+    <p>Arquivo <code>@e.Evidencia.Arquivo</code>, <strong>linha @e.Evidencia.Linha</strong>
+        (contando o cabeçalho como linha 1).</p>
+    <p class="meta">Impressão digital do arquivo (SHA-256): <code>@e.Evidencia.Sha256Arquivo</code>.
+        Se o arquivo que você tem der a mesma impressão digital, a linha @e.Evidencia.Linha dele é exatamente a que gerou este evento.</p>
+    <p class="meta">A plataforma não guarda a linha original do CSV (só os campos que usa), para guardar o mínimo de dados (LGPD).
+        Para ver a linha como veio, abra o arquivo nessa linha.</p>
+</section>
+
+<h2>Por que esta severidade</h2>
+<p>@(e.Justificativa ?? "Sem justificativa.")</p>
+<p class="meta">Como veio na fonte: @(e.SeveridadeOrigem ?? "não informada")@(e.Cvss is { } cvss ? $" · nota CVSS {cvss.ToString("0.0", Formatar.PtBr)}" : "")@(e.NivelOrigem is { } nivel ? $" · nível {nivel}" : "")</p>
+
+<h2>O que a plataforma leu</h2>
+<table class="estreita-media">
+    <tbody>
+        <tr><th>Fonte</th><td>@e.Fonte</td></tr>
+        <tr><th>Tipo</th><td>@e.Tipo</td></tr>
+        <tr><th>Ambiente</th><td>@e.Ambiente <span class="meta">(premissa: o nome do arquivo)</span></td></tr>
+        <tr><th>Máquina</th><td><a href="@Links.Eventos(lote.Id, new FiltroEventos { Ativo = e.Ativo })">@e.Ativo</a> <span class="meta">(@Model.Regras.Ativos.Tipo(e.TipoAtivo).Singular)</span></td></tr>
+        <tr><th>Serviço</th><td>@if (Model.Servico is { } s) { <a href="@Links.Eventos(lote.Id, new FiltroEventos { Servico = s.Id })">@s.Nome</a> <span class="meta">(situação @s.Faixa.ToLowerInvariant(); premissa da equipe)</span> } else { <span>—</span> }</td></tr>
+        <tr><th>Quando</th><td>@if (e.DataUtc is null) { <span>não informada pela fonte</span> } else { @Formatar.DataHora(e.DataUtc, fuso) <span class="meta">(horário de Brasília)</span> }</td></tr>
+        @if (e.Cve is not null) { <tr><th>Falha (CVE)</th><td>@e.Cve</td></tr> }
+        @if (e.Pacote is not null) { <tr><th>Programa</th><td><a href="@Links.Eventos(lote.Id, new FiltroEventos { Texto = e.Pacote })">@e.Pacote</a> @e.VersaoPacote</td></tr> }
+        @if (e.SistemaOperacional is not null) { <tr><th>Sistema</th><td>@e.SistemaOperacional</td></tr> }
+        @if (e.RegraOrigem is not null) { <tr><th>Regra do alerta</th><td><a href="@Links.Eventos(lote.Id, new FiltroEventos { Regra = e.RegraOrigem })">@e.RegraOrigem</a></td></tr> }
+        @if (e.UsuarioAnonimo is not null) { <tr><th>Usuário (anonimizado)</th><td><code>@e.UsuarioAnonimo</code></td></tr> }
+        @if (e.Detalhe is not null) { <tr><th>Detalhe da fonte</th><td>@e.Detalhe</td></tr> }
+    </tbody>
+</table>
+
+<h2>Correlações em que aparece (@Model.Correlacoes.Count)</h2>
+@if (Model.Correlacoes.Count == 0)
+{
+    <p class="vazio">Este evento não entrou em nenhuma correlação.</p>
+}
+else
+{
+    <ul>
+        @foreach (var c in Model.Correlacoes)
+        {
+            <li><a href="@Links.Eventos(lote.Id, new FiltroEventos { Correlacao = c.Id })"><code>@c.Id</code></a> @c.Titulo
+                <div class="meta">@c.Justificativa</div></li>
+        }
+    </ul>
+}

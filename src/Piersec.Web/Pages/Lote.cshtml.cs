@@ -3,11 +3,12 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Piersec.Core.Armazenamento;
 using Piersec.Core.Modelo;
 using Piersec.Core.Relatorio;
+using Piersec.Web.Seguranca;
 
 namespace Piersec.Web.Pages;
 
 /// <summary>Resultado de um lote: o que aconteceu com cada arquivo e links do relatório.</summary>
-public sealed class LoteModel(RepositorioLotes repositorio, GeradorRelatorioHtml gerador) : PageModel
+public sealed class LoteModel(RepositorioLotes repositorio, LotesEmMemoria lotes, GeradorRelatorioHtml gerador) : PageModel
 {
     public Lote Lote { get; private set; } = null!;
     public bool PdfDisponivel { get; private set; }
@@ -20,7 +21,7 @@ public sealed class LoteModel(RepositorioLotes repositorio, GeradorRelatorioHtml
 
     public IActionResult OnGet(string id)
     {
-        var lote = repositorio.Carregar(id); // id inválido → null → 404
+        var lote = lotes.Obter(id); // id inválido → null → 404
         if (lote is null)
             return NotFound();
         Lote = lote;

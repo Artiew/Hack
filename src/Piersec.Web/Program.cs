@@ -67,6 +67,7 @@ builder.Services.AddSingleton(new ConversorPdf());
 builder.Services.AddSingleton(sp => new RepositorioChamados(pastaDados, sp.GetRequiredService<ICifrador>()));
 builder.Services.AddSingleton(sp => new ServicoOperacao(regras, sp.GetRequiredService<RepositorioChamados>(), sp.GetRequiredService<TimeProvider>(), fuso));
 builder.Services.AddSingleton<CicloAnalise>();
+builder.Services.AddSingleton<LotesEmMemoria>();
 
 // Acesso (RS1): usuários, auditoria e sessão por cookie protegido que expira.
 builder.Services.AddSingleton(new RepositorioUsuarios(pastaDados));
@@ -90,6 +91,7 @@ builder.Services.AddAuthorization(o =>
     // Nada abre sem autenticar, a não ser o que for liberado explicitamente.
     o.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
     o.AddPolicy("Admin", p => p.RequireRole(Papeis.Admin));
+    o.AddPolicy("Tecnico", p => p.RequireRole(Papeis.Admin, Papeis.Analista)); // visão técnica: executivo não vê
 });
 builder.Services.AddRazorPages(o =>
 {
@@ -97,6 +99,8 @@ builder.Services.AddRazorPages(o =>
     o.Conventions.AllowAnonymousToPage("/Erro");
     o.Conventions.AuthorizePage("/Usuarios", "Admin");
     o.Conventions.AuthorizePage("/Auditoria", "Admin");
+    o.Conventions.AuthorizePage("/Eventos", "Tecnico");
+    o.Conventions.AuthorizePage("/Evento", "Tecnico");
 });
 
 // Limite de tentativas de login: no máximo 10 por minuto vindas do mesmo endereço.

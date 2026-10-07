@@ -1,0 +1,107 @@
+@page "/Lote/{id}/Eventos"
+@model EventosModel
+@using Piersec.Core.Consulta
+@{
+    var lote = Model.Lote;
+    ViewData["Title"] = "Eventos do lote " + lote.Id[..8];
+    var fuso = Piersec.Core.Padronizacao.NormalizadorDatas.FusoBrasilia;
+    var f = Model.Filtro;
+    var fontes = lote.Eventos.Select(e => e.Fonte).Distinct().Order().ToList();
+    var ambientes = lote.Eventos.Select(e => e.Ambiente).Distinct().Order().ToList();
+    var tipos = lote.Eventos.Select(e => e.Tipo).Distinct().Order().ToList();
+}
+
+<p><a href="/Lote/@lote.Id">← Voltar ao lote @lote.Id[..8]</a></p>
+<h1>Eventos: @ConsultaEventos.Descrever(lote, f)</h1>
+<p class="meta">@Formatar.Qtd(Model.Encontrados.Count, "evento encontrado", "eventos encontrados") de @Formatar.Numero(lote.Eventos.Count),
+    do mais grave para o menos grave. Clique no id para ver de que arquivo e linha o evento veio.</p>
+
+<p class="resumo-filtro">
+    @foreach (var sev in SeveridadeExtensoes.DoMaisGrave)
+    {
+        Severidade? s = sev;
+        var n = Model.SemFiltroDeSeveridade.Count(e => e.Severidade == sev);
+        <a class="sev @s.ClasseCss()" href="@Links.Eventos(lote.Id, f with { Severidade = sev.ToString() })">@s.Nome(): @Formatar.Numero(n)</a>
+    }
+</p>
+
+<form method="get" class="cartao filtros" action="/Lote/@lote.Id/Eventos">
+    <label>Severidade
+        <select name="severidade">
+            <option value="">todas</option>
+            @foreach (var sev in SeveridadeExtensoes.DoMaisGrave)
+            {
+                Severidade? s = sev;
+                <option value="@sev" selected="@(f.Severidade == sev.ToString())">@s.Nome()</option>
+            }
+            <option value="@ConsultaEventos.SemSeveridade" selected="@(f.Severidade == ConsultaEventos.SemSeveridade)">sem severidade</option>
+        </select>
+    </label>
+    <label>Tipo
+        <select name="tipo">
+            <option value="">todos</option>
+            @foreach (var t in tipos) { <option value="@t" selected="@(f.Tipo == t)">@t</option> }
+        </select>
+    </label>
+    <label>Serviço
+        <select name="servico">
+            <option value="">todos</option>
+            @foreach (var s in lote.Servicos) { <option value="@s.Id" selected="@(f.Servico == s.Id)">@s.Nome</option> }
+        </select>
+    </label>
+    <label>Fonte
+        <select name="fonte">
+            <option value="">todas</option>
+            @foreach (var fo in fontes) { <option value="@fo" selected="@(f.Fonte == fo)">@fo</option> }
+        </select>
+    </label>
+    <label>Ambiente (arquivo)
+        <select name="ambiente">
+            <option value="">todos</option>
+            @foreach (var a in ambientes) { <option value="@a" selected="@(f.Ambiente == a)">@a</option> }
+        </select>
+    </label>
+    <label>Máquina contém <input type="text" name="ativo" value="@f.Ativo" maxlength="@FiltroEventos.TamanhoMaximoTexto"></label>
+    <label>Regra do alerta <input type="text" name="regra" value="@f.Regra" maxlength="@FiltroEventos.TamanhoMaximoTexto"></label>
+    <label>Procurar (descrição, CVE, programa) <input type="text" name="texto" value="@f.Texto" maxlength="@FiltroEventos.TamanhoMaximoTexto"></label>
+    @if (f.Correlacao is not null) { <input type="hidden" name="correlacao" value="@f.Correlacao"> }
+    @if (f.Acao is not null) { <input type="hidden" name="acao" value="@f.Acao"> }
+    @if (f.Arquivo is not null) { <input type="hidden" name="arquivo" value="@f.Arquivo"> }
+    <div class="acoes-filtro">
+        <button type="submit">Filtrar</button>
+        <a href="/Lote/@lote.Id/Eventos">Limpar filtros</a>
+    </div>
+</form>
+
+@if (Model.Encontrados.Count == 0)
+{
+    <p class="vazio">Nenhum evento com esses filtros.</p>
+}
+else
+{
+    <table>
+        <thead><tr><th>Id</th><th>Severidade</th><th>Máquina</th><th>Serviço</th><th>O que é</th><th>Quando</th><th>Origem</th></tr></thead>
+        <tbody>
+            @foreach (var e in Model.NaPagina)
+            {
+                <tr>
+                    <td class="nowrap"><a href="@Links.Evento(lote.Id, e.Id)"><code>@e.Id</code></a></td>
+                    <td><span class="sev @e.Severidade.ClasseCss()"><span aria-hidden="true">@e.Severidade.Simbolo()</span> @e.Severidade.Nome()</span></td>
+                    <td>@e.Ativo<div class="meta">@Model.Regras.Ativos.Tipo(e.TipoAtivo).Singular</div></td>
+                    <td>@(lote.Servicos.FirstOrDefault(s => s.Id == e.Servico)?.Nome ?? "—")</td>
+                    <td>@e.Descricao</td>
+                    <td class="nowrap">@(e.DataUtc is null ? "não informada" : Formatar.DataHora(e.DataUtc, fuso))</td>
+                    <td><code>@e.Evidencia.Arquivo:@e.Evidencia.Linha</code></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    @if (Model.TotalPaginas > 1)
+    {
+        <nav class="paginas" aria-label="Páginas">
+            @if (Model.Pagina > 1) { <a href="@Model.LinkPagina(Model.Pagina - 1)">← anterior</a> }
+            <span>página @Model.Pagina de @Model.TotalPaginas</span>
+            @if (Model.Pagina < Model.TotalPaginas) { <a href="@Model.LinkPagina(Model.Pagina + 1)">próxima →</a> }
+        </nav>
+    }
+}
