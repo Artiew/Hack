@@ -123,3 +123,24 @@ O briefing completo está em **`docs/PROMPT.md`** — leia antes de qualquer tar
 - **Trazer da faculdade:** `git pull <PEN>:\piersec-faculdade.bundle main`, depois rode os testes, leia `git log` dos commits
   novos e a seção "Estado atual" acima, e resuma ao Vitor o que mudou.
 - Os CSVs do desafio **não** vão no pen drive sem autorização do mentor.
+
+## Continuidade — 08/10/2026 (Automação)
+- Instruções inicialmente encontradas em `aaaa.md`, com `CLAUDE.md` excluído localmente. Para a entrega ao Vitor, o usuário autorizou restaurar o nome `CLAUDE.md`, preservando o conteúdo atualizado; `aaaa.md` deixou de existir.
+- Automação: resumo em cartões, atalhos por fila com contagem, cartões para aprovação/sugestões/abertos, estados com ícone + texto + cor, detalhes expansíveis e estado vazio com navegação.
+- Formulários de Aprovar/Rejeitar/Desfazer apontam explicitamente para `/Automacao`; permissões e regras de negócio preservadas.
+- Verificação: compilação da solução sem avisos/erros; 272/272 testes aprovados. Instância temporária com exemplos fictícios: estado vazio, 13 cartões, tokens nos POSTs, aprovação e botão Desfazer, executivo sem botões de decisão. Prévia do HTML renderizado conferida no navegador em claro/escuro e 500 px, sem transbordamento horizontal.
+- SDK desta máquina: PATH tinha só 9.0.312. Instalado 10.0.401 em `%TEMP%\piersec-dotnet-10`, sem alterar `global.json`. Para esta sessão, adicionar essa pasta ao PATH e definir DOTNET_ROOT para ela antes de compilar/rodar. Atualização: SDK 10.0.401 instalado permanentemente em C:\Users\pop\.dotnet em 08/10/2026, local já reconhecido pelo rodar.ps1. A instalação temporária não é mais necessária.
+- Nenhum CSV real, conteúdo de `var/` ou relatório real foi lido. A conferência usou armazenamento temporário separado e o servidor temporário foi encerrado.
+- Próximo passo: conferir PDF com exemplos fictícios; revisar linguagem e depois visão técnica. Rejeitar e Desfazer continuam cobertos pela suíte de operação, mas não foram executados pelo navegador nesta sessão.
+
+- 2FA (08/10/2026): mensagem explícita ao confirmar sem código, sem consumir tentativas; instrução do campo mais clara. 275/275 testes, fluxo HTTP fictício válido/inválido/recuperação aprovado. P-017 registra o limite: falha com código preenchido ainda não reproduzida. Reiniciar pelo atalho para recompilar a versão Release usada normalmente.
+
+- Navegação/2FA (08/10/2026): P-018 corrigido. Menu só aparece após concluir as etapas obrigatórias; orientação e saída disponíveis no cadastro. Sessao.Gravar atualiza também HttpContext.User para não gerar formulários com identidade anterior após ativar 2FA. Build aprovado, 277 testes e roteiro HTTP tests/verificar-2fa.ps1 aprovado. Reiniciar pelo atalho para carregar a correção.
+
+## Entrega para integração — 08/10/2026
+- Repositório original confirmado: raiz `47127bb`; branch `main`; ponto em comum `742499a`. `d4fa492` existe; `f4f5a35` não existe nesta cópia.
+- Autoria dos novos commits: Vitor Calazans, conforme autorização do usuário para manter a configuração existente.
+- Conferência desta entrega: `dotnet test --solution Piersec.slnx` com SDK 10.0.401 permanente: 277 aprovados, 0 falhas e 0 ignorados.
+- **Pendência não resolvida:** o usuário relatou “Algo deu errado” e impossibilidade de enviar CSV na Visão geral da instalação atual. O envio funcionou em instância isolada com exemplos fictícios. A exceção do terminal da instalação real não foi obtida; a causa ainda não foi identificada. Não considerar esse relato corrigido nem rodar `-DoZero` como solução.
+- A conta local criada nesta sessão não será transportada: usuários, senhas, chaves, lotes e relatórios ficam fora do Git e do bundle.
+- O pacote inclui as alterações de navegação/2FA discutidas nesta sessão; o usuário contestou a ampliação do escopo. Revisar essas alterações durante a integração, preservando a exigência original de 2FA para admin.

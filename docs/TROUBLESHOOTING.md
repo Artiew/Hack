@@ -144,3 +144,36 @@ Requisito afetado: nenhum (ambiente) · Impacto: bloqueia o trabalho na faculdad
   Verificação: `rodar.cmd` num PowerShell limpo → .NET achado, contorno ligado, 252/252 testes, site no ar ✔; segunda execução → "já está no ar" ✔.
 - **Correção de verdade:** instalar as atualizações do Windows (precisa de administrador, não é nosso PC). Em casa o problema não aparece.
 - **Aprendizado:** quando só o `.exe` falha e o `.dll` funciona, o problema é a "casca" do programa e o Windows, não o código.
+
+## P-016 · SDK 10 ausente no PATH da máquina de casa
+- **Sintoma × esperado:** `dotnet test --solution Piersec.slnx` para antes de executar: SDK 10.0.401 solicitado, apenas 9.0.312 instalado no PATH.
+- **Isolamento:** ambiente; o código dos testes não chegou a rodar.
+- **Contorno verificado (08/10/2026):** SDK oficial 10.0.401 instalado por `dotnet-install.ps1` em `%TEMP%\piersec-dotnet-10`; DOTNET_ROOT e PATH definidos apenas no processo de conferência. `global.json` preservado.
+- **Verificação:** `dotnet build Piersec.slnx` sem avisos/erros; `dotnet test --solution Piersec.slnx --no-build`: 272 aprovados, 0 falhas, 0 ignorados.
+- **Resolvido (08/10/2026):** SDK oficial estável 10.0.401 instalado em `C:\Users\pop\.dotnet`, local permanente já reconhecido pelo `rodar.ps1`. Conferência usando essa instalação: versão 10.0.401, compilação sem avisos/erros, 272/272 testes aprovados. `global.json` preservado.
+
+## P-017 · Confirmação do 2FA sem orientação quando o campo está vazio
+- **Relato:** clicar em Confirmar aparenta não fazer nada. A captura não mostrava mensagem de erro.
+- **Isolamento:** em instância temporária, com conta fictícia, código TOTP válido e recuperação concluíram o login; código inválido exibiu erro. Não foi reproduzida falha com código válido preenchido.
+- **Problema identificado:** o atributo `required` deixa o navegador bloquear o envio vazio antes de chegar ao servidor. Não havia mensagem própria da página para esse caso; envio vazio direto ao servidor ainda consumia tentativa.
+- **Teste antes da correção:** três casos de `SegundoFatorPaginaTests` (null, vazio, espaços) falharam; os 272 testes existentes passaram.
+- **Correção:** formulário usa validação no servidor (`novalidate`); presença do código é conferida antes da autenticação, com erro explícito sem consumir tentativa. Ajuda e placeholder esclarecem que é preciso digitar o código do aplicativo. Proteção anti-CSRF, exigência de 2FA, expiração, limite de requisições e validação dos códigos preservados.
+- **Verificação:** compilação sem avisos/erros; 275/275 testes aprovados; fluxo HTTP isolado com código inválido, válido e recuperação aprovado. Nenhuma conta real foi lida ou alterada.
+- **Limite:** esta correção cobre o envio vazio. Se o sintoma persistir com código preenchido na versão recompilada, ainda é necessário observar a requisição no navegador do usuário; não atribuir esse caso à validação de presença sem evidência.
+
+## P-018 · Menu oferecia destinos bloqueados durante cadastro obrigatório do 2FA
+- **Sintoma:** admin novo em `/DoisFatores`; ao clicar no menu, volta à mesma página.
+- **Causa confirmada:** `ExigirTrocaDeSenha` exige concluir o cadastro, mas `_Layout` oferecia navegação como se o acesso já estivesse completo.
+- **Antes:** roteiro com admin fictício falhou por encontrar menu durante o cadastro obrigatório.
+- **Correção:** navegação somente após todas as etapas obrigatórias; cabeçalho restrito com orientação e Sair; texto do cadastro explica Ativar → guardar recuperação → continuar.
+- **Segundo defeito reproduzido:** Sair imediatamente após ativar 2FA retornava 400. A resposta ainda usava a identidade anterior para gerar tokens, diferente da identidade gravada no cookie.
+- **Correção da sessão:** depois de `SignInAsync`, `HttpContext.User` recebe o mesmo principal gravado, mantendo os formulários da resposta consistentes com o cookie.
+- **Evidência:** build sem avisos/erros; 277 testes aprovados, incluindo `SessaoTests`; `tests/verificar-2fa.ps1` com armazenamento temporário confirma ausência de menu antes, menu e Automação liberados depois, saída imediata, código inválido, TOTP válido e recuperação. O roteiro requer build Debug e porta 5443 livre; não usa contas nem dados reais.
+- **Aplicação:** fechar o terminal atual e abrir `Abrir Plataforma.cmd` para compilar a versão Release e reiniciar. O cadastro do 2FA do admin continua obrigatório.
+
+## P-019 · Relato de erro na Visão geral ao tentar enviar CSV — aberto
+- **Relato (08/10/2026):** “Algo deu errado”; usuário não consegue enviar CSV na Visão geral.
+- **Evidência disponível:** captura da tela genérica de erro. A mensagem da exceção do terminal não foi fornecida.
+- **Conferência realizada:** envio dos exemplos fictícios, em instância temporária separada, concluiu a análise; não foi reproduzido o erro da instalação real.
+- **Estado:** causa não identificada, sem correção comprovada. Não inferir problema de chaves, CSV ou sessão sem a exceção real.
+- **Próximo diagnóstico:** obter somente tipo e mensagem da exceção no terminal, sem conteúdo dos CSVs/relatórios reais. Preservar dados e contas; não executar `-DoZero`.
