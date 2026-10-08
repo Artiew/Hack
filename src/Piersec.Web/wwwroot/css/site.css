@@ -460,6 +460,25 @@ button:disabled { opacity: .6; cursor: progress; }
 .exec-projecao .projecao-seta { align-self: center; font-size: 24px; color: var(--suave); }
 .exec-projecao > p { grid-column: 1 / -1; font-size: 12px; margin-top: 10px; }
 .exec-projecao[aria-busy=true] { opacity: .65; }
+
+/* Simulação: o número grande no topo, que cai animado quando se marca uma correção */
+.exec-projecao-grande { grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 10px 28px; margin: 0 0 20px; padding: 22px 24px; }
+.exec-projecao-grande .projecao-numero p { margin: 0; display: flex; align-items: baseline; gap: 6px; }
+.exec-projecao-grande .projecao-numero strong { font-size: 64px; line-height: 1; color: var(--destaque); }
+.exec-projecao-grande .projecao-numero small { font-size: 15px; color: var(--suave); }
+.projecao-faixa { display: inline-block; margin-top: 6px; font-weight: 600; font-size: 14px; }
+.projecao-mudanca { display: flex; flex-direction: column; gap: 8px; }
+.projecao-delta { font-size: 20px; font-weight: 700; color: var(--baixa); font-variant-numeric: tabular-nums; }
+.projecao-delta[data-sem-mudanca] { color: var(--suave); font-weight: 400; font-size: 15px; }
+.projecao-barra { position: relative; height: 14px; border-radius: 999px; background: var(--linha); overflow: hidden; }
+.projecao-barra > span { position: absolute; inset: 0 auto 0 0; border-radius: 999px; }
+.projecao-barra > [data-barra-hoje] { background: var(--suave); opacity: .45; }
+.projecao-barra > [data-barra-simulada] { background: var(--destaque); transition: width .45s ease-out; }
+@media (prefers-reduced-motion: reduce) { .projecao-barra > [data-barra-simulada] { transition: none; } }
+@media (max-width: 700px) {
+    .exec-projecao-grande { grid-template-columns: minmax(0, 1fr); }
+    .exec-projecao-grande .projecao-numero strong { font-size: 52px; }
+}
 .exec-riscos > details { padding: 15px 0; border-top: 1px solid var(--linha); font-size: 14px; }
 .exec-riscos > details > summary { display: flex; gap: 14px; align-items: center; list-style: none; }
 .exec-riscos > details > summary .sev { font-size: 12px; }

@@ -49,6 +49,7 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
             <style>{Estilo}</style>
             </head>
             <body>
+            {Sprite}
             <header class="capa">
               <p class="selo">{H(SeloConfidencialidade)}</p>
               <h1>Relatório de segurança{(diretoria ? " — versão para a diretoria" : "")}</h1>
@@ -202,7 +203,7 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
 
         sb.Append($"""
             <section class="diretoria">
-            <h2>Resumo para a diretoria</h2>
+            <h2>{Ic("resumo")}Resumo para a diretoria</h2>
             <div class="score-caixa {ClasseFaixa(s.Faixa)}">
               <div class="score-numero"><span class="grande">{numero}</span><span class="de"> de 100</span></div>
               <div class="score-texto">
@@ -215,27 +216,31 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
               </div>
             </div>
             """);
+        sb.Append(FaixaIndicadores(lote, a));
+
         if (AvisoRevisao(lote, diretoria) is { } revisao)
             sb.Append($"<p class=\"aviso-forte\">⚠ {H(revisao)}</p>");
         foreach (var avisoAmbiente in lote.FontesAusentes.Concat(lote.AvisosAmbiente))
             sb.Append($"<p class=\"aviso-forte\">⚠ {H(avisoAmbiente)}</p>");
 
-        sb.Append("<h3>O que é mais grave</h3><div class=\"riscos\">");
+        sb.Append($"<div class=\"duas-colunas\"><div class=\"quadro\"><h3>{Ic("limite")}O que é mais grave</h3><div class=\"riscos\">");
         var n = 1;
         foreach (var r in a.Riscos)
         {
+            // Cartão: o leitor bate o olho e pega a consequência. O detalhe fica em letra menor, para quem quiser.
             sb.Append($"""
                 <div class="risco {ClasseSeveridade(r.Severidade)}">
-                  <p class="titulo-risco"><span class="ordem">{n++}</span> {H(r.Titulo)} {Selo(r.Severidade)}</p>
-                  <p><strong>O que é:</strong> {H(r.OQueE)}</p>
-                  <p><strong>Por que importa:</strong> {H(r.PorQueImporta)}</p>
-                  <p><strong>Como resolver:</strong> {H(r.ComoResolver)}</p>
+                  <p class="risco-topo"><span class="ordem">{n++}</span> {Selo(r.Severidade)}</p>
+                  <p class="risco-titulo">{H(r.Titulo)}</p>
+                  <p class="risco-frase">{H(r.PorQueImporta)}</p>
+                  <p class="risco-detalhe">{H(r.OQueE)}</p>
+                  <p class="risco-acao"><strong>O que fazer:</strong> {H(r.ComoResolver)}</p>
                 </div>
                 """);
         }
         if (a.Riscos.Count == 0)
             sb.Append("<p>Nenhum risco relevante encontrado nas fontes analisadas.</p>");
-        sb.Append("</div>");
+        sb.Append("</div></div>");
 
         // A mensagem principal vem antes da tabela, para caber sempre na primeira página.
         if (a.FraseUmaCoisa is { } umaCoisa)
@@ -249,12 +254,23 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
         var principais = a.Acoes.Take(3).ToList();
         if (principais.Count > 0)
         {
-            sb.Append("<h3>O que fazer agora (em ordem)</h3><table class=\"acoes\"><thead><tr><th>#</th><th>Ação</th><th>Resultado esperado</th><th>Esforço</th><th>Prazo</th></tr></thead><tbody>");
+            // Direção, não relatório: cada passo numerado, com o prazo e o efeito, para o executivo sair da leitura sabendo o que pedir.
+            sb.Append($"<div class=\"quadro\"><h3>{Ic("plano")}Como resolver, em ordem</h3><ol class=\"passos\">");
             foreach (var acao in principais)
-                sb.Append($"<tr><td class=\"num\">{acao.Ordem}</td><td><strong>{H(acao.Titulo)}</strong><br><span class=\"meta\">{H(acao.Quadrante)}</span></td>" +
-                          $"<td>{H(acao.Impacto)}</td><td>{H(NomeNivel(acao.Esforco))}</td><td>até {acao.PrazoDias} dias</td></tr>");
-            sb.Append("</tbody></table>");
+            {
+                var efeito = acao.PercentualScore is { } pct && pct > 0 ? $" Derruba {Pct(pct)} do risco." : "";
+                var custo = acao.CustoMinimo is { } cmin && acao.CustoMaximo is { } cmax ? $" Custa {Formatar.FaixaCurta((decimal)cmin, (decimal)cmax)}." : "";
+                sb.Append($"<li><strong>{H(acao.Titulo)}</strong>" +
+                          $"<span class=\"passo-meta\">em até {acao.PrazoDias} dias · esforço {H(NomeNivel(acao.Esforco))}</span>" +
+                          $"<span class=\"passo-efeito\">{H(acao.Impacto)}{H(efeito)}{H(custo)}</span></li>");
+            }
+            sb.Append("</ol></div>");
         }
+        else
+        {
+            sb.Append($"<div class=\"quadro\"><h3>{Ic("plano")}Como resolver</h3><p>Nenhuma ação de correção foi proposta com os dados recebidos.</p></div>");
+        }
+        sb.Append("</div>");
         sb.Append("</section>");
     }
 
@@ -277,9 +293,46 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
         ? $"Se {(i.ServicosEmRisco == 1 ? "esse serviço for atingido" : "esses serviços forem atingidos")}, o prejuízo pode ficar {Formatar.FaixaDinheiro(i.Minimo, i.Maximo)}."
         : null;
 
+    /// <summary>
+    /// Os quatro números que o executivo lê de relance, antes de qualquer texto: quanto se perde, quanto custa
+    /// arrumar, onde o score chega se o plano for feito e para onde o risco está indo. Cada um com a nota do que é.
+    /// Quando falta dado, o cartão DIZ que falta — não desaparece nem inventa número.
+    /// </summary>
+    private string FaixaIndicadores(Lote lote, Avaliacao a)
+    {
+        var s = a.Score;
+
+        var (prejuizo, notaPrejuizo) = lote.Impacto is { } i
+            ? (Formatar.FaixaCurta(i.Minimo, i.Maximo), Formatar.Qtd(i.ServicosEmRisco, "serviço em risco", "serviços em risco"))
+            : ("não estimado", "nenhum serviço em risco com valor estimado");
+
+        var (custo, notaCusto) = a.CustoTotalMinimo is { } cmin && a.CustoTotalMaximo is { } cmax
+            ? (Formatar.FaixaCurta((decimal)cmin, (decimal)cmax), $"plano inteiro, {Formatar.Qtd(a.Acoes.Count, "ação", "ações")}")
+            : ("a estimar", "sem premissa de custo para estas ações");
+
+        var (depois, notaDepois) = s.Valor is { } atual && a.ScorePrevisto is { } previsto
+            ? ($"{Inteiro(atual)} → {Inteiro(previsto)}", $"de {regras.Score.FaixaDe(atual).Nome.ToLowerInvariant()} para {regras.Score.FaixaDe(previsto).Nome.ToLowerInvariant()}")
+            : (s.Valor is { } so ? Inteiro(so) : "—", "sem ação que derrube o score");
+
+        var (tendencia, notaTendencia) = lote.Comparacao is { } c
+            ? (c.Diferenca > 0 ? $"▲ +{Inteiro(c.Diferenca)}" : c.Diferenca < 0 ? $"▼ −{Inteiro(Math.Abs(c.Diferenca))}" : "igual",
+               $"em relação à análise anterior ({Inteiro(c.ScoreAnterior)})")
+            : ("primeira análise", "ainda não há com o que comparar");
+
+        string Cartao(string rotulo, string valor, string nota, string classe) =>
+            $"<div class=\"kpi {classe}\"><span class=\"kpi-rotulo\">{H(rotulo)}</span><strong>{H(valor)}</strong><span class=\"kpi-nota\">{H(nota)}</span></div>";
+
+        return "<div class=\"kpis\">" +
+               Cartao("Quanto podemos perder", prejuizo, notaPrejuizo, "kpi-perda") +
+               Cartao("Quanto custa corrigir", custo, notaCusto, "kpi-custo") +
+               Cartao("Score se o plano for feito", depois, notaDepois, "kpi-score") +
+               Cartao("Para onde o risco vai", tendencia, notaTendencia, "kpi-tendencia") +
+               "</div>";
+    }
+
     private void SecaoServicos(StringBuilder sb, Lote lote)
     {
-        sb.Append("<section class=\"quebra\"><h2>2. Serviços da empresa e prejuízo potencial</h2>");
+        sb.Append($"<section class=\"quebra\"><h2>{Ic("negocio")}2. Serviços da empresa e prejuízo potencial</h2>");
         if (lote.Servicos.Count == 0)
         {
             sb.Append("<p>Nenhuma máquina identificada nos dados: não dá para dizer quais serviços estão em risco.</p></section>");
@@ -319,7 +372,7 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
         var s = a.Score;
         sb.Append($"""
             <section class="quebra">
-            <h2>3. Entendendo o score</h2>
+            <h2>{Ic("score")}3. Entendendo o score</h2>
             <p>{H(regras.Score.Descricao)}</p>
             <p><strong>Por que o score pode mudar quando chegam mais fontes:</strong> ele é a média dos fatores medidos.
             Uma fonte nova acrescenta um fator à conta: se esse fator estiver bom, o score cai; se estiver ruim, sobe.
@@ -385,7 +438,7 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
     {
         sb.Append($"""
             <section>
-            <h2>4. Plano de ação completo</h2>
+            <h2>{Ic("plano")}4. Plano de ação completo</h2>
             <p>O resultado de cada ação é <strong>calculado</strong> contando as falhas que ela elimina. Prazos e esforço seguem as premissas {(diretoria ? "da " + ReferenciaVersaoCompleta : "do anexo F")}.</p>
             <table><thead><tr><th>#</th><th>Ação e como fazer</th><th>Resultado esperado</th><th>Melhora no score</th><th>Custo estimado</th><th>Impacto</th><th>Esforço</th><th>Prazo</th></tr></thead><tbody>
             """);
@@ -466,7 +519,7 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
 
     private void SecaoAutomacao(StringBuilder sb, ResultadoOperacao? op)
     {
-        sb.Append("<section><h2>5. O que a plataforma fez sozinha</h2>");
+        sb.Append($"<section><h2>{Ic("robo")}5. O que a plataforma fez sozinha</h2>");
         if (op is null)
         {
             sb.Append("<p class=\"meta\">A operação automática não rodou neste lote.</p></section>");
@@ -513,7 +566,7 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
         itens.Add(regras.Ativos.Premissa);
         itens.Add("Os dados não informam cliente ou ambiente: cada arquivo foi tratado como um ambiente. Datas sem fuso foram consideradas no horário de Brasília.");
 
-        sb.Append("<section><h2>6. O que esta análise não consegue dizer</h2><ul>");
+        sb.Append($"<section><h2>{Ic("limite")}6. O que esta análise não consegue dizer</h2><ul>");
         foreach (var item in itens)
             sb.Append($"<li>{H(item)}</li>");
         sb.Append($"</ul><p class=\"meta\">Detalhes: {Formatar.Numero(lote.Lacunas.Count)} lacuna(s) listadas no anexo E.</p></section>");
@@ -680,7 +733,7 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
             }
         }
 
-        sb.Append("<section><h2>Anexo — Técnicas de ataque (MITRE ATT&amp;CK)</h2>");
+        sb.Append($"<section><h2>{Ic("alvo")}Anexo — Técnicas de ataque (MITRE ATT&amp;CK)</h2>");
         sb.Append($"""
             <p>O MITRE ATT&CK é um catálogo público das técnicas que atacantes usam. Ele serve para falar a mesma língua
             que o resto do mercado. <strong>Atenção ao que esta tabela é e ao que ela não é:</strong> as fontes deste lote
@@ -872,6 +925,22 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
                "O caminho é atualizar todas as máquinas de forma automática, e não corrigir uma por uma.";
     }
 
+    /// <summary>Ícones do relatório: SVG desenhado pela equipe, dentro do próprio arquivo (nada vem da internet).</summary>
+    private const string Sprite = """
+        <svg class="sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+        <symbol id="ic-resumo" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9 8h6M9 12h6M9 16h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+        <symbol id="ic-negocio" viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l7-4 7 4v14" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M10 21v-5h4v5" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+        <symbol id="ic-score" viewBox="0 0 24 24"><path d="M4 18a8 8 0 1 1 16 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="m12 18 5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+        <symbol id="ic-plano" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="m17 17 2 2 3-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="ic-robo" viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="12" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 4v4M9 13h.01M15 13h.01M9 17h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+        <symbol id="ic-limite" viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M12 10v4M12 17h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+        <symbol id="ic-anexo" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+        <symbol id="ic-alvo" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+        </svg>
+        """;
+
+    private static string Ic(string nome) => $"<svg class=\"ic\" aria-hidden=\"true\"><use href=\"#ic-{nome}\"/></svg>";
+
     private static string Pontos(double valor) => valor < 1
         ? $"{valor.ToString("0.0", Formatar.PtBr)} ponto"
         : $"{Inteiro(valor)} {(Inteiro(valor) == "1" ? "ponto" : "pontos")}";
@@ -932,9 +1001,41 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
         .faixa-critica{border-left-color:var(--critica)}.faixa-alta{border-left-color:var(--alta)}.faixa-media{border-left-color:var(--media)}.faixa-baixa{border-left-color:var(--baixa)}
         .score-numero{white-space:nowrap}.grande{font-size:56px;font-weight:800;line-height:1}.de{font-size:16px;color:var(--suave)}
         .score-texto p{margin:3px 0}.rotulo{font-size:15px}.frase{font-size:16px;font-weight:600}
-        .riscos{display:grid;gap:6px}
+        .sprite{position:absolute;width:0;height:0;overflow:hidden}
+        .ic{width:17px;height:17px;flex:none;color:var(--suave)}
+        h2{display:flex;align-items:center;gap:8px}
+        h2 .ic{width:20px;height:20px;color:var(--tinta)}
+        h3{display:flex;align-items:center;gap:7px}
+        .duas-colunas{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start;margin:8px 0}
+        .duas-colunas .quadro{border:1px solid var(--linha);border-radius:6px;padding:10px 12px}
+        .duas-colunas h3{margin:0 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--suave);border-bottom:1px solid var(--linha);padding-bottom:5px}
+        .duas-colunas .riscos{grid-template-columns:1fr}
+        .passos{margin:0;padding-left:20px}
+        .passos li{margin:0 0 9px}
+        .passos strong{display:block;font-size:13.5px;line-height:1.25}
+        .passo-meta{display:block;font-size:11px;color:var(--suave);margin:1px 0 2px}
+        .passo-efeito{display:block;font-size:12px}
+        @media(max-width:720px){.duas-colunas{grid-template-columns:1fr}}
+        .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:10px 0}
+        .kpi{border:1px solid var(--linha);border-top:4px solid var(--tinta);border-radius:6px;padding:8px 10px}
+        .kpi-perda{border-top-color:var(--critica)}.kpi-custo{border-top-color:var(--media)}
+        .kpi-score{border-top-color:var(--baixa)}.kpi-tendencia{border-top-color:var(--suave)}
+        .kpi-rotulo{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--suave)}
+        .kpi strong{display:block;font-size:19px;line-height:1.15;margin:3px 0 2px}
+        .kpi-nota{display:block;font-size:11px;color:var(--suave);line-height:1.3}
+        .riscos{display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:8px;align-items:stretch}
+        .risco{display:flex;flex-direction:column;border:1px solid var(--linha);border-top:4px solid var(--suave);border-radius:6px;padding:9px 11px}
+        .risco-topo{display:flex;align-items:center;gap:8px;margin:0 0 4px}
+        .risco .ordem{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:var(--tinta);color:#fff;font-size:11px;font-weight:700}
+        .risco-titulo{font-size:14px;font-weight:700;margin:0 0 5px;line-height:1.25}
+        .risco-frase{font-size:13px;margin:0 0 6px;line-height:1.35}
+        .risco-detalhe{font-size:11.5px;color:var(--suave);margin:0 0 6px;line-height:1.3}
+        .risco-acao{font-size:11.5px;margin:auto 0 0;padding-top:6px;border-top:1px solid var(--linha)}
+        .sev-critica.risco{border-top-color:var(--critica)}.sev-alta.risco{border-top-color:var(--alta)}
+        .sev-media.risco{border-top-color:var(--media)}.sev-baixa.risco{border-top-color:var(--baixa)}
+
         .risco{border:1px solid var(--linha);border-left:6px solid var(--nenhuma);border-radius:6px;padding:5px 10px;break-inside:avoid}
-        .risco p{margin:2px 0}.titulo-risco{font-size:14px;font-weight:700}
+
         .risco.sev-critica{border-left-color:var(--critica);color:inherit}.risco.sev-alta{border-left-color:var(--alta);color:inherit}
         .risco.sev-media{border-left-color:var(--media);color:inherit}.risco.sev-baixa{border-left-color:var(--baixa);color:inherit}
         .ordem{display:inline-block;min-width:20px;height:20px;border-radius:10px;background:var(--tinta);color:#fff;text-align:center;font-size:12px;line-height:20px;margin-right:4px}
@@ -962,7 +1063,9 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
           h1{font-size:22px;margin:6px 0 2px}.capa .meta{font-size:11px;margin:2px 0}.selo-ok{margin:2px 0 0;padding:2px 8px}
           .diretoria{font-size:12px;line-height:1.35}.diretoria h2{font-size:17px;margin:10px 0 4px}.diretoria h3{font-size:13px;margin:8px 0 4px}
           .score-caixa{padding:6px 12px;margin:4px 0}.grande{font-size:48px}.rotulo{font-size:13px}.frase{font-size:14px}
-          .riscos{gap:4px}.risco{padding:3px 8px}.risco p{margin:1px 0}.titulo-risco{font-size:13px}
+          .duas-colunas{gap:8px}.duas-colunas .quadro{padding:8px 10px}.passos li{margin:0 0 7px}
+          .kpis{gap:6px;margin:6px 0}.kpi{padding:6px 8px}.kpi strong{font-size:17px}
+          .riscos{gap:6px}.risco{padding:7px 9px}.risco-titulo{font-size:13px}.risco-frase{font-size:12px}
           .aviso-forte{padding:4px 8px;margin:4px 0}.uma-coisa{font-size:12px;padding:5px 10px;margin:6px 0}}
         @media screen{
         body{max-width:1280px;padding:48px 56px 80px;font-size:17px;line-height:1.6}

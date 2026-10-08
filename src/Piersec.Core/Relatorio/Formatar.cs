@@ -37,4 +37,7 @@ public static class Formatar
 
     /// <summary>"entre R$ 500 mil e R$ 5 milhões".</summary>
     public static string FaixaDinheiro(decimal minimo, decimal maximo) => $"entre {Dinheiro(minimo)} e {Dinheiro(maximo)}";
+
+    /// <summary>Faixa curta, para cartão de indicador: "R$ 500 mil a R$ 5 milhões".</summary>
+    public static string FaixaCurta(decimal minimo, decimal maximo) => $"{Dinheiro(minimo)} a {Dinheiro(maximo)}";
 }

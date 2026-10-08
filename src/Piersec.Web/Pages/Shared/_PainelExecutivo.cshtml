@@ -186,6 +186,29 @@
                 <section class="exec-painel" aria-labelledby="titulo-plano">
                     <div class="exec-titulo"><div><p class="exec-eyebrow">Escolha o próximo passo</p><h2 id="titulo-plano">E se corrigirmos?</h2></div><span class="exec-contagem">Simulação</span></div>
                     <p class="meta">Marque as correções para recalcular o risco. Nenhuma mudança é executada.</p>
+                    @{
+                        var scoreHoje = s.Valor ?? 0;
+                        var scoreMostrado = Model.ErroSimulacao is not null ? scoreHoje : (Model.Simulacao?.Score.Valor ?? scoreHoje);
+                        var quedaInicial = scoreHoje > 0 ? Math.Max(scoreHoje - scoreMostrado, 0) / scoreHoje * 100 : 0;
+                    }
+                    <div class="exec-projecao exec-projecao-grande" id="resultado-simulacao" aria-live="polite" aria-atomic="true"
+                         data-score-atual="@N(scoreHoje)">
+                        <div class="projecao-numero">
+                            <span class="exec-rotulo">Risco com o que você marcar</span>
+                            <p><strong data-score-simulado>@Nota(scoreMostrado)</strong><small> de 100</small></p>
+                            <span class="projecao-faixa" data-faixa-simulada>@(Model.ErroSimulacao is not null ? "Não atualizado" : Model.Simulacao?.Score.Faixa ?? s.Faixa)</span>
+                        </div>
+                        <div class="projecao-mudanca">
+                            <span class="projecao-delta" data-delta-simulado>@(quedaInicial >= 0.5 ? "−" + quedaInicial.ToString("0") + "% do risco" : "nada marcado ainda")</span>
+                            <div class="projecao-barra" role="img" aria-label="Risco de 0 a 100">
+                                <span data-barra-hoje style="width:@N(Math.Clamp(scoreHoje,0,100))%"></span>
+                                <span data-barra-simulada style="width:@N(Math.Clamp(scoreMostrado,0,100))%"></span>
+                            </div>
+                            <span class="exec-rotulo">Hoje: @Nota(s.Valor) de 100 · @s.Faixa</span>
+                        </div>
+                        <p data-resumo-simulado>@(Model.Simulacao is { } sim ? LoteModel.ResumoSimulacao(sim) : "Marque abaixo o que a empresa consegue corrigir: o número muda na hora.")</p>
+                        <p class="erro" data-erro-simulacao hidden="@(Model.ErroSimulacao is null ? "hidden" : null)">@Model.ErroSimulacao</p>
+                    </div>
                     <form method="get" asp-page="/Lote" asp-route-id="@lote.Id" asp-page-handler="" asp-fragment="simulacao" id="form-simulacao" data-url="@Url.Page("/Lote","Simular",new { id = lote.Id })">
                         <input type="hidden" name="simular" value="true"><input type="hidden" name="Secao" value="simulacao">
                         @foreach (var acao in av.Acoes)
@@ -219,11 +242,7 @@
                         @if (av.Acoes.Count == 0) { <p class="vazio">Nenhuma ação de correção foi proposta com os dados disponíveis.</p> }
                         <div class="simulacao-comandos"><button type="submit">Recalcular cenário</button><a href="/Lote/@lote.Id#simulacao" data-limpar-simulacao>Limpar seleção</a></div>
                     </form>
-                    <div class="exec-projecao" id="resultado-simulacao" aria-live="polite" aria-atomic="true">
-                        <div><span class="exec-rotulo">Risco atual</span><strong>@Nota(s.Valor)</strong><span>@s.Faixa</span></div><span class="projecao-seta" aria-hidden="true">→</span><div><span class="exec-rotulo">Cenário simulado</span><strong data-score-simulado>@(Model.ErroSimulacao is not null ? "—" : Nota(Model.Simulacao?.Score.Valor ?? s.Valor))</strong><span data-faixa-simulada>@(Model.ErroSimulacao is not null ? "Não atualizado" : Model.Simulacao?.Score.Faixa ?? s.Faixa)</span></div>
-                        <p data-resumo-simulado>@(Model.Simulacao is { } sim ? LoteModel.ResumoSimulacao(sim) : "Selecione as correções disponíveis.")</p>
-                        <p class="erro" data-erro-simulacao hidden="@(Model.ErroSimulacao is null ? "hidden" : null)">@Model.ErroSimulacao</p>
-                    </div>
+
                     <p class="meta exec-nota">Projeção com as mesmas fontes e máquinas. Investigar alertas ou medir novos fatores não garante redução de risco e não entra como correção. A faixa financeira acima continua sendo uma premissa, não uma economia garantida.</p>
                 </section>
         @if (av.Riscos.Count > 0)

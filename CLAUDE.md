@@ -5,6 +5,34 @@ correlaciona, calcula score 0–100, monta plano de ação e gera sozinha o rela
 O briefing completo está em **`docs/PROMPT.md`** — leia antes de qualquer tarefa, junto com `docs/REQUISITOS.md`,
 `docs/FONTES.md` e `docs/TROUBLESHOOTING.md`.
 
+> ## ⚠ LEIA ANTES DE CONTINUAR — código NÃO VERIFICADO na máquina do Ruan (08/10/2026)
+>
+> As alterações do commit **"Relatório em duas colunas…"** e seguintes foram **escritas e compiladas, mas NÃO
+> foram executadas nem testadas**. O Windows da máquina do Ruan bloqueou os binários recém-compilados
+> (Smart App Control — ver **P-020** mais abaixo), e ele pediu para parar de tentar executar ali.
+>
+> **Na próxima máquina, antes de qualquer coisa:**
+> 1. `dotnet test --solution Piersec.slnx` — esperado **303 testes, 0 falhas**. Se falhar, a causa está nas
+>    alterações listadas abaixo, não no ambiente.
+> 2. **Leia o código com atenção** nos pontos abaixo, porque nenhum deles passou por execução:
+>    - `src/Piersec.Core/Relatorio/GeradorRelatorioHtml.cs` — grid de duas colunas na página 1
+>      (`.duas-colunas`), ícones nos títulos (sprite `Sprite` + helper `Ic`), "Como resolver, em ordem"
+>      (lista `.passos`, que substituiu a tabela de ações), cartões de risco redesenhados e faixa de
+>      indicadores (`FaixaIndicadores`). **Risco maior: HTML malformado ou texto escapado errado.**
+>    - `src/Piersec.Web/wwwroot/js/executivo.js` — animação do score na simulação (`animarPara`,
+>      `atualizarQueda`). **Risco maior: erro de JavaScript deixando o simulador mudo.** Conferir no
+>      navegador com o console aberto, marcando e desmarcando as caixas.
+>    - `src/Piersec.Web/Pages/Shared/_PainelExecutivo.cshtml` — o bloco do score grande passou para ANTES
+>      do formulário, com `data-score-atual`, `data-delta-simulado` e `data-barra-simulada`.
+>    - `src/Piersec.Web/Pages/Index.cshtml.cs` — **executivo agora é redirecionado** para o painel do lote
+>      mais recente em vez de ver a lista. **Risco maior: quebrar teste de permissão ou criar laço de
+>      redirecionamento** quando não houver lote. Conferir entrando como executivo com 0, 1 e 2 lotes.
+> 3. Conferir o relatório gerado (HTML **e** PDF) com os exemplos fictícios: a página 1 deve ter as duas
+>    colunas lado a lado, ícone em cada título e os passos numerados com prazo, efeito e custo.
+>
+> O que **foi** verificado antes do bloqueio (303 testes, 0 falhas, e print conferido): MITRE ATT&CK,
+> custo de correção, gráfico de peso dos problemas e a faixa de quatro indicadores.
+
 ## Quem é o usuário e como responder
 - Vitor, estudante de ADS (2º semestre), grupo de 3 iniciantes; sabe C# básico.
 - Responda em português. Para cada conceito, comando ou termo novo: 2–3 linhas simples (o que é, por que existe, o que vai fazer).
@@ -241,6 +269,31 @@ O briefing completo está em **`docs/PROMPT.md`** — leia antes de qualquer tar
   testados e SEM efeito: recompilar do zero, `dotnet exec`, copiar a saída para outra pasta. WSL não está instalado.
   Solução real: desligar o Smart App Control (decisão do usuário; é de mão única) ou rodar a suíte em outra máquina.
   Observação para a banca: o Defender marcou `_Layout.cshtml` dentro do zip baixado do GitHub (ID 2147751841) — falso positivo.
+
+## Continuidade — 08/10/2026 (relatório em duas colunas, score animado, entrada do executivo)
+- **NÃO VERIFICADO** — ver o aviso no topo deste arquivo. Compila sem avisos nem erros; nada foi executado.
+- Relatório HTML/PDF, página 1: `.duas-colunas` coloca **"O que é mais grave"** (cartões) ao lado de
+  **"Como resolver, em ordem"**. A tabela de ações virou lista numerada `.passos`: cada passo traz prazo,
+  esforço, efeito no score e custo. Pedido do Ruan: "o relatório tem que dar a direção na hora que o
+  executivo ler do como resolver".
+- Ícones próprios em cada título de seção (sprite SVG dentro do próprio HTML, `Sprite` + `Ic("nome")`):
+  resumo, negócio, score, plano, robô, limite, alvo. Nada vem da internet, funciona no PDF.
+- Cartões de risco: número + selo de gravidade, título em destaque, **uma frase forte** (o "por que importa"),
+  detalhe em letra menor e "O que fazer" separado por um traço no pé do cartão.
+- Simulação na tela: o score virou número **grande no topo da aba Plano de ação**, antes das caixas de seleção.
+  Ao marcar uma correção o número **desce contando** (`animarPara`, ~550 ms, com easing), aparece "−X% do risco"
+  e uma barra encolhe. Respeita `prefers-reduced-motion`. A recalculação ao vivo já existia (`change` no
+  formulário); o que foi acrescentado é a animação e o destaque.
+- **Entrada do executivo:** `Index.OnGet` agora redireciona quem não pode enviar (executivo) para o painel do
+  lote mais recente. Ele não escolhe mais arquivo nem lote; o histórico continua dentro do painel. Admin e
+  analista seguem vendo a lista e o envio.
+- Referência de layout: o Ruan mandou painéis de mercado (WhatsApp do grupo) e o one-pager do SlideTeam.
+  **São inspiração, não modelo** — o `leiame.txt` do easter egg da organização diz expressamente "não as
+  reproduza" e avisa que painel só-técnico NÃO cumpre o desafio. O caminho seguido é o oposto: prejuízo em
+  reais, custo para corrigir e passos com prazo.
+- Pedido ainda em aberto: transformar a página 1 num **one-pager de verdade** (tudo numa folha A4), com as
+  seções detalhadas vindo depois. O Ruan aprovou o grid e os ícones; o one-pager completo não foi começado.
+
 - **Falta, nesta ordem:** 1) conferir o relatório novo (HTML e PDF) página por página, com os gráficos; 3) "tempo até doer";
   4) deixar o relatório mais técnico e mais bonito, pedido do Ruan; 5) `docs/RESUMO_PARA_BANCA.md`;
   6) linha do tempo por máquina, mapa de calor, triagem de alertas; 7) rodar com os 3 CSVs reais

@@ -115,6 +115,47 @@
     if (form && window.fetch && window.URLSearchParams && window.AbortController) {
         var resultado = document.getElementById("resultado-simulacao");
         var erro = resultado.querySelector("[data-erro-simulacao]");
+        var alvoNumero = resultado.querySelector("[data-score-simulado]");
+        var alvoFaixa = resultado.querySelector("[data-faixa-simulada]");
+        var alvoDelta = resultado.querySelector("[data-delta-simulado]");
+        var alvoBarra = resultado.querySelector("[data-barra-simulada]");
+        var scoreAtual = parseFloat(resultado.dataset.scoreAtual || "0");
+        var mostrado = parseFloat((alvoNumero.textContent || "0").replace(",", ".")) || 0;
+        var semMovimento = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        var animacao = null;
+
+        // O número desce contando, em vez de pular: o executivo VÊ o risco caindo ao marcar a correção.
+        function animarPara(destino) {
+            if (animacao) cancelAnimationFrame(animacao);
+            var partida = mostrado, inicio = null, duracao = 550;
+            if (semMovimento || !window.requestAnimationFrame) {
+                mostrado = destino;
+                alvoNumero.textContent = Math.round(destino).toLocaleString("pt-BR");
+                return;
+            }
+            function passo(agora) {
+                if (inicio === null) inicio = agora;
+                var t = Math.min((agora - inicio) / duracao, 1);
+                var suave = 1 - Math.pow(1 - t, 3);
+                var valor = partida + (destino - partida) * suave;
+                alvoNumero.textContent = Math.round(valor).toLocaleString("pt-BR");
+                if (t < 1) animacao = requestAnimationFrame(passo);
+                else { mostrado = destino; animacao = null; }
+            }
+            animacao = requestAnimationFrame(passo);
+        }
+
+        function atualizarQueda(novo) {
+            var queda = scoreAtual > 0 ? Math.max(scoreAtual - novo, 0) / scoreAtual * 100 : 0;
+            if (queda >= 0.5) {
+                alvoDelta.textContent = "−" + Math.round(queda) + "% do risco";
+                alvoDelta.removeAttribute("data-sem-mudanca");
+            } else {
+                alvoDelta.textContent = "nada marcado ainda";
+                alvoDelta.setAttribute("data-sem-mudanca", "");
+            }
+            if (alvoBarra) alvoBarra.style.width = Math.max(0, Math.min(novo, 100)) + "%";
+        }
         function simular() {
             var atual = ++versao;
             if (pedido) pedido.abort();
@@ -127,14 +168,15 @@
                 .then(function (r) { return r.json().then(function (corpo) { if (!r.ok) throw new Error(corpo.erro || "Não foi possível simular."); return corpo; }); })
                 .then(function (corpo) {
                     if (atual !== versao) return;
-                    resultado.querySelector("[data-score-simulado]").textContent = corpo.score === null ? "—" : Math.round(corpo.score).toLocaleString("pt-BR");
-                    resultado.querySelector("[data-faixa-simulada]").textContent = corpo.faixa;
+                    if (corpo.score === null) { alvoNumero.textContent = "—"; }
+                    else { animarPara(corpo.score); atualizarQueda(corpo.score); }
+                    alvoFaixa.textContent = corpo.faixa;
                     resultado.querySelector("[data-resumo-simulado]").textContent = corpo.resumo;
                 })
                 .catch(function (ex) {
                     if (atual !== versao || ex.name === "AbortError") return;
-                    resultado.querySelector("[data-score-simulado]").textContent = "—";
-                    resultado.querySelector("[data-faixa-simulada]").textContent = "Não atualizado";
+                    alvoNumero.textContent = "—";
+                    alvoFaixa.textContent = "Não atualizado";
                     resultado.querySelector("[data-resumo-simulado]").textContent = "";
                     erro.textContent = "Não foi possível atualizar o cenário. Use Recalcular cenário para tentar novamente.";
                     erro.hidden = false;

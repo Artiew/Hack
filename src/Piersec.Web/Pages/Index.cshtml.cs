@@ -19,7 +19,17 @@ public sealed class IndexModel(CicloAnalise ciclo, RepositorioLotes repositorio,
     public IReadOnlyList<ResumoLote> Lotes { get; private set; } = [];
     public string? Erro { get; private set; }
 
-    public void OnGet() => Lotes = repositorio.Listar();
+    public IActionResult OnGet()
+    {
+        Lotes = repositorio.Listar();
+
+        // O executivo não escolhe arquivo nem lote: entra e já cai no painel da análise mais recente.
+        // As análises anteriores continuam acessíveis pelo histórico dentro do próprio painel.
+        if (!Sessao.PodeEnviar(User) && (Lotes.FirstOrDefault(l => l.Score is not null) ?? Lotes.FirstOrDefault()) is { } recente)
+            return RedirectToPage("/Lote", new { id = recente.Id });
+
+        return Page();
+    }
 
     // Razor Pages valida o token anti-CSRF automaticamente em todo POST (inclusive os do JavaScript).
     public async Task<IActionResult> OnPostAsync(List<IFormFile>? arquivos, CancellationToken ct)
