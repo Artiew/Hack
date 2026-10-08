@@ -190,3 +190,18 @@ O briefing completo está em **`docs/PROMPT.md`** — leia antes de qualquer tar
 - HTTPS: certificado de desenvolvimento de `localhost` passou a ser confiável no usuário Windows desta máquina; requisição HTTPS sem ignorar validação retornou HTTP 200. Brave em perfil temporário reconheceu conexão `secure`. O Brave original estava em execução desde antes da confiança; orientado `brave://restart`. Não houve confirmação posterior do usuário sobre o desaparecimento do aviso. Certificados e confiança são locais, não viajam no bundle; na máquina de destino usar `dotnet dev-certs https --trust`.
 - Pendências mantidas: orçamento de correção ausente (“A estimar”); novo layout não está no HTML/PDF exportado; auditoria completa de acessibilidade/contraste ainda não feita; catálogo MITRE/KEV/conformidade não inventado. Regras JSON e arquivos centrais de avaliação/relatório não alterados em relação a `742499a`.
 - Revisão da entrega: `.gitignore` intacto; nenhum caminho proibido nos arquivos novos/modificados nem nos objetos alcançáveis por HEAD/main. Varredura por padrões de segredos encontrou somente fixtures fictícias preexistentes do teste `Filtro_encontra_e_mascara_credenciais`; nenhum segredo de uso identificado. Nenhum CSV ou relatório real lido. Entrega somente `.bundle` e resumo `.md`, fora do projeto; sem nuvem.
+
+## Continuidade — 08/10/2026 (tela de login)
+- Operador atual: Ruan (git user `Ruan`), continuando o trabalho no repositório **privado** `github.com/Artiew/Hack`.
+  O push para o GitHub está autorizado por ele; os CSVs do desafio e `var/` continuam fora do git pelo `.gitignore`.
+- `/Entrar` centralizada na janela (vertical e horizontal), cartão maior, marca com o escudo no topo e etiqueta
+  "Protótipo · dados sintéticos · tudo local" no rodapé. Campos e botão maiores; botão ocupa a largura toda.
+  Só variáveis de cor já existentes — nenhuma cor nova escrita à mão; tema claro, escuro e 500 px conferidos em print.
+- Como funciona: a página define `ViewData["Entrada"]` e o `_Layout` acrescenta `conteudo-entrada` ao `<main>`;
+  o CSS novo fica no fim de `site.css`. Para dar o mesmo visual a outra tela de acesso, basta o `ViewData`.
+- Evidência: 289 testes aprovados, 0 falhas; prints de uma instância temporária com pasta de dados separada, já encerrada.
+- **Falta, nesta ordem:** 1) mesmo visual em Trocar senha e Código de duas etapas; 2) MITRE ATT&CK (único item
+  obrigatório ainda em aberto: `"mitre": []` em `regras/frameworks.json` e `regras/correlacao.json`);
+  3) custo para corrigir e "tempo até doer"; 4) relatório mais técnico e mais bonito (HTML/PDF).
+- Análise do easter egg da organização (`qqdiz.com.br/bash.html`): os documentos escondidos confirmam os pesos do manual
+  e as fases; o que falta no projeto está listado acima. Máquina do Ruan não tem `dados/` nem `var/`.

@@ -604,3 +604,41 @@ body[data-apresentacao] .exec-tecnico:not([hidden]) { display: block; }
     .lateral-rodape { margin-top: 0; gap: 0; }
     .conta-menu { padding-top: 8px; }
 }
+/* ---------- tela de acesso (/Entrar): centralizada na janela, cartão maior ---------- */
+.conteudo-entrada {
+    display: grid;
+    place-items: center;
+    min-height: 100vh;
+    max-width: none;
+    padding: 32px 20px;
+}
+.entrada { width: 100%; max-width: 460px; }
+
+.entrada-marca { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 26px; }
+.entrada-marca svg { width: 46px; height: 46px; flex: none; color: var(--destaque); }
+.entrada-marca strong { display: block; font-size: 21px; line-height: 1.25; }
+.entrada-marca span { display: block; color: var(--suave); font-size: 14px; }
+
+.entrada-cartao {
+    display: block;
+    padding: 34px 32px;
+    box-shadow: var(--sombra);
+    border-top: 4px solid var(--destaque);
+}
+.entrada-cartao h1 { font-size: 29px; margin: 0 0 6px; }
+.entrada-cartao > .meta { margin: 0 0 24px; font-size: 15px; }
+
+.entrada .formulario { display: flex; flex-direction: column; gap: 6px; margin: 0; }
+.entrada .formulario label { font-weight: 600; font-size: 15px; margin-top: 14px; }
+.entrada .formulario label:first-of-type { margin-top: 0; }
+.entrada .formulario input { padding: 14px 16px; font-size: 18px; border-radius: 8px; }
+.entrada .formulario button { margin-top: 26px; width: 100%; padding: 15px 20px; font-size: 18px; }
+
+.entrada .aviso-forte, .entrada .erro { margin: 0 0 18px; font-size: 15px; }
+.entrada-rodape { text-align: center; color: var(--suave); font-size: 13px; margin: 24px 0 0; }
+
+@media (max-width: 560px) {
+    .conteudo-entrada { padding: 24px 16px; min-height: auto; }
+    .entrada-cartao { padding: 26px 20px; }
+    .entrada-cartao h1 { font-size: 25px; }
+}

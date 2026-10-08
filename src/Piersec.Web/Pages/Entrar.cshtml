@@ -2,27 +2,40 @@
 @model EntrarModel
 @{
     ViewData["Title"] = "Entrar";
+    ViewData["Entrada"] = true; // centraliza a tela na janela (ver .conteudo-entrada no site.css)
 }
 
-<div class="estreito">
-    <h1>Entrar</h1>
-    <p class="meta">Acesso restrito. Use o usuário e a senha fornecidos pelo administrador.</p>
+<div class="entrada">
+    <div class="entrada-marca">
+        <svg aria-hidden="true"><use href="#i-escudo"/></svg>
+        <span>
+            <strong>Plataforma de risco</strong>
+            <span>Piersec · Semana de TI 2026</span>
+        </span>
+    </div>
 
-    @if (Model.Aviso is not null)
-    {
-        <p class="aviso-forte" role="status">@Model.Aviso</p>
-    }
-    @if (Model.Erro is not null)
-    {
-        <p class="erro" role="alert">@Model.Erro</p>
-    }
+    <div class="cartao entrada-cartao">
+        <h1>Entrar</h1>
+        <p class="meta">Acesso restrito. Use o usuário e a senha fornecidos pelo administrador.</p>
 
-    <form method="post" asp-page="/Entrar" class="cartao formulario">
-        <input type="hidden" name="ReturnUrl" value="@Model.ReturnUrl">
-        <label for="login">Usuário</label>
-        <input id="login" name="Login" value="@Model.Login" autocomplete="username" required maxlength="64" autofocus>
-        <label for="senha">Senha</label>
-        <input id="senha" name="Senha" type="password" autocomplete="current-password" required maxlength="128">
-        <button type="submit">Entrar</button>
-    </form>
+        @if (Model.Aviso is not null)
+        {
+            <p class="aviso-forte" role="status">@Model.Aviso</p>
+        }
+        @if (Model.Erro is not null)
+        {
+            <p class="erro" role="alert">@Model.Erro</p>
+        }
+
+        <form method="post" asp-page="/Entrar" class="formulario">
+            <input type="hidden" name="ReturnUrl" value="@Model.ReturnUrl">
+            <label for="login">Usuário</label>
+            <input id="login" name="Login" value="@Model.Login" autocomplete="username" required maxlength="64" autofocus>
+            <label for="senha">Senha</label>
+            <input id="senha" name="Senha" type="password" autocomplete="current-password" required maxlength="128">
+            <button type="submit">Entrar</button>
+        </form>
+    </div>
+
+    <p class="entrada-rodape">Protótipo · dados sintéticos · tudo local</p>
 </div>
