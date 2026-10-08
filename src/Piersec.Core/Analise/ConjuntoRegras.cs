@@ -104,6 +104,8 @@ public sealed partial class ConjuntoRegras
     public required RegrasPlano Plano { get; init; }
     public required RegrasAutomacao Automacao { get; init; }
     public required RegrasServicos Servicos { get; init; }
+    public required RegrasMitre Mitre { get; init; }
+    public required RegrasCustos Custos { get; init; }
 
     public static ConjuntoRegras Carregar(string pasta)
     {
@@ -115,6 +117,8 @@ public sealed partial class ConjuntoRegras
         var plano = Ler<RegrasPlano>(pasta, "plano.json");
         var automacao = Ler<RegrasAutomacao>(pasta, "automacao.json");
         var servicos = Ler<RegrasServicos>(pasta, "servicos.json");
+        var mitre = Ler<RegrasMitre>(pasta, "mitre.json");
+        var custos = Ler<RegrasCustos>(pasta, "custos.json");
 
         var regras = new ConjuntoRegras
         {
@@ -132,6 +136,8 @@ public sealed partial class ConjuntoRegras
             Plano = plano,
             Automacao = automacao,
             Servicos = servicos,
+            Mitre = mitre,
+            Custos = custos,
         };
         regras.Validar();
         return regras;
@@ -139,6 +145,9 @@ public sealed partial class ConjuntoRegras
 
     private void Validar()
     {
+        ValidarMitre();
+        ValidarCustos();
+
         if (!Ativos.Tipos.ContainsKey(RegrasAtivos.Desconhecido))
             throw Erro("ativos.json", $"'tipos' precisa ter '{RegrasAtivos.Desconhecido}'");
         foreach (var tipo in Ativos.Regras.Select(r => r.Tipo).Append(Ativos.TipoDosAlertas))
@@ -210,6 +219,77 @@ public sealed partial class ConjuntoRegras
         {
             throw Erro(arquivo, $"JSON inválido ({ex.Message})");
         }
+    }
+
+    /// <summary>
+    /// O custo é premissa declarada, então a premissa é OBRIGATÓRIA: faixa sem explicação viraria número mágico.
+    /// </summary>
+    private void ValidarCustos()
+    {
+        if (Custos.HoraTecnica.Minimo <= 0 || Custos.HoraTecnica.Maximo < Custos.HoraTecnica.Minimo)
+            throw Erro("custos.json", "'horaTecnica' precisa de 'minimo' maior que zero e 'maximo' maior ou igual a ele");
+        if (string.IsNullOrWhiteSpace(Custos.HoraTecnica.Premissa))
+            throw Erro("custos.json", "'horaTecnica' precisa declarar a premissa (de onde veio o valor)");
+        if (Custos.HorasPorAcao.Count == 0)
+            throw Erro("custos.json", "falta 'horasPorAcao' com pelo menos um tipo de ação");
+
+        foreach (var (tipo, h) in Custos.HorasPorAcao)
+        {
+            if (h.FixoMinimo < 0 || h.PorMaquinaMinimo < 0)
+                throw Erro("custos.json", $"'{tipo}' não pode ter horas negativas");
+            if (h.FixoMaximo < h.FixoMinimo || h.PorMaquinaMaximo < h.PorMaquinaMinimo)
+                throw Erro("custos.json", $"em '{tipo}', todo máximo precisa ser maior ou igual ao mínimo");
+            if (string.IsNullOrWhiteSpace(h.Premissa))
+                throw Erro("custos.json", $"'{tipo}' precisa declarar a premissa das horas");
+        }
+    }
+
+    /// <summary>
+    /// Nenhuma técnica inventada: tudo que as regras citam precisa existir no catálogo, e toda confiança
+    /// declarada precisa ser uma das três previstas. Regra errada impede a plataforma de subir.
+    /// </summary>
+    private void ValidarMitre()
+    {
+        if (Mitre.Catalogo.Count == 0)
+            throw Erro("mitre.json", "falta 'catalogo' com pelo menos uma técnica");
+
+        foreach (var (codigo, tecnica) in Mitre.Catalogo)
+        {
+            if (!codigo.StartsWith('T') || codigo.Length < 5)
+                throw Erro("mitre.json", $"'{codigo}' não parece um código de técnica (esperado algo como T1190)");
+            foreach (var m in tecnica.Mitigacoes)
+                if (!Mitre.Mitigacoes.ContainsKey(m))
+                    throw Erro("mitre.json", $"a técnica {codigo} cita a mitigação '{m}', que não está em 'mitigacoes'");
+        }
+
+        foreach (var (tipo, doTipo) in Mitre.PorTipo)
+        {
+            if (!ConfiancaMitre.Todas.Contains(doTipo.Confianca))
+                throw Erro("mitre.json", $"o tipo '{tipo}' usa a confiança '{doTipo.Confianca}'; use observada, provavel ou possivel");
+            if (doTipo.Tecnicas.Count > 0 && string.IsNullOrWhiteSpace(doTipo.Premissa))
+                throw Erro("mitre.json", $"o tipo '{tipo}' aponta técnicas sem declarar a premissa");
+            foreach (var t in doTipo.Tecnicas)
+                if (!Mitre.Catalogo.ContainsKey(t))
+                    throw Erro("mitre.json", $"o tipo '{tipo}' cita a técnica '{t}', que não está no catálogo");
+        }
+
+        foreach (var termos in Mitre.PorDescricaoAlerta)
+        {
+            if (!Mitre.Catalogo.ContainsKey(termos.Tecnica))
+                throw Erro("mitre.json", $"'porDescricaoAlerta' cita a técnica '{termos.Tecnica}', que não está no catálogo");
+            if (termos.Contem.Count == 0)
+                throw Erro("mitre.json", $"a técnica '{termos.Tecnica}' está em 'porDescricaoAlerta' sem nenhum termo em 'contem'");
+        }
+
+        foreach (var regra in Correlacoes)
+            foreach (var t in regra.Frameworks.Mitre)
+                if (!Mitre.Catalogo.ContainsKey(t))
+                    throw Erro("correlacao.json", $"a regra '{regra.Id}' cita a técnica MITRE '{t}', que não está em mitre.json");
+
+        foreach (var (tipo, f) in FrameworksPorTipo)
+            foreach (var t in f.Mitre)
+                if (!Mitre.Catalogo.ContainsKey(t))
+                    throw Erro("frameworks.json", $"o tipo '{tipo}' cita a técnica MITRE '{t}', que não está em mitre.json");
     }
 
     private static InvalidOperationException Erro(string arquivo, string motivo) =>

@@ -205,8 +205,43 @@ O briefing completo está em **`docs/PROMPT.md`** — leia antes de qualquer tar
   no topo — é o caso da troca de senha obrigatória. `TrocarSenha` ganhou destino explícito (`asp-page`), como manda P-013.
   Ponta a ponta com usuários fictícios: troca de senha concluída pelo formulário novo; 2FA ativado, logout, login e
   código conferido na tela nova; os 3 formulários com token anti-CSRF. 289 testes aprovados.
-- **Falta, nesta ordem:** 1) MITRE ATT&CK (único item
-  obrigatório ainda em aberto: `"mitre": []` em `regras/frameworks.json` e `regras/correlacao.json`);
-  3) custo para corrigir e "tempo até doer"; 4) relatório mais técnico e mais bonito (HTML/PDF).
+
+## Continuidade — 08/10/2026 (MITRE, custo de correção e gráficos)
+- **MITRE ATT&CK (item obrigatório do manual, antes ⚠️):** `regras/mitre.json` traz catálogo de 9 técnicas (nome em
+  português, fase do ataque, explicação, mitigação) e três confianças: `observada`, `provavel`, `possivel`.
+  `Core/Analise/MapaMitre` aponta a técnica do ALERTA pelo texto da regra do firewall (termos em `porDescricaoAlerta`)
+  e a da VULNERABILIDADE pelo tipo (T1190/T1210/T1203, sempre "possível", com premissa declarada).
+  **Alerta sem termo reconhecido fica sem técnica e vira lacuna declarada — nunca palpite.**
+  `EventoSeguranca.Mitre` guarda os códigos; `ProcessadorLote` preenche junto com tipo de ativo e serviço.
+  As 5 regras de `correlacao.json` e os tipos em `frameworks.json` saíram de `"mitre": []`.
+  Validação na subida: técnica fora do catálogo, confiança inválida ou técnica sem premissa impedem a plataforma de iniciar.
+  Tela: seção "Técnica de ataque" no detalhe do evento. Relatório: anexo com técnica × eventos × confiança × como reduzir,
+  e a contagem dos eventos sem técnica.
+- **Custo para corrigir (antes "A estimar"):** `regras/custos.json` (hora técnica em faixa + horas fixas e por máquina,
+  por tipo de ação) e `Core/Analise/RegrasCustos` (`CalculadoraCustos`). Sempre FAIXA, com premissa obrigatória —
+  a validação recusa faixa sem premissa. Piso nunca arredonda até zero ("trabalho que existe não custa R$ 0").
+  `custos.json` declara também o que NÃO está incluído (licenças, parada do negócio, empresa externa).
+- **Score por problema:** `AcaoRecomendada` ganhou `QuedaScore`, `PercentualScore`, `CustoMinimo`/`CustoMaximo`;
+  `Avaliacao` ganhou `CustoTotalMinimo`/`CustoTotalMaximo`. A queda é recalculada pela MESMA calculadora do score,
+  sem os eventos daquela ação: não é estimativa.
+- **Gráficos (sem biblioteca, sem internet):** relatório tem barras de "peso de cada problema no score" e de
+  "prejuízo potencial × custo do plano" na mesma escala, legíveis em preto e branco; a tela ganhou o painel
+  "Peso de cada problema" e, em cada ação do plano, "melhora X% do score · custa entre R$ A e R$ B".
+- **Estado da verificação:** solução compila sem avisos nem erros; 12 testes novos em `MitreECustosTests`.
+  Numa janela em que o Windows liberou, a suíte rodou: **302 testes, 1 falha** — o piso do custo arredondava para zero,
+  **corrigido** (`ArredondarParaBaixo`) com teste próprio (`Acao_pequena_nao_custa_zero_reais`). A suíte **depois da
+  correção ainda não pôde ser executada** nesta máquina (ver abaixo).
+- **P-020 · Smart App Control bloqueia os binários recém-compilados.** Windows 11 com Smart App Control LIGADO
+  (`HKLM\SYSTEM\CurrentControlSet\Control\CI\Policy` → `VerifiedAndReputablePolicyState = 1`) recusa carregar os
+  `.dll` novos do projeto: `FileLoadException ... (0x800711C7)`. Não é vírus (o Defender não registrou detecção).
+  O veredito **oscila**: às vezes libera minutos depois, às vezes volta a bloquear no binário seguinte. Contornos
+  testados e SEM efeito: recompilar do zero, `dotnet exec`, copiar a saída para outra pasta. WSL não está instalado.
+  Solução real: desligar o Smart App Control (decisão do usuário; é de mão única) ou rodar a suíte em outra máquina.
+  Observação para a banca: o Defender marcou `_Layout.cshtml` dentro do zip baixado do GitHub (ID 2147751841) — falso positivo.
+- **Falta, nesta ordem:** 1) rodar a suíte completa depois da correção do custo (P-020 impede nesta máquina);
+  2) conferir o relatório novo (HTML e PDF) página por página, com os gráficos; 3) "tempo até doer";
+  4) deixar o relatório mais técnico e mais bonito, pedido do Ruan; 5) `docs/RESUMO_PARA_BANCA.md`;
+  6) linha do tempo por máquina, mapa de calor, triagem de alertas; 7) rodar com os 3 CSVs reais
+  (a máquina do Ruan não tem `dados/`). MITRE ATT&CK saiu da lista: foi feito nesta sessão.
 - Análise do easter egg da organização (`qqdiz.com.br/bash.html`): os documentos escondidos confirmam os pesos do manual
   e as fases; o que falta no projeto está listado acima. Máquina do Ruan não tem `dados/` nem `var/`.

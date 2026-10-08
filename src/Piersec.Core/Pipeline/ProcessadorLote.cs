@@ -38,6 +38,7 @@ public sealed class ProcessadorLote(
     private readonly MotorCorrelacao _motor = new();
     private readonly PlanejadorAvaliacao _planejador = new(regras, new CalculadoraScore(regras.Score, regras.Ativos));
     private readonly AnalisadorServicos _analisadorServicos = new(regras);
+    private readonly MapaMitre _mitre = new(regras.Mitre);
 
     /// <summary>
     /// Etapas: coleta e padronização (por arquivo) → severidade e tipo de máquina → correlação →
@@ -55,7 +56,8 @@ public sealed class ProcessadorLote(
         {
             var (evento, lacuna) = _classificador.Classificar(bruto);
             var tipo = _tiposDeAtivo.Classificar(evento);
-            eventos.Add(evento with { TipoAtivo = tipo, Servico = evento.Ativo == ContextoConversao.NaoInformado ? null : servicos.Classificar(evento.Ativo, tipo) });
+            var comContexto = evento with { TipoAtivo = tipo, Servico = evento.Ativo == ContextoConversao.NaoInformado ? null : servicos.Classificar(evento.Ativo, tipo) };
+            eventos.Add(comContexto with { Mitre = _mitre.Codigos(comContexto) });
             if (lacuna is not null)
                 lacunas.Add(lacuna);
         }

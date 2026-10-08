@@ -76,6 +76,16 @@ public sealed record AcaoRecomendada
 
     public int Maquinas { get; init; }
     public IReadOnlyList<string> EventoIds { get; init; } = [];
+
+    /// <summary>Quantos PONTOS do score esta ação derruba, recalculando o score sem os eventos que ela resolve.</summary>
+    public double? QuedaScore { get; init; }
+
+    /// <summary>A mesma queda em PORCENTAGEM do score atual ("corrigir isto melhora 18% do score").</summary>
+    public double? PercentualScore { get; init; }
+
+    /// <summary>Faixa de quanto custa fazer (premissa de regras/custos.json). Nula quando não há premissa para o tipo.</summary>
+    public double? CustoMinimo { get; init; }
+    public double? CustoMaximo { get; init; }
 }
 
 /// <summary>Score, riscos principais e plano de ação: o que o executivo precisa ler.</summary>
@@ -103,6 +113,10 @@ public sealed record Avaliacao
 
     /// <summary>Quantas máquinas de cada tipo (ex.: "servidores" → 41).</summary>
     public required IReadOnlyDictionary<string, int> MaquinasPorTipo { get; init; }
+
+    /// <summary>Faixa do custo de executar o plano inteiro (soma das ações). Nula quando não há premissa de custo.</summary>
+    public double? CustoTotalMinimo { get; init; }
+    public double? CustoTotalMaximo { get; init; }
 }
 
 /// <summary>Comparação com o lote anterior (tendência).</summary>

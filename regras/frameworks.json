@@ -1,19 +1,19 @@
 {
-  "descricao": "Controles de frameworks ligados a cada tipo de evento. MITRE ATT&CK só é preenchido quando os dados permitem saber a técnica.",
+  "descricao": "Controles de frameworks ligados a cada tipo de evento. As técnicas MITRE ATT&CK vêm de regras/mitre.json e são sempre acompanhadas da confiança da dedução: os dados não dizem qual técnica foi usada.",
   "porTipo": {
     "vulnerabilidade": {
-      "mitre": [],
+      "mitre": ["T1190", "T1210", "T1203"],
       "nist": ["ID.RA-01", "PR.PS-02"],
       "cis": ["7.3", "7.4"],
       "iso": ["A.8.8"],
-      "observacao": "A técnica MITRE depende de como cada falha é explorada; os dados (sem exposição nem exploração conhecida) não permitem afirmar."
+      "observacao": "Técnicas POSSÍVEIS, não observadas: uma falha conhecida pode virar entrada pela rede (T1190), pulo entre máquinas (T1210) ou execução pelo programa do usuário (T1203). Qual delas depende de exposição à internet e de exploração ativa, e os dados não trazem nenhuma das duas."
     },
     "alerta": {
       "mitre": [],
       "nist": ["DE.CM-01", "DE.AE-02"],
       "cis": ["13.1", "13.3"],
       "iso": ["A.8.16", "A.8.20"],
-      "observacao": "A técnica MITRE de cada alerta depende do catálogo de regras do SIEM (aguardando liberação do mentor)."
+      "observacao": "A técnica de cada alerta é deduzida do texto da própria regra do firewall (regras/mitre.json), com confiança PROVÁVEL. Alerta cujo texto não casa com nenhum termo fica sem técnica, e isso é declarado como lacuna."
     }
   },
   "controles": {

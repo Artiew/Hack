@@ -43,8 +43,16 @@
                 </section>
                 <section class="exec-negocio-card" data-resumo-gasto>
                     <h2>Gasto para corrigir</h2>
-                    <p class="negocio-valor">A estimar</p>
-                    <p class="meta">O lote não informa orçamento de correção. Não significa custo zero.</p>
+                    @if (av.CustoTotalMinimo is { } custoMin && av.CustoTotalMaximo is { } custoMax)
+                    {
+                        <p class="negocio-valor">@Formatar.FaixaDinheiro((decimal)custoMin, (decimal)custoMax)</p>
+                        <p class="meta">Plano inteiro, em faixa. Premissa da equipe (hora técnica), não veio dos dados; não inclui licenças nem parada do negócio.</p>
+                    }
+                    else
+                    {
+                        <p class="negocio-valor">A estimar</p>
+                        <p class="meta">Sem premissa de custo para as ações deste lote. Não significa custo zero.</p>
+                    }
                     @if (primeiraAcao is not null) { <p class="negocio-esforco">Primeira ação: esforço <strong>@LoteModel.NomeEsforco(primeiraAcao.Esforco)</strong></p> }
                     <a href="@Url.Page("/Lote",new {id=lote.Id,secao="simulacao"})#simulacao">Consultar o plano →</a>
                 </section>
@@ -111,6 +119,23 @@
                     }
                     <p class="meta exec-nota">As parcelas medidas formam a nota geral. Itens sem dados ficam fora da conta e reduzem a confiança.</p>
                 </section>
+                @if (av.AchadosPrincipais.Count > 0 && s.Valor is { } totalScore && totalScore > 0)
+                {
+                    var maiorPeso = av.AchadosPrincipais.Max(x => x.Pontos);
+                    <section class="exec-painel" aria-labelledby="titulo-pesos">
+                        <div class="exec-titulo"><h2 id="titulo-pesos">Peso de cada problema</h2><span class="exec-eyebrow">Quanto cai se resolver</span></div>
+                        @foreach (var achado in av.AchadosPrincipais.OrderByDescending(x => x.Pontos))
+                        {
+                            var pctScore = 100 * achado.Pontos / totalScore;
+                            <div class="exec-fator">
+                                <div><strong>@achado.Texto</strong><span>−@pctScore.ToString("0.#", Formatar.PtBr)%</span></div>
+                                <svg class="exec-barra" viewBox="0 0 200 6" aria-hidden="true"><rect class="barra-fundo" width="200" height="6" rx="3"/><rect class="barra-valor" width="@N(maiorPeso > 0 ? Math.Clamp(achado.Pontos / maiorPeso, 0, 1) * 200 : 0)" height="6" rx="3"/></svg>
+                                <p class="meta">Resolver só este item já tira @achado.Pontos.ToString("0.#", Formatar.PtBr) pontos do score (@Formatar.Qtd(achado.Eventos, "evento", "eventos")).</p>
+                            </div>
+                        }
+                        <p class="meta exec-nota">A barra compara os problemas entre si. A porcentagem é sobre o score de hoje, recalculado sem aquele problema — não é estimativa.</p>
+                    </section>
+                }
                 <section class="exec-painel" aria-labelledby="titulo-historico">
                     <div class="exec-titulo"><h2 id="titulo-historico">Evolução do risco</h2><span class="exec-eyebrow">Até 6 análises</span></div>
                     @if (Model.Historico.Count > 1)
@@ -171,7 +196,22 @@
                                 else { <svg class="icone meta" aria-hidden="true"><use href="#i-lista"/></svg> }
                                 <div class="acao-conteudo">
                                     @if (simulavel) { <label for="acao-@acao.Ordem">@acao.Titulo</label> } else { <strong>@acao.Titulo</strong> }
-                                    <p>@acao.Impacto</p><p class="meta">Esforço @LoteModel.NomeEsforco(acao.Esforco) · até @Formatar.Qtd(acao.PrazoDias,"dia","dias") · @acao.Quadrante</p>
+                                    <p>@acao.Impacto</p>
+                                    <p class="acao-ganho">
+                                        @if (acao.PercentualScore is { } ganho && ganho > 0)
+                                        {
+                                            <span class="ganho-score">melhora <strong>@ganho.ToString("0.#", Formatar.PtBr)%</strong> do score</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="ganho-score ganho-neutro">efeito no score não calculado</span>
+                                        }
+                                        @if (acao.CustoMinimo is { } cMin && acao.CustoMaximo is { } cMax)
+                                        {
+                                            <span class="ganho-custo">custa @Formatar.FaixaDinheiro((decimal)cMin, (decimal)cMax)</span>
+                                        }
+                                    </p>
+                                    <p class="meta">Esforço @LoteModel.NomeEsforco(acao.Esforco) · até @Formatar.Qtd(acao.PrazoDias,"dia","dias") · @acao.Quadrante</p>
                                     <details><summary>Como realizar</summary><p>@acao.ComoFazer</p>@if (tecnico && acao.EventoIds.Count > 0) { <a href="@Links.Eventos(lote.Id,new Piersec.Core.Consulta.FiltroEventos { Acao = acao.Ordem })">Ver falhas relacionadas →</a> }</details>
                                 </div>
                             </div>

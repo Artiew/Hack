@@ -1,0 +1,49 @@
+{
+  "descricao": "MITRE ATT&CK: catálogo público das técnicas que atacantes usam. PREMISSA DECLARADA: os dados do desafio não dizem qual técnica foi usada — não trazem exposição à internet, nem exploração confirmada, nem o catálogo de regras do SIEM. A plataforma deduz a técnica a partir do texto do alerta e do tipo do evento, e marca a confiança de cada dedução. Nada aqui é afirmado como observado.",
+  "confiancas": {
+    "observada": "a própria fonte diz que a técnica aconteceu",
+    "provavel": "o texto do alerta descreve essa técnica (dedução da plataforma, não confirmada pela fonte)",
+    "possivel": "é um caminho de ataque plausível para esse tipo de problema, não um fato"
+  },
+  "catalogo": {
+    "T1595": { "nome": "Varredura do alvo", "tatica": "Reconhecimento", "explicacao": "O atacante vasculha a rede de fora para descobrir o que existe e o que responde.", "mitigacoes": ["M1031"] },
+    "T1046": { "nome": "Descoberta de serviços de rede", "tatica": "Descoberta", "explicacao": "Procura quais portas e serviços estão abertos, para escolher por onde entrar.", "mitigacoes": ["M1030", "M1031"] },
+    "T1190": { "nome": "Exploração de aplicação exposta", "tatica": "Acesso inicial", "explicacao": "Usa uma falha conhecida de um programa acessível pela rede para entrar.", "mitigacoes": ["M1051", "M1030"] },
+    "T1210": { "nome": "Exploração de serviços remotos", "tatica": "Movimento lateral", "explicacao": "Já dentro da rede, usa uma falha para pular de uma máquina para outra.", "mitigacoes": ["M1051", "M1030"] },
+    "T1203": { "nome": "Exploração de programa do usuário", "tatica": "Execução", "explicacao": "Faz um programa do dia a dia (navegador, leitor de PDF, pacote office) executar código do atacante.", "mitigacoes": ["M1051"] },
+    "T1110": { "nome": "Tentativa de adivinhar senha", "tatica": "Acesso a credenciais", "explicacao": "Repete tentativas de login até acertar a senha.", "mitigacoes": ["M1032"] },
+    "T1071": { "nome": "Comunicação disfarçada com o atacante", "tatica": "Comando e controle", "explicacao": "A máquina invadida conversa com o atacante usando tráfego que parece normal.", "mitigacoes": ["M1031", "M1030"] },
+    "T1498": { "nome": "Ataque para derrubar o serviço", "tatica": "Impacto", "explicacao": "Sobrecarrega a rede ou o sistema até ele parar de atender.", "mitigacoes": ["M1031"] },
+    "T1566": { "nome": "Mensagem enganosa (phishing)", "tatica": "Acesso inicial", "explicacao": "Convence uma pessoa a clicar, abrir um arquivo ou entregar a senha.", "mitigacoes": ["M1017", "M1031"] }
+  },
+  "mitigacoes": {
+    "M1017": "MITRE ATT&CK — treinar as pessoas para reconhecer o ataque",
+    "M1030": "MITRE ATT&CK — separar a rede em partes, para o problema não se espalhar",
+    "M1031": "MITRE ATT&CK — bloquear o ataque na rede (prevenção de intrusão)",
+    "M1032": "MITRE ATT&CK — exigir um segundo fator além da senha",
+    "M1051": "MITRE ATT&CK — manter os programas atualizados"
+  },
+  "porTipo": {
+    "vulnerabilidade": {
+      "tecnicas": ["T1190", "T1210", "T1203"],
+      "confianca": "possivel",
+      "premissa": "Uma falha conhecida num programa pode virar entrada pela rede, pulo entre máquinas ou execução pelo próprio usuário. Qual delas depende de a máquina estar exposta e de o atacante ter interesse — os dados não dizem nenhuma das duas coisas."
+    },
+    "alerta": {
+      "tecnicas": [],
+      "confianca": "provavel",
+      "premissa": "A técnica de cada alerta vem do texto da própria regra do firewall (ver 'porDescricaoAlerta'). Alerta cujo texto não casa com nenhum termo fica sem técnica, e isso é declarado como lacuna em vez de virar um palpite."
+    }
+  },
+  "porDescricaoAlerta": [
+    { "tecnica": "T1046", "contem": ["scan", "varredura", "port-scan", "portscan", "probe", "sniff"] },
+    { "tecnica": "T1110", "contem": ["brute", "forca bruta", "força bruta", "failed login", "login failure", "falha de login", "password guess", "credential"] },
+    { "tecnica": "T1190", "contem": ["exploit", "exploracao", "exploração", "injection", "sql", "xss", "traversal", "overflow", "rce", "remote code", "web attack", "cve-"] },
+    { "tecnica": "T1071", "contem": ["botnet", "command and control", "c2", "c&c", "beacon", "callback", "tunnel", "tunel", "túnel", "exfil"] },
+    { "tecnica": "T1498", "contem": ["dos", "ddos", "flood", "denial of service", "negacao de servico", "negação de serviço"] },
+    { "tecnica": "T1203", "contem": ["malware", "virus", "vírus", "trojan", "ransom", "worm", "payload", "backdoor"] },
+    { "tecnica": "T1566", "contem": ["phishing", "phish", "spam", "spoof", "mail"] },
+    { "tecnica": "T1210", "contem": ["rdp", "ssh", "smb", "telnet", "vpn", "lateral"] },
+    { "tecnica": "T1595", "contem": ["recon", "reconhecimento", "enumerat", "discovery", "fingerprint"] }
+  ]
+}

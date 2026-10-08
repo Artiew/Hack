@@ -66,7 +66,7 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
             PaginaDiretoria(sb, lote, avaliacao, diretoria);
             SecaoServicos(sb, lote);
             SecaoScore(sb, avaliacao);
-            SecaoPlano(sb, avaliacao, diretoria);
+            SecaoPlano(sb, lote, avaliacao, diretoria);
             if (!diretoria)
                 SecaoAutomacao(sb, lote.Operacao);
         }
@@ -84,6 +84,7 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
             AnexoComoDecidimos(sb, lote);
             AnexoArquivos(sb, lote);
             AnexoLacunas(sb, lote);
+            AnexoMitre(sb, lote);
             AnexoMetodologia(sb);
             AnexoGlossario(sb, "G. Glossário");
             AnexoValidacao(sb, lote.Validacao);
@@ -347,6 +348,24 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
             }
             sb.Append("</ol><p class=\"meta\">Como calculamos: refazendo a conta do score sem cada problema (máquinas corrigidas continuam na média, valendo 0). " +
                       "Juntos, o efeito é menor que a soma, porque uma mesma falha pode estar em dois problemas.</p>");
+
+            // Gráfico: quanto cada problema pesa no score. Uma pergunta só — "o que pesa mais?" — em barras
+            // ordenadas, que continuam legíveis impressas em preto e branco.
+            if (s.Valor is { } totalScore && totalScore > 0)
+            {
+                var maior = a.AchadosPrincipais.Max(x => x.Pontos);
+                sb.Append("<h3>Peso de cada problema no score</h3><table class=\"grafico\"><tbody>");
+                foreach (var achado in a.AchadosPrincipais.OrderByDescending(x => x.Pontos))
+                {
+                    var largura = maior > 0 ? Math.Round(100 * achado.Pontos / maior) : 0;
+                    var pctScore = Math.Round(100 * achado.Pontos / totalScore, 1);
+                    sb.Append($"<tr><td>{H(achado.Texto)}</td>" +
+                              $"<td class=\"barra-celula\"><div class=\"barra\"><span style=\"width:{largura.ToString("0", System.Globalization.CultureInfo.InvariantCulture)}%\"></span></div></td>" +
+                              $"<td class=\"num\"><strong>{H(Pct(pctScore))}</strong> do score<br><span class=\"pequeno\">{H(Pontos(achado.Pontos))}</span></td></tr>");
+                }
+                sb.Append("</tbody></table><p class=\"meta\">Leia assim: resolver só o primeiro item já tira essa fatia do score. " +
+                          "A barra compara os problemas entre si; a porcentagem é sobre o score de hoje.</p>");
+            }
         }
 
         sb.Append("<h3>Faixas</h3><table><thead><tr><th>Score</th><th>Faixa</th><th>O que significa</th></tr></thead><tbody>");
@@ -362,22 +381,66 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
 
     // ================= 3. Plano de ação =================
 
-    private static void SecaoPlano(StringBuilder sb, Avaliacao a, bool diretoria)
+    private void SecaoPlano(StringBuilder sb, Lote lote, Avaliacao a, bool diretoria)
     {
         sb.Append($"""
             <section>
             <h2>4. Plano de ação completo</h2>
             <p>O resultado de cada ação é <strong>calculado</strong> contando as falhas que ela elimina. Prazos e esforço seguem as premissas {(diretoria ? "da " + ReferenciaVersaoCompleta : "do anexo F")}.</p>
-            <table><thead><tr><th>#</th><th>Ação e como fazer</th><th>Resultado esperado</th><th>Impacto</th><th>Esforço</th><th>Prazo</th></tr></thead><tbody>
+            <table><thead><tr><th>#</th><th>Ação e como fazer</th><th>Resultado esperado</th><th>Melhora no score</th><th>Custo estimado</th><th>Impacto</th><th>Esforço</th><th>Prazo</th></tr></thead><tbody>
             """);
         foreach (var acao in a.Acoes)
         {
             // A lista de máquinas (anexo B) só existe na versão completa.
             var comoFazer = diretoria ? acao.ComoFazer.Replace("A lista está no anexo B.", $"A lista está na {ReferenciaVersaoCompleta}.") : acao.ComoFazer;
+            var melhora = acao.QuedaScore is { } q && acao.PercentualScore is { } pct
+                ? $"<strong>−{H(Pct(pct))}</strong><br><span class=\"pequeno\">{H(Pontos(q))} a menos</span>"
+                : "<em>não calculado</em>";
+            var custo = acao.CustoMinimo is { } cmin && acao.CustoMaximo is { } cmax
+                ? H(Formatar.FaixaDinheiro((decimal)cmin, (decimal)cmax))
+                : "<em>sem premissa</em>";
             sb.Append($"<tr><td class=\"num\">{acao.Ordem}</td><td><strong>{H(acao.Titulo)}</strong><br>{H(comoFazer)}</td><td>{H(acao.Impacto)}</td>" +
+                      $"<td>{melhora}</td><td class=\"pequeno\">{custo}</td>" +
                       $"<td>{H(NomeNivel(acao.NivelImpacto))}</td><td>{H(NomeNivel(acao.Esforco))}</td><td>até {acao.PrazoDias} dias</td></tr>");
         }
         sb.Append("</tbody></table>");
+
+        // Quanto custa × quanto evita: as duas faixas lado a lado, na mesma escala, para a diretoria comparar de relance.
+        if (a.CustoTotalMinimo is { } totalMin && a.CustoTotalMaximo is { } totalMax)
+        {
+            var prejuizo = lote.Impacto;
+            sb.Append("<h3>Quanto custa corrigir, e quanto está em jogo</h3>");
+            sb.Append($"<p class=\"frase\"><strong>Executar o plano inteiro custa {H(Formatar.FaixaDinheiro((decimal)totalMin, (decimal)totalMax))}</strong>");
+            if (a.Score.Valor is { } atual && a.ScorePrevisto is { } depois)
+                sb.Append($" e leva o score de {Inteiro(atual)} para {Inteiro(depois)}");
+            sb.Append(".</p>");
+
+            if (prejuizo is not null)
+            {
+                var escala = Math.Max((double)prejuizo.Maximo, totalMax);
+                string Barra(double valor) => escala <= 0 ? "" :
+                    $"<div class=\"barra\"><span style=\"width:{Math.Round(100 * valor / escala).ToString("0", System.Globalization.CultureInfo.InvariantCulture)}%\"></span></div>";
+                sb.Append($"""
+                    <table class="grafico"><tbody>
+                    <tr><td>Prejuízo potencial se os serviços em risco forem atingidos</td><td class="barra-celula">{Barra((double)prejuizo.Maximo)}</td><td class="num"><strong>{H(Formatar.FaixaDinheiro(prejuizo.Minimo, prejuizo.Maximo))}</strong></td></tr>
+                    <tr><td>Custo de executar o plano de ação</td><td class="barra-celula">{Barra(totalMax)}</td><td class="num"><strong>{H(Formatar.FaixaDinheiro((decimal)totalMin, (decimal)totalMax))}</strong></td></tr>
+                    </tbody></table>
+                    <p class="meta">As duas barras estão na mesma escala. Não é promessa de economia: o prejuízo é o que se PERDE caso o
+                    ataque aconteça, e ninguém sabe se vai acontecer. A comparação serve para dar ordem de grandeza à decisão.</p>
+                    """);
+            }
+            else
+            {
+                sb.Append("<p class=\"meta\">Nenhum serviço em risco com prejuízo estimado neste lote, então não há com o que comparar o custo.</p>");
+            }
+
+            var hora = regras.Custos.HoraTecnica;
+            sb.Append($"<p class=\"pequeno\"><strong>Premissa do custo (não veio dos dados):</strong> {H(hora.Premissa ?? "")} " +
+                      "O total é a soma das faixas de cada ação, com horas fixas mais horas por máquina, arredondado para cima no limite superior.");
+            if (regras.Custos.NaoIncluido.Count > 0)
+                sb.Append($" <strong>Não está incluído:</strong> {H(string.Join("; ", regras.Custos.NaoIncluido))}.");
+            sb.Append("</p>");
+        }
 
         string Celula(string quadrante)
         {
@@ -595,6 +658,66 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
         sb.Append("</section>");
     }
 
+    /// <summary>
+    /// Anexo: técnicas do MITRE ATT&amp;CK ligadas aos eventos deste lote. Cada linha diz quantos eventos a técnica
+    /// explica e QUANTO a plataforma confia nisso — os dados não afirmam a técnica, então o grau de confiança
+    /// anda junto. O que não foi possível apontar aparece como lacuna, não como zero.
+    /// </summary>
+    private void AnexoMitre(StringBuilder sb, Lote lote)
+    {
+        var mapa = new MapaMitre(regras.Mitre);
+        var porTecnica = new Dictionary<string, (int Eventos, string Confianca)>();
+        var semTecnica = 0;
+        foreach (var e in lote.Eventos)
+        {
+            var apontadas = mapa.Apontar(e);
+            if (apontadas.Count == 0) { semTecnica++; continue; }
+            foreach (var t in apontadas)
+            {
+                var atual = porTecnica.GetValueOrDefault(t.Tecnica, (Eventos: 0, Confianca: t.Confianca));
+                porTecnica[t.Tecnica] = (atual.Eventos + 1, MaisForte(atual.Confianca, t.Confianca));
+            }
+        }
+
+        sb.Append("<section><h2>Anexo — Técnicas de ataque (MITRE ATT&amp;CK)</h2>");
+        sb.Append($"""
+            <p>O MITRE ATT&CK é um catálogo público das técnicas que atacantes usam. Ele serve para falar a mesma língua
+            que o resto do mercado. <strong>Atenção ao que esta tabela é e ao que ela não é:</strong> as fontes deste lote
+            não dizem qual técnica foi usada — não trazem exposição à internet nem exploração confirmada. A plataforma
+            <em>deduz</em> a técnica (pelo texto do alerta ou pelo tipo do problema) e declara o quanto confia em cada dedução.
+            Nenhuma linha abaixo é um ataque observado.</p>
+            """);
+
+        if (porTecnica.Count == 0)
+        {
+            sb.Append("<p class=\"vazio\">Nenhuma técnica pôde ser apontada neste lote.</p></section>");
+            return;
+        }
+
+        sb.Append("<table><thead><tr><th>Técnica</th><th>Fase do ataque</th><th>O que é</th><th>Eventos</th><th>Confiança</th><th>Como reduzir</th></tr></thead><tbody>");
+        foreach (var (codigo, dados) in porTecnica.OrderByDescending(p => p.Value.Eventos).ThenBy(p => p.Key, StringComparer.Ordinal))
+        {
+            var ficha = mapa.Tecnica(codigo);
+            var reduzir = string.Join("<br>", (ficha?.Mitigacoes ?? []).Select(m => H(regras.Mitre.Mitigacoes.GetValueOrDefault(m, m))));
+            sb.Append($"<tr><td><code>{H(codigo)}</code><br>{H(ficha?.Nome ?? "")}</td><td class=\"pequeno\">{H(ficha?.Tatica ?? "")}</td>" +
+                      $"<td class=\"pequeno\">{H(ficha?.Explicacao ?? "")}</td><td>{Formatar.Numero(dados.Eventos)}</td>" +
+                      $"<td class=\"pequeno\">{H(ConfiancaMitre.Descricao(dados.Confianca))}</td><td class=\"pequeno\">{reduzir}</td></tr>");
+        }
+        sb.Append("</tbody></table>");
+
+        if (semTecnica > 0)
+            sb.Append($"<p class=\"pequeno\">Lacuna declarada: {Formatar.Qtd(semTecnica, "evento", "eventos")} sem técnica identificada. " +
+                      "O texto da fonte não permitiu apontar nenhuma técnica, e a plataforma prefere dizer isso a chutar.</p>");
+        sb.Append("</section>");
+    }
+
+    /// <summary>Entre duas confianças, fica a mais forte (observada &gt; provável &gt; possível).</summary>
+    private static string MaisForte(string a, string b)
+    {
+        int Peso(string c) => c == ConfiancaMitre.Observada ? 3 : c == ConfiancaMitre.Provavel ? 2 : 1;
+        return Peso(a) >= Peso(b) ? a : b;
+    }
+
     private void AnexoMetodologia(StringBuilder sb)
     {
         var s = regras.Severidade;
@@ -752,6 +875,11 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
         ? $"{valor.ToString("0.0", Formatar.PtBr)} ponto"
         : $"{Inteiro(valor)} {(Inteiro(valor) == "1" ? "ponto" : "pontos")}";
 
+    /// <summary>Porcentagem para leitura: "18%" ou "1,4%" quando é menos de 10%.</summary>
+    private static string Pct(double valor) => valor < 10
+        ? valor.ToString("0.#", Formatar.PtBr) + "%"
+        : valor.ToString("0", Formatar.PtBr) + "%";
+
     private static string Inteiro(double valor) => Math.Round(valor, MidpointRounding.AwayFromZero).ToString("0", Formatar.PtBr);
 
     private static string NomeNivel(Nivel nivel) => nivel switch { Nivel.Alto => "alto", Nivel.Medio => "médio", _ => "baixo" };
@@ -815,6 +943,11 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
         .uma-coisa{border:2px dashed var(--tinta);background:var(--fundo-claro);padding:8px 12px;margin:10px 0;font-size:14px}
         .barra{display:inline-block;width:120px;height:10px;border:1px solid var(--tinta);vertical-align:middle;margin-right:6px}
         .barra span{display:block;height:100%;background:var(--tinta)}
+        .grafico{width:100%;border-collapse:collapse;margin:10px 0 6px}
+        .grafico td{border:0;padding:5px 8px;vertical-align:middle}
+        .grafico .barra-celula{width:45%}
+        .grafico .barra{width:100%;max-width:none;height:14px}
+        .grafico .num{text-align:right;white-space:nowrap}
         tr.atual td{font-weight:700;background:var(--fundo-claro)}
         .matriz td,.matriz th{text-align:center;width:33%}
         .glossario dt{font-weight:700;margin-top:6px}.glossario dd{margin:0 0 4px 16px}

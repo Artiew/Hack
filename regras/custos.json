@@ -1,0 +1,37 @@
+{
+  "descricao": "Quanto custa CORRIGIR. PREMISSA DECLARADA: os dados do desafio não trazem contrato, salário, nota fiscal nem hora de técnico. Os valores abaixo são uma premissa do exercício, definida pela equipe, para responder à pergunta do executivo 'quanto custa arrumar?'. Sempre em FAIXA, nunca em valor exato, e sempre com esta premissa visível no relatório. Trocar os números aqui muda o relatório inteiro, sem tocar em código.",
+  "moeda": "R$",
+  "horaTecnica": {
+    "minimo": 60,
+    "maximo": 120,
+    "premissa": "Hora de um técnico de infraestrutura, entre R$ 60 e R$ 120, incluindo encargos. Valor de referência de mercado assumido pela equipe; não veio dos dados."
+  },
+  "arredondarPara": 500,
+  "horasPorAcao": {
+    "atualizar_programas": {
+      "fixoMinimo": 2, "fixoMaximo": 4,
+      "porMaquinaMinimo": 0.15, "porMaquinaMaximo": 0.4,
+      "premissa": "Algumas horas para testar e empacotar a atualização, mais poucos minutos por máquina, porque a distribuição é automática."
+    },
+    "corrigir_maquinas": {
+      "fixoMinimo": 2, "fixoMaximo": 4,
+      "porMaquinaMinimo": 1.0, "porMaquinaMaximo": 2.5,
+      "premissa": "Máquina a máquina: aplicar tudo o que está pendente, reiniciar e conferir. Mais caro por máquina do que atualizar um único programa."
+    },
+    "investigar_picos": {
+      "fixoMinimo": 4, "fixoMaximo": 10,
+      "porMaquinaMinimo": 0, "porMaquinaMaximo": 0,
+      "premissa": "Trabalho de análise de quem olha os registros; não cresce com o número de máquinas."
+    },
+    "medir_fatores": {
+      "fixoMinimo": 8, "fixoMaximo": 20,
+      "porMaquinaMinimo": 0, "porMaquinaMaximo": 0,
+      "premissa": "Ligar e conferir uma fonte de dados nova (ex.: antivírus, exposição à internet). É projeto curto, não compra de ferramenta: licença, se houver, NÃO está contada aqui."
+    }
+  },
+  "naoIncluido": [
+    "compra de licenças, equipamentos ou ferramentas novas",
+    "horas paradas do negócio durante a correção",
+    "contratação de empresa externa"
+  ]
+}

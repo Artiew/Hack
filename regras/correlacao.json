@@ -9,7 +9,7 @@
       "titulo": "{cve} está em {ativos} máquinas",
       "justificativa": "A mesma falha ({cve}, nota CVSS {cvss}) aparece em {ativos} máquinas. Quem conhece essa falha pode tentar usá-la em todas elas; corrigi-la reduz o risco de várias máquinas de uma vez.",
       "severidade": "maior_dos_eventos",
-      "frameworks": { "mitre": [], "nist": ["ID.RA-01", "PR.PS-02"], "cis": ["7.3", "7.4"], "iso": ["A.8.8"] }
+      "frameworks": { "mitre": ["T1190"], "nist": ["ID.RA-01", "PR.PS-02"], "cis": ["7.3", "7.4"], "iso": ["A.8.8"] }
     },
     {
       "id": "COR-PACOTE-CONCENTRA",
@@ -19,7 +19,7 @@
       "titulo": "Atualizar {pacote} resolve {cves} falhas em {ativos}",
       "justificativa": "O software {pacote} reúne {cves} falhas diferentes (a mais grave com nota CVSS {cvss}) em {ativos}. Uma única ação (atualizar esse software) elimina todas elas: é a correção com maior retorno por esforço.",
       "severidade": "maior_dos_eventos",
-      "frameworks": { "mitre": [], "nist": ["PR.PS-02"], "cis": ["7.4"], "iso": ["A.8.8"] }
+      "frameworks": { "mitre": ["T1190"], "nist": ["PR.PS-02"], "cis": ["7.4"], "iso": ["A.8.8"] }
     },
     {
       "id": "COR-ATIVO-ACUMULA",
@@ -29,7 +29,7 @@
       "titulo": "{ativo} tem {quantidade} falhas críticas",
       "justificativa": "A máquina {ativo} tem {quantidade} falhas classificadas como críticas. Cada uma é uma porta de entrada; juntas, tornam essa máquina um alvo fácil e uma prioridade de correção.",
       "severidade": "Critica",
-      "frameworks": { "mitre": [], "nist": ["ID.RA-01"], "cis": ["7.3", "7.4"], "iso": ["A.8.8"] }
+      "frameworks": { "mitre": ["T1210"], "nist": ["ID.RA-01"], "cis": ["7.3", "7.4"], "iso": ["A.8.8"] }
     },
     {
       "id": "COR-RAJADA-ALERTAS",
@@ -39,7 +39,7 @@
       "titulo": "{quantidade} alertas da regra {regra} em {janela} minutos ({ativo})",
       "justificativa": "O equipamento {ativo} gerou {quantidade} alertas da regra {regra} (\"{descricao}\") em até {janela} minutos. Volume concentrado assim costuma indicar atividade em andamento, como varredura ou tentativas repetidas, e merece análise.",
       "severidade": "maior_dos_eventos",
-      "frameworks": { "mitre": [], "nist": ["DE.CM-01", "DE.AE-02"], "cis": ["13.1"], "iso": ["A.8.16"] }
+      "frameworks": { "mitre": ["T1046"], "nist": ["DE.CM-01", "DE.AE-02"], "cis": ["13.1"], "iso": ["A.8.16"] }
     },
     {
       "id": "COR-ALERTA-E-FALHA-MESMO-ATIVO",
@@ -49,7 +49,7 @@
       "titulo": "{ativo} gerou alertas e tem falhas graves",
       "justificativa": "A máquina {ativo} tem {quantidade} e também aparece em {alertas}. Uma máquina vulnerável que já está sendo alvo de atividade suspeita tem chance muito maior de ser invadida.",
       "severidade": "Critica",
-      "frameworks": { "mitre": [], "nist": ["ID.RA-01", "DE.AE-02"], "cis": ["7.4", "13.1"], "iso": ["A.8.8", "A.8.16"] }
+      "frameworks": { "mitre": ["T1190", "T1210"], "nist": ["ID.RA-01", "DE.AE-02"], "cis": ["7.4", "13.1"], "iso": ["A.8.8", "A.8.16"] }
     }
   ]
 }

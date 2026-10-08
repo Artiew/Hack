@@ -645,3 +645,15 @@ body[data-apresentacao] .exec-tecnico:not([hidden]) { display: block; }
     .entrada-cartao { padding: 26px 20px; }
     .entrada-cartao h1 { font-size: 25px; }
 }
+
+/* MITRE: técnica + confiança no detalhe do evento */
+.lista-mitre { list-style: none; padding: 0; }
+.lista-mitre > li { border: 1px solid var(--linha); border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; background: var(--superficie); }
+.lista-mitre .chip { font-size: 13px; padding: 2px 10px; margin-left: 8px; }
+
+/* Plano: o que cada ação melhora no score e quanto custa */
+.acao-ganho { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0; }
+.acao-ganho > span { font-size: 14px; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--linha); }
+.ganho-score { background: var(--destaque-claro); color: var(--destaque); font-weight: 600; }
+.ganho-neutro { background: transparent; color: var(--suave); font-weight: 400; }
+.ganho-custo { color: var(--suave); }

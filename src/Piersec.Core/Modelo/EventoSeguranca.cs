@@ -87,5 +87,11 @@ public sealed record EventoSeguranca
     /// <summary>Link de referência da fonte. Só exibido como texto; a plataforma nunca acessa.</summary>
     public string? Referencia { get; init; }
 
+    /// <summary>
+    /// Técnicas do MITRE ATT&amp;CK apontadas pela plataforma (ex.: T1046). Lista vazia = não foi possível dizer,
+    /// e isso vira lacuna declarada. A confiança de cada dedução está em regras/mitre.json (ver MapaMitre).
+    /// </summary>
+    public IReadOnlyList<string> Mitre { get; init; } = [];
+
     public required Evidencia Evidencia { get; init; }
 }

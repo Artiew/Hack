@@ -30,6 +30,32 @@
     <p class="aviso-forte">Severidade ajustada por @aj.Usuario (de @aj.De.Nome() para @aj.Para.Nome()). A plataforma tinha dito: “@aj.JustificativaOriginal”</p>
 }
 
+<h2>Técnica de ataque (MITRE ATT&amp;CK)</h2>
+@{
+    var mapa = new MapaMitre(Model.Regras.Mitre);
+    var tecnicas = mapa.Apontar(e);
+}
+@if (tecnicas.Count == 0)
+{
+    <p class="vazio">Não foi possível dizer qual técnica este evento representa. A plataforma prefere declarar isso a chutar.</p>
+}
+else
+{
+    <ul class="lista-mitre">
+        @foreach (var t in tecnicas)
+        {
+            var ficha = mapa.Tecnica(t.Tecnica);
+            <li>
+                <strong>@mapa.Rotulo(t.Tecnica)</strong>
+                <span class="chip">confiança: @ConfiancaMitre.Descricao(t.Confianca)</span>
+                <div class="meta">@ficha?.Explicacao Fase do ataque: @ficha?.Tatica. Por que apontamos: @t.Motivo.</div>
+            </li>
+        }
+    </ul>
+    <p class="meta">A fonte <strong>não</strong> diz qual técnica foi usada: isto é dedução da plataforma, por isso cada uma vem com o grau de confiança.
+        @(mapa.Premissa(e.Tipo))</p>
+}
+
 <details class="cartao discordar" open="@(Model.Erro is not null)">
     <summary>Discordar da severidade</summary>
     <p class="meta">Se você sabe algo que os dados não mostram (ex.: a máquina está desligada, isolada ou o serviço não usa esse programa),

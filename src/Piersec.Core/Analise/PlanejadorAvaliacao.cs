@@ -41,6 +41,11 @@ public sealed class PlanejadorAvaliacao(ConjuntoRegras regras, CalculadoraScore 
 
         var (achados, percentualExplicado, scoreSemAchados) = AchadosQueMaisPesam(eventos, tiposMedidos, score, populacao);
 
+        // Quanto CADA ação melhora o score e quanto custa fazer. A queda é recalculada pela mesma calculadora,
+        // tirando os eventos que a ação resolve: nada é estimado "no olho".
+        acoes = ComEfeitoECusto(acoes, eventos, tiposMedidos, populacao, score);
+        var custoTotal = CalculadoraCustos.Somar(acoes.Select(a => a.CustoMinimo is { } min && a.CustoMaximo is { } max ? new FaixaCusto(min, max) : null));
+
         return new Avaliacao
         {
             Score = score,
@@ -52,10 +57,45 @@ public sealed class PlanejadorAvaliacao(ConjuntoRegras regras, CalculadoraScore 
             AchadosPrincipais = achados,
             PercentualExplicado = percentualExplicado,
             ScoreSemAchados = scoreSemAchados,
+            CustoTotalMinimo = custoTotal?.Minimo,
+            CustoTotalMaximo = custoTotal?.Maximo,
             MaquinasPorTipo = eventos.Where(e => e.Ativo != ContextoConversao.NaoInformado)
                 .GroupBy(e => e.TipoAtivo ?? RegrasAtivos.Desconhecido)
                 .ToDictionary(g => regras.Ativos.Tipo(g.Key).Plural, g => g.Select(e => e.Ativo).Distinct().Count()),
         };
+    }
+
+    /// <summary>
+    /// Completa cada ação com duas respostas que o executivo pede: "quanto isso melhora o score?" e "quanto custa?".
+    /// A melhora vem de recalcular o score sem os eventos daquela ação (mesma calculadora do score oficial).
+    /// O custo vem de regras/custos.json e é sempre uma FAIXA, com a premissa declarada no relatório.
+    /// </summary>
+    private List<AcaoRecomendada> ComEfeitoECusto(List<AcaoRecomendada> acoes, IReadOnlyList<EventoSeguranca> eventos,
+        IReadOnlySet<string> tiposMedidos, IReadOnlyDictionary<string, string?> populacao, ScoreRisco score)
+    {
+        var custos = new CalculadoraCustos(regras.Custos);
+        var total = score.Valor;
+        var completas = new List<AcaoRecomendada>(acoes.Count);
+        foreach (var acao in acoes)
+        {
+            double? queda = null, percentual = null;
+            if (total is { } atual && atual > 0 && acao.EventoIds.Count > 0)
+            {
+                var ids = acao.EventoIds.ToHashSet(StringComparer.Ordinal);
+                var sem = calculadora.Calcular(eventos.Where(e => !ids.Contains(e.Id)).ToList(), tiposMedidos, populacao).Valor ?? 0;
+                queda = Math.Round(Math.Max(atual - sem, 0), 1);
+                percentual = Math.Round(100 * queda.Value / atual, 1);
+            }
+            var custo = custos.Calcular(acao.Tipo, acao.Maquinas);
+            completas.Add(acao with
+            {
+                QuedaScore = queda,
+                PercentualScore = percentual,
+                CustoMinimo = custo?.Minimo,
+                CustoMaximo = custo?.Maximo,
+            });
+        }
+        return completas;
     }
 
     // ---------------- "3 achados explicam X% do risco" ----------------
