@@ -120,21 +120,35 @@ public sealed class ServicoAutenticacao(RepositorioUsuarios repositorio, TimePro
     }
 
     /// <summary>
-    /// Começa o cadastro do 2FA: devolve a chave (para o QR code e para digitar) e o endereço otpauth://.
-    /// Se já havia um cadastro começado, devolve a MESMA chave (recarregar a página não troca o QR code).
+    /// Começa o cadastro do 2FA: devolve a chave e o endereço otpauth://.
+    /// Preserva um cadastro pendente legível; se a proteção antiga não abre, gera outro ainda não ativado.
+    /// Nunca substitui o 2FA já ativado.
     /// </summary>
-    public (string Chave, string Endereco) Iniciar2fa(string login)
+    public (string Chave, string Endereco) Iniciar2fa(string login) => Iniciar2fa(login, out _);
+
+    public (string Chave, string Endereco) Iniciar2fa(string login, out bool cadastroReiniciado)
     {
         var usuario = repositorio.Obter(login) ?? throw new ArgumentException($"Usuário '{login}' não existe.");
-        byte[] segredo;
-        if (usuario.Segredo2faPendente is { } pendente)
-            segredo = Decifrar(pendente);
-        else
+        if (usuario.Tem2fa)
+            throw new InvalidOperationException("A verificação em duas etapas já está ativada.");
+
+        var segredo = usuario.Segredo2faPendente is { } pendente ? DecifrarCadastroPendente(pendente) : null;
+        cadastroReiniciado = usuario.Segredo2faPendente is not null && segredo is null;
+        if (segredo is null)
         {
             segredo = Totp.GerarSegredo();
             repositorio.Salvar(usuario with { Segredo2faPendente = Cifrar(segredo) });
         }
         return (Base32.Codificar(segredo), Totp.Endereco(Emissor2fa, usuario.Login, segredo));
+    }
+
+    // A recuperação se limita ao cadastro AINDA NÃO ATIVADO. Falhas de escrita ou de geração de chaves
+    // continuam sendo erros; uma chave ativa nunca passa por este tratamento.
+    private byte[]? DecifrarCadastroPendente(string pendente)
+    {
+        try { return Decifrar(pendente); }
+        catch (CryptographicException) { return null; }
+        catch (FormatException) { return null; }
     }
 
     /// <summary>
@@ -144,9 +158,13 @@ public sealed class ServicoAutenticacao(RepositorioUsuarios repositorio, TimePro
     public (string? Erro, IReadOnlyList<string> CodigosRecuperacao) Confirmar2fa(string login, string? codigo)
     {
         var usuario = repositorio.Obter(login);
+        if (usuario is { Tem2fa: true })
+            return ("A verificação em duas etapas já está ativada.", []);
         if (usuario?.Segredo2faPendente is not { } pendente)
             return ("O cadastro não foi iniciado. Recarregue a página para gerar o QR code.", []);
-        if (Totp.Verificar(Decifrar(pendente), codigo, relogio.GetUtcNow(), null) is not { } passo)
+        if (DecifrarCadastroPendente(pendente) is not { } segredo)
+            return ("O cadastro anterior não pôde ser aberto. Use o novo QR code para configurar o app e confirme novamente.", []);
+        if (Totp.Verificar(segredo, codigo, relogio.GetUtcNow(), null) is not { } passo)
             return ("O código não confere. Confira se o relógio do celular está certo e digite o código que aparece agora no app.", []);
 
         var codigos = GerarCodigosRecuperacao();

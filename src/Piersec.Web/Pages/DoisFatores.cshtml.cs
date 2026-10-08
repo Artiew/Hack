@@ -73,7 +73,12 @@ public sealed class DoisFatoresModel(ServicoAutenticacao servico, RepositorioUsu
         Usuario = repositorio.Obter(Login)!;
         if (!Usuario.Tem2fa)
         {
-            var (chave, endereco) = servico.Iniciar2fa(Login);
+            var (chave, endereco) = servico.Iniciar2fa(Login, out var cadastroReiniciado);
+            if (cadastroReiniciado)
+            {
+                auditoria.Registrar(Login, "2fa_cadastro_pendente_reiniciado");
+                Mensagem = "O cadastro anterior de duas etapas não pôde ser aberto nesta instalação. Geramos um novo QR code. Adicione esta nova chave no app e confirme abaixo para ativar. O cadastro anterior não será usado.";
+            }
             Chave = Base32.EmGrupos(chave);
             QrSvg = QrCode.Gerar(endereco).Svg("QR code para cadastrar a Piersec no app de autenticação");
         }

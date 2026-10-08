@@ -238,6 +238,89 @@ public class DoisFatoresTests : IDisposable
         Assert.True(ServicoAutenticacao.PrecisaConfigurar2fa(_repo.Obter("admin")!));
     }
 
+    [Theory]
+    [InlineData(Papeis.Executivo)]
+    [InlineData(Papeis.Admin)]
+    public void Cadastro_pendente_ilegivel_ganha_nova_chave_mas_so_ativa_com_confirmacao(string papel)
+    {
+        _servico.Criar("conta-teste", papel);
+        var (anterior, _) = _servico.Iniciar2fa("conta-teste");
+        var usuario = _repo.Obter("conta-teste")!;
+        var cifrado = Convert.FromBase64String(usuario.Segredo2faPendente!);
+        cifrado[^1] ^= 1; // simula proteção antiga/corrompida sem qualquer dado real
+        _repo.Salvar(usuario with { Segredo2faPendente = Convert.ToBase64String(cifrado) });
+
+        var (nova, _) = _servico.Iniciar2fa("conta-teste", out var reiniciado);
+
+        Assert.True(reiniciado);
+        Assert.NotEqual(anterior, nova);
+        Assert.False(_repo.Obter("conta-teste")!.Tem2fa);
+        Assert.Equal(papel == Papeis.Admin, ServicoAutenticacao.Exige2fa(_repo.Obter("conta-teste")!));
+        var (erro, codigos) = _servico.Confirmar2fa("conta-teste", CodigoAgora(nova));
+        Assert.Null(erro);
+        Assert.Equal(ServicoAutenticacao.QuantidadeCodigosRecuperacao, codigos.Count);
+        Assert.True(_repo.Obter("conta-teste")!.Tem2fa);
+    }
+
+    [Fact]
+    public void Cadastro_pendente_com_base64_invalido_tambem_pode_ser_reiniciado()
+    {
+        _servico.Criar("executivo", Papeis.Executivo);
+        _repo.Salvar(_repo.Obter("executivo")! with { Segredo2faPendente = "base64-invalido" });
+
+        var (chave, _) = _servico.Iniciar2fa("executivo", out var reiniciado);
+
+        Assert.True(reiniciado);
+        Assert.False(_repo.Obter("executivo")!.Tem2fa);
+        Assert.Null(_servico.Confirmar2fa("executivo", CodigoAgora(chave)).Erro);
+    }
+
+    [Fact]
+    public void Recarregar_cadastro_legivel_preserva_a_chave_e_nao_indica_reinicio()
+    {
+        _servico.Criar("executivo", Papeis.Executivo);
+        var (chave, _) = _servico.Iniciar2fa("executivo", out var primeiraVez);
+        var (recarregada, _) = _servico.Iniciar2fa("executivo", out var reiniciado);
+
+        Assert.False(primeiraVez);
+        Assert.False(reiniciado);
+        Assert.Equal(chave, recarregada);
+    }
+
+    [Fact]
+    public void Confirmacao_de_cadastro_ilegivel_recusa_sem_ativar_ou_trocar_a_chave()
+    {
+        _servico.Criar("executivo", Papeis.Executivo);
+        var usuario = _repo.Obter("executivo")! with { Segredo2faPendente = "base64-invalido" };
+        _repo.Salvar(usuario);
+
+        var (erro, codigos) = _servico.Confirmar2fa("executivo", "000000");
+
+        Assert.Contains("novo QR code", erro);
+        Assert.Empty(codigos);
+        Assert.False(_repo.Obter("executivo")!.Tem2fa);
+        Assert.Equal(usuario.Segredo2faPendente, _repo.Obter("executivo")!.Segredo2faPendente);
+    }
+
+    [Fact]
+    public void Recuperacao_de_cadastro_pendente_nunca_substitui_2fa_ativo()
+    {
+        AdminCom2fa();
+        var usuario = _repo.Obter("admin")! with { Segredo2faPendente = "base64-invalido" };
+        _repo.Salvar(usuario);
+
+        Assert.Throws<InvalidOperationException>(() => _servico.Iniciar2fa("admin"));
+        var (erro, codigos) = _servico.Confirmar2fa("admin", "000000");
+
+        Assert.Contains("já está ativada", erro);
+        Assert.Empty(codigos);
+        var preservado = _repo.Obter("admin")!;
+        Assert.Equal(usuario.Segredo2fa, preservado.Segredo2fa);
+        Assert.Equal(usuario.Segredo2faPendente, preservado.Segredo2faPendente);
+        Assert.Equal(usuario.CodigosRecuperacao, preservado.CodigosRecuperacao);
+        Assert.Equal(usuario.UltimoPasso2fa, preservado.UltimoPasso2fa);
+    }
+
     private static byte[] DecodificarBase32(string texto)
     {
         const string alfabeto = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
