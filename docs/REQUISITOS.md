@@ -111,14 +111,39 @@ Atualizado ao fim da **Fase 6** (serviços e prejuízo, visão técnica com rast
 
 | Item | Evidência | Status |
 |---|---|---|
-| Barra lateral (busca + itens com ícone, ativo em azul-claro) e barra superior | `_Layout.cshtml`, ícones SVG próprios (nada da internet); prints claro/escuro | ✅ |
+| Barra lateral (busca + itens com ícone, ativo em âmbar) e barra superior | `_Layout.cshtml`, ícones SVG próprios (nada da internet); prints claro/escuro | ✅ |
 | Chips de filtro em pílula com contagem | Achados na tela do lote (Todos · Crítica · Alta · Média · Baixa) e contadores da visão técnica | ✅ |
-| Cards horizontais (ícone, meta `ID · ativo · fonte`, título, tags de frameworks, "Ver mais"); selecionado com borda azul 2px e sombra | Riscos e achados na tela do lote (print conferido) | ✅ |
-| Coluna direita: score atual, próximas ações com prazo, aguardando aprovação | Tela do lote (print conferido) | ✅ |
+| Cards horizontais (ícone, meta `ID · ativo · fonte`, título, tags de frameworks, "Ver mais"); selecionado com borda de destaque e sombra | Riscos e achados na tela do lote (print conferido) | ✅ |
+| Painel executivo: risco, prioridade e ações com prazo, decisões pendentes | Indicadores e grade de contexto/serviços/plano na tela do lote; prévias clara/escura/celular conferidas com dados fictícios | ✅ |
 | Severidade sempre cor + ícone + texto, mesmos nomes em tudo | `Visual.Selo`; ícone muda de forma (triângulo, círculo, quadrado, círculo vazado) | ✅ |
 | Número grande com contexto | "50 de 100 · pior/melhor/igual à análise anterior" ou "primeira análise" | ✅ |
-| Tema claro/escuro, foco visível, teclado, responsivo | Variáveis CSS; "pular para o conteúdo"; prints claro, escuro e 500 px | ✅ |
+| Tema claro/escuro, foco visível, teclado, responsivo | Seletor no menu da conta no rodapé esquerdo, preferência local persistente; sem escolha acompanha o sistema. Teste de navegador e prévias claras/escuras/390 px com exemplos fictícios | ✅ |
 | Envio: arrastar e soltar + botão, vários arquivos | `wwwroot/js/envio.js` (arquivo próprio, CSP `script-src 'self'`); sem JavaScript o formulário normal funciona | ✅ |
 | Progresso por etapa | Envio em segundo plano (`ServicoEnvios`), 6 etapas; só quem enviou vê; no máximo 2 simultâneos (ponta a ponta) | ✅ |
 | Estados vazio / carregando / erro | Sem lote → card explicativo; carregando → etapas; erro → mensagem e botão liberado; fonte ausente → aviso | ✅ |
-| Contraste AA medido por ferramenta | Cores escolhidas para contraste alto, mas sem medição automática | ⚠️ |
+| Contraste AA medido por ferramenta | Paleta principal calculada por luminância relativa WCAG: mínimo 5,12:1 claro / 7,49:1 escuro para textos sobre fundos. Auditoria de todos os componentes/estados ainda pendente | ⚠️ |
+
+## Visão executiva — atualização de 08/10/2026
+
+| Item | Evidência | Status |
+|---|---|---|
+| Panorama, prioridade, risco, impacto em faixa, tendência e confiança | `_PainelExecutivo.cshtml`; usa os resultados existentes e declara ausências/premissas; build e prévias com dados fictícios | ✅ |
+| Simulador de correções sem executar ações | `SimuladorRemediacaoTests` (5 testes), HTTP e navegador com/sem JS; hash dos arquivos de análises/operação permanece igual após simular | ✅ |
+| Histórico navegável e cobertura das fontes | Dois lotes fictícios no roteiro `tests/verificar-executivo.cjs`; fontes ausentes continuam explicitadas, sem transformar falta de dados em zero risco | ✅ |
+| Modo apresentação por teclado | Botão Apresentar, setas trocam de seção e Esc sai; roteiro de navegador aprovado | ✅ |
+| Restrição técnica preservada | Executivo acessa o painel/simulador; não recebe tabelas/links de eventos, rota técnica continua em /Negado; roteiro aprovado | ✅ |
+
+Suíte após a atualização: 283 aprovados, 0 falhas, 0 ignorados. O relatório exportado não recebeu este novo layout. O mapa MITRE continua dependendo do catálogo do mentor; não foram inventadas métricas financeiras ou de conformidade.
+### Ajustes de leitura executiva e navegação — 08/10/2026
+
+| Item | Evidência | Status |
+|---|---|---|
+| Uma seção por vez, Panorama na abertura | Navegador verifica exatamente um painel visível; títulos e setas alternam serviços/plano/fontes/técnico; destinos GET sem JavaScript também aprovados | ✅ |
+| Prejuízo, gasto, causa e solução no primeiro olhar | Quatro cartões do Panorama; teste fictício verifica valor de prejuízo existente, gasto "A estimar", fator predominante e ação priorizada; caso sem dados declara insuficiência | ✅ |
+| Navegação preserva contexto | Seleção do simulador mantida, Voltar/Avançar, Home/End e setas aprovados; versões clara/escura e 390 px conferidas | ✅ |
+
+Gasto monetário de remediação ainda depende de orçamento: não existe no modelo atual. Esforço não foi convertido em dinheiro. Causa indica predominância de fator na avaliação, não causa raiz comprovada de ataque.
+
+Menu da conta (08/10/2026): botão com nome/papel no rodapé esquerdo abre Duas etapas, Tema, Trocar senha e Sair. Roteiro fictício prova destinos, destaque ativo, token de saída, logout, Enter/Esc/foco, clique fora, uso sem JavaScript e 390 px sem transbordamento.
+
+Validação consolidada da entrega (08/10/2026): **289 aprovados, 0 falhas, 0 ignorados**; build Web Debug sem avisos/erros; roteiros fictícios de envio, 2FA e visão executiva aprovados. Cadastro pendente de 2FA ilegível pode ser recriado, com aviso, sem substituir fator já ativo. A falha de login 2FA do admin real relatada depois continua sem diagnóstico: o usuário cancelou a investigação. HTTPS confiável verificado nesta máquina e em Brave temporário; a confiança no certificado precisa ser configurada em cada computador.

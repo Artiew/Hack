@@ -181,3 +181,17 @@ Requisito afetado: nenhum (ambiente) · Impacto: bloqueia o trabalho na faculdad
 - **Confirmação do usuário (08/10/2026):** “agora foi possivel enviar o csv”. Fluxo real confirmado pelo usuário após o reparo; o agente não acessou os CSVs nem os relatórios reais.
 - **Defeito adicional reproduzido:** sem JavaScript, abrir `/?handler=Iniciar` e enviar pelo formulário sem destino explícito acionava o handler assíncrono e devolvia JSON em vez do lote. `asp-page="/Index" asp-page-handler=""` fixa o destino; o mesmo roteiro falhou antes e passou depois.
 - **Teste de segurança:** `Chave_inacessivel_e_preservada_e_nao_orienta_apagar_os_dados` garante que uma chave fictícia alterada não é sobrescrita e a orientação não recomenda `-DoZero`.
+
+## P-020 · Duas etapas do executivo falhava ao montar o QR code
+- Requisito: RS1; impacto: impede configurar a segunda etapa da conta afetada.
+- Causa confirmada: cadastro pendente, sem 2FA ativo, cuja chave protegida não abre nesta instalação (`CryptographicException`). O motivo original da perda de acesso à chave não foi determinado. Diagnóstico local mostrou apenas estado e tipo de exceção.
+- Correção: recriar apenas chave pendente ilegível, avisar na página e exigir código do NOVO cadastro antes da ativação. Chave pendente legível continua estável entre recargas. Fator já ativo nunca é substituído por esse fluxo. Registro de reinício na auditoria, sem segredos.
+- Evidência: seis casos de regressão (incluindo executivo/admin, Base64 inválido, recarga, recusa de confirmação ilegível e preservação do fator ativo); roteiro de navegador com executivo fictício e cifra inválida, aviso, novo QR estável e ativação TOTP. Suíte consolidada: 289 aprovados, 0 falhas/ignorados. Na implementação anterior, a decifragem pendente não tinha tratamento; nesta entrega não foi repetida a execução anterior ao conserto.
+- Reprodução segura: após build Debug, `node tests/verificar-executivo.cjs`, com Playwright e navegador local disponíveis. O roteiro usa armazenamento temporário e apenas exemplos fictícios. Não alterar o `var/` real para reproduzir.
+- Limite: a falha de login 2FA do administrador real relatada posteriormente é um caso separado; investigação cancelada pelo usuário antes do diagnóstico. Não tratar esta correção como solução comprovada daquele relato.
+
+## P-021 · Brave continuava mostrando “Não seguro” após confiança no certificado
+- HTTPS já estava ativo em `https://localhost:5001`; faltava confiança no certificado de desenvolvimento no usuário Windows.
+- Ação local: `dotnet dev-certs https --trust`, seguida de `dotnet dev-certs https --check --trust`. TLS validado sem ignorar erros; login anônimo HTTP 200. Certificado servido corresponde ao certificado confiável.
+- Brave com perfil temporário reconheceu conexão `secure`; o processo original permanecia aberto desde antes da mudança de confiança. Orientado reinício completo com `brave://restart`; efeito no perfil original ainda não confirmado pelo usuário. Não desabilitar validação de certificados.
+- Sem mudança no código de HTTPS e sem exportar certificado/chave. A confiança desta máquina não é transportada pelo Git: configurar localmente no computador de destino.
