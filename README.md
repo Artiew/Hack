@@ -31,6 +31,12 @@ O site fica em **https://localhost:5001**. Se algum teste falhar, o site não so
 8 caracteres). No primeiro login a troca de senha é obrigatória. O admin cria os outros usuários em **Usuários**
 (papéis: admin, analista, executivo).
 
+**Verificação em duas etapas (2FA):** depois da senha, o login pede o código de 6 dígitos de um app de autenticação
+(Google ou Microsoft Authenticator). É **obrigatória para o admin** (logo depois de trocar a senha, o site mostra um QR
+code para cadastrar o app) e opcional para os outros, em **Duas etapas**, no topo da tela. Funciona sem internet. Ao
+ativar, o site mostra 8 códigos de recuperação, uma única vez: guarde-os. Admin sem celular e sem códigos:
+`Esqueci a senha do admin.cmd` gera uma senha temporária e desliga o 2FA, que deve ser cadastrado de novo.
+
 - **Dados do desafio:** coloque os CSVs em `dados/` (fora do git) e envie os três juntos pela tela.
 - **Sem os dados do desafio:** envie os arquivos de `exemplos/`. São **fictícios, criados por nós**, no mesmo formato das
   fontes reais (inclusive linhas entre aspas e data com vírgula) e com erros de propósito (nota inválida, máquina em branco,

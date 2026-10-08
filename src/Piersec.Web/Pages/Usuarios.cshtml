@@ -54,7 +54,7 @@
 
 <h2>Cadastrados</h2>
 <table>
-    <thead><tr><th>Login</th><th>Papel</th><th>Situação</th><th>Criado em</th><th></th></tr></thead>
+    <thead><tr><th>Login</th><th>Papel</th><th>Situação</th><th>Duas etapas</th><th>Criado em</th><th></th></tr></thead>
     <tbody>
         @foreach (var u in Model.Usuarios)
         {
@@ -62,6 +62,7 @@
                 <td>@u.Login</td>
                 <td>@u.Papel</td>
                 <td>@(u.BloqueadoAteUtc > Model.Agora ? "bloqueado (muitas tentativas)" : u.TrocarSenha ? "aguardando troca da senha inicial" : "ativo")</td>
+                <td>@(u.Tem2fa ? "ativa" : ServicoAutenticacao.Exige2fa(u) ? "pendente (obrigatória)" : "desligada")</td>
                 <td>@Formatar.DataHora(u.CriadoEmUtc, fuso)</td>
                 <td>
                     @if (string.Equals(u.Login, User.Identity?.Name, StringComparison.OrdinalIgnoreCase))

@@ -86,7 +86,12 @@ O briefing completo está em **`docs/PROMPT.md`** — leia antes de qualquer tar
     3. Score, 4. Plano completo e Glossário (`VersaoRelatorio.Diretoria`, arquivos `relatorio-diretoria.*`). Admin e
     analista continuam com o relatório completo + botão "Versão da diretoria". Lotes antigos não têm essa versão: o
     executivo vê um aviso para reenviar. 252 testes.
-  - PC da faculdade: Windows sem atualização quebra os .exe do .NET 10 (P-015); contorno em `docs/TROUBLESHOOTING.md`.
+  - PC da faculdade: Windows sem atualização quebra os .exe do .NET 10 (P-015); o `rodar.ps1` liga o contorno sozinho.
+  - **2FA (pedido do Vitor, na faculdade):** código do app de autenticação (TOTP), obrigatório para admin, opcional para
+    os outros (decisão do Vitor); QR code próprio (`Core/Seguranca/QrCode.cs`, sem pacote); páginas `/SegundoFator` e
+    `/DoisFatores`; recuperação por 8 códigos de uso único ou pelo "Esqueci a senha do admin". 272 testes.
+    **Pendente: o Vitor ler o QR code com o celular de verdade** (a estrutura foi conferida em imagem, e o código
+    calculado por fora bate com o do site). Admin zerar o 2FA de outro usuário (celular perdido) ainda não existe.
   - **Falta, nesta ordem (recomendada ao Vitor):** 1) Automação no visual de cards/chips (vale 30% da nota);
     2) conferir o PDF página por página; 3) revisão de linguagem; 4) visão técnica (chips na lista de eventos,
     detalhe em cards); 5) telas Entrar/Trocar senha. Estimativa: 2 a 3 horas.

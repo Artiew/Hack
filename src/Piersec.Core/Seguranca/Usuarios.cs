@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
 namespace Piersec.Core.Seguranca;
@@ -25,6 +26,22 @@ public sealed record Usuario
     public int TentativasFalhas { get; init; }
     public DateTimeOffset? BloqueadoAteUtc { get; init; }
     public required DateTimeOffset CriadoEmUtc { get; init; }
+
+    // ---- verificação em duas etapas (2FA) ----
+
+    /// <summary>Chave do app de autenticação, CIFRADA (base64). Null = 2FA desligado.</summary>
+    public string? Segredo2fa { get; init; }
+
+    /// <summary>Chave gerada no cadastro, ainda não confirmada com um código (cifrada). Vira <see cref="Segredo2fa"/> ao confirmar.</summary>
+    public string? Segredo2faPendente { get; init; }
+
+    /// <summary>Último passo de 30 s aceito: o mesmo código não vale duas vezes.</summary>
+    public long? UltimoPasso2fa { get; init; }
+
+    /// <summary>SHA-256 dos códigos de recuperação ainda não usados (o código em si nunca é gravado).</summary>
+    public IReadOnlyList<string> CodigosRecuperacao { get; init; } = [];
+
+    [JsonIgnore] public bool Tem2fa => Segredo2fa is not null;
 }
 
 /// <summary>Cadastro de usuários em var/usuarios.json (só hashes; nenhuma senha é gravada).</summary>

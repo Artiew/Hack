@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 @{
-    var logado = User.Identity?.IsAuthenticated == true;
+    // Quem só passou da senha (falta o código do 2FA) ainda não entrou: sem menu, sem nome no topo.
+    var logado = User.Identity?.IsAuthenticated == true && !Sessao.FaltaSegundoFator(User);
     var caminho = Context.Request.Path.Value ?? "/";
     var tecnico = logado && Sessao.PodeEnviar(User);
     var papel = User.IsInRole(Papeis.Admin) ? Papeis.Admin : User.IsInRole(Papeis.Analista) ? Papeis.Analista : Papeis.Executivo;
@@ -72,6 +73,7 @@
                     <span class="selo-confidencial">Confidencial</span>
                     <div class="usuario">
                         <span><strong>@User.Identity!.Name</strong> <span class="meta">(@papel)</span></span>
+                        <a href="/DoisFatores" class="botao-discreto" aria-current="@Ativo("/DoisFatores")"><svg class="icone"><use href="#i-escudo"/></svg>Duas etapas</a>
                         <a href="/TrocarSenha" class="botao-discreto" aria-current="@Ativo("/TrocarSenha")"><svg class="icone"><use href="#i-chave"/></svg>Trocar senha</a>
                         <form method="post" asp-page="/Sair" class="em-linha">
                             <button type="submit" class="botao-discreto"><svg class="icone"><use href="#i-sair"/></svg>Sair</button>

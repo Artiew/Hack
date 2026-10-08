@@ -8,12 +8,17 @@
     <h1>Entrar</h1>
     <p class="meta">Acesso restrito. Use o usuário e a senha fornecidos pelo administrador.</p>
 
+    @if (Model.Aviso is not null)
+    {
+        <p class="aviso-forte" role="status">@Model.Aviso</p>
+    }
     @if (Model.Erro is not null)
     {
         <p class="erro" role="alert">@Model.Erro</p>
     }
 
-    <form method="post" class="cartao formulario">
+    <form method="post" asp-page="/Entrar" class="cartao formulario">
+        <input type="hidden" name="ReturnUrl" value="@Model.ReturnUrl">
         <label for="login">Usuário</label>
         <input id="login" name="Login" value="@Model.Login" autocomplete="username" required maxlength="64" autofocus>
         <label for="senha">Senha</label>

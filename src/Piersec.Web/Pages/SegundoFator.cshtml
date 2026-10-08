@@ -1,0 +1,27 @@
+@page
+@model SegundoFatorModel
+@{
+    ViewData["Title"] = "Código de verificação";
+}
+
+<div class="estreito">
+    <h1>Código de verificação</h1>
+    <p class="meta">Abra o app de autenticação no celular (Google Authenticator, Microsoft Authenticator…) e digite o código de 6 dígitos
+        da <strong>Piersec</strong>. Sem o celular? Use um dos códigos de recuperação que você guardou.</p>
+
+    @if (Model.Erro is not null)
+    {
+        <p class="erro" role="alert">@Model.Erro</p>
+    }
+
+    <form method="post" asp-page="/SegundoFator" class="cartao formulario">
+        <input type="hidden" name="ReturnUrl" value="@Model.ReturnUrl">
+        <label for="codigo">Código</label>
+        <input id="codigo" name="Codigo" autocomplete="one-time-code" inputmode="text" required maxlength="20" autofocus
+               placeholder="123456 ou abcde-fghij">
+        <button type="submit">Confirmar</button>
+    </form>
+    <form method="post" asp-page="/Sair" class="em-linha">
+        <button type="submit" class="botao-discreto">Cancelar e voltar ao login</button>
+    </form>
+</div>

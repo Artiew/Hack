@@ -88,12 +88,12 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         o.Cookie.SecurePolicy = CookieSecurePolicy.Always;
         o.Cookie.SameSite = SameSiteMode.Strict;   // outro site não consegue usar a sessão
         // A cada requisição: o usuário ainda existe e tem o mesmo papel? Se foi excluído (ou mudou de papel), a sessão cai
-        // na hora, em vez de continuar valendo até expirar.
+        // na hora, em vez de continuar valendo até expirar. A sessão que ainda espera o código do 2FA não tem papel.
         o.Events.OnValidatePrincipal = async ctx =>
         {
             var login = ctx.Principal?.Identity?.Name;
             var usuario = login is null ? null : ctx.HttpContext.RequestServices.GetRequiredService<RepositorioUsuarios>().Obter(login);
-            if (usuario is null || !ctx.Principal!.IsInRole(usuario.Papel))
+            if (usuario is null || (!Sessao.FaltaSegundoFator(ctx.Principal!) && !ctx.Principal!.IsInRole(usuario.Papel)))
             {
                 ctx.RejectPrincipal();
                 await ctx.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
@@ -118,12 +118,12 @@ builder.Services.AddRazorPages(o =>
     o.Conventions.AuthorizePage("/Buscar", "Tecnico");
 });
 
-// Limite de tentativas de login: no máximo 10 por minuto vindas do mesmo endereço.
+// Limite de tentativas de login (senha e código do 2FA, somados): no máximo 10 por minuto vindas do mesmo endereço.
 builder.Services.AddRateLimiter(o =>
 {
     o.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
     o.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(ctx =>
-        HttpMethods.IsPost(ctx.Request.Method) && ctx.Request.Path.StartsWithSegments("/Entrar")
+        HttpMethods.IsPost(ctx.Request.Method) && (ctx.Request.Path.StartsWithSegments("/Entrar") || ctx.Request.Path.StartsWithSegments("/SegundoFator"))
             ? RateLimitPartition.GetFixedWindowLimiter(ctx.Connection.RemoteIpAddress?.ToString() ?? "?",
                 _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromMinutes(1) })
             : RateLimitPartition.GetNoLimiter("livre"));
@@ -149,12 +149,13 @@ if (adminCriado)
 if (!adminCriado && Environment.GetEnvironmentVariable("PIERSEC_REDEFINIR_ADMIN") == "1")
 {
     var nova = app.Services.GetRequiredService<ServicoAutenticacao>().RedefinirSenha(Papeis.Admin);
-    app.Services.GetRequiredService<Auditoria>().Registrar("sistema", "senha_redefinida", "admin (pelo computador local)");
+    app.Services.GetRequiredService<Auditoria>().Registrar("sistema", "senha_redefinida", "admin (pelo computador local; 2FA desligado)");
     Console.WriteLine(
         $"\n  ====================================================================\n" +
-        $"   SENHA DO ADMIN REDEFINIDA\n" +
+        $"   SENHA DO ADMIN REDEFINIDA (e a verificação em duas etapas desligada)\n" +
         $"   USUÁRIO: admin    SENHA TEMPORÁRIA: {nova}\n" +
-        $"   Anote agora: ela NÃO será mostrada de novo. Troca obrigatória ao entrar.\n" +
+        $"   Anote agora: ela NÃO será mostrada de novo. Troca obrigatória ao entrar,\n" +
+        $"   e em seguida o cadastro do app de autenticação de novo.\n" +
         $"  ====================================================================\n");
 }
 

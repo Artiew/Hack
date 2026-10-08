@@ -1,18 +1,29 @@
 using System.Security.Cryptography;
+using System.Text;
+using Piersec.Core.Armazenamento;
 
 namespace Piersec.Core.Seguranca;
 
-public enum ResultadoEntrada { Falhou, Ok, PrecisaTrocarSenha }
+public enum ResultadoEntrada { Falhou, Ok, PrecisaTrocarSenha, PrecisaSegundoFator }
 
 /// <summary>Resultado de uma tentativa de login. <see cref="Bloqueado"/> serve só para a auditoria: a tela mostra sempre o mesmo erro.</summary>
 public sealed record TentativaEntrada(ResultadoEntrada Resultado, Usuario? Usuario, bool Bloqueado);
 
+/// <summary>Resultado do código do 2FA. <see cref="RecuperacaoRestantes"/> só vale quando um código de recuperação foi usado.</summary>
+public sealed record TentativaSegundoFator(bool Ok, Usuario? Usuario, bool Bloqueado, bool UsouRecuperacao = false, int RecuperacaoRestantes = 0);
+
 /// <summary>
 /// Regras de acesso (RS1): senha inicial de exatamente 8 caracteres com troca obrigatória no primeiro acesso,
 /// bloqueio após 5 erros seguidos, mensagem de erro igual para qualquer falha e regras mínimas para a nova senha.
+/// Verificação em duas etapas (2FA, código do app de autenticação): obrigatória para admin, opcional para os outros.
 /// </summary>
-public sealed class ServicoAutenticacao(RepositorioUsuarios repositorio, TimeProvider relogio)
+public sealed class ServicoAutenticacao(RepositorioUsuarios repositorio, TimeProvider relogio, ICifrador? cifrador = null)
 {
+    public const string Emissor2fa = "Piersec";
+    public const int QuantidadeCodigosRecuperacao = 8;
+    private const string CaracteresRecuperacao = "abcdefghjkmnpqrstuvwxyz23456789";
+    private readonly ICifrador _cifrador = cifrador ?? SemCifra.Instancia;
+
     public const int TamanhoSenhaInicial = 8;
     /// <summary>Mínimo do guia NIST SP 800-63B para senha escolhida pela pessoa.</summary>
     public const int TamanhoMinimoNovaSenha = 8;
@@ -52,10 +63,154 @@ public sealed class ServicoAutenticacao(RepositorioUsuarios repositorio, TimePro
             return new(ResultadoEntrada.Falhou, atualizado, bloquear);
         }
 
+        // Com 2FA, a senha certa NÃO zera as tentativas: senão quem descobriu a senha poderia chutar códigos sem fim,
+        // entrando de novo com a senha a cada 4 erros. Elas só zeram quando o código também confere.
+        if (usuario.Tem2fa)
+            return new(ResultadoEntrada.PrecisaSegundoFator, usuario, false);
+
         var ok = usuario with { TentativasFalhas = 0, BloqueadoAteUtc = null };
         repositorio.Salvar(ok);
         return new(ok.TrocarSenha ? ResultadoEntrada.PrecisaTrocarSenha : ResultadoEntrada.Ok, ok, false);
     }
+
+    // ================= 2FA =================
+
+    /// <summary>Admin é obrigado a usar 2FA; analista e executivo escolhem.</summary>
+    public static bool Exige2fa(Usuario usuario) => usuario.Papel == Papeis.Admin;
+
+    public static bool PrecisaConfigurar2fa(Usuario usuario) => Exige2fa(usuario) && !usuario.Tem2fa;
+
+    /// <summary>
+    /// Segunda etapa do login: código do app (6 dígitos) ou um código de recuperação. Erros contam nas mesmas
+    /// tentativas da senha e bloqueiam do mesmo jeito.
+    /// </summary>
+    public TentativaSegundoFator ConfirmarSegundoFator(string login, string? codigo)
+    {
+        var usuario = repositorio.Obter(login);
+        if (usuario is not { Tem2fa: true })
+            return new(false, null, false);
+        var agora = relogio.GetUtcNow();
+        if (usuario.BloqueadoAteUtc > agora)
+            return new(false, usuario, true);
+
+        if (Totp.Verificar(Decifrar(usuario.Segredo2fa!), codigo, agora, usuario.UltimoPasso2fa) is { } passo)
+        {
+            var ok = usuario with { UltimoPasso2fa = passo, TentativasFalhas = 0, BloqueadoAteUtc = null };
+            repositorio.Salvar(ok);
+            return new(true, ok, false);
+        }
+
+        var hash = HashRecuperacao(codigo);
+        if (hash is not null && usuario.CodigosRecuperacao.Contains(hash))
+        {
+            var ok = usuario with { CodigosRecuperacao = [.. usuario.CodigosRecuperacao.Where(c => c != hash)], TentativasFalhas = 0, BloqueadoAteUtc = null };
+            repositorio.Salvar(ok);
+            return new(true, ok, false, UsouRecuperacao: true, RecuperacaoRestantes: ok.CodigosRecuperacao.Count);
+        }
+
+        var tentativas = usuario.TentativasFalhas + 1;
+        var bloquear = tentativas >= MaximoTentativas;
+        var atualizado = usuario with
+        {
+            TentativasFalhas = bloquear ? 0 : tentativas,
+            BloqueadoAteUtc = bloquear ? agora + TempoBloqueio : usuario.BloqueadoAteUtc,
+        };
+        repositorio.Salvar(atualizado);
+        return new(false, atualizado, bloquear);
+    }
+
+    /// <summary>
+    /// Começa o cadastro do 2FA: devolve a chave (para o QR code e para digitar) e o endereço otpauth://.
+    /// Se já havia um cadastro começado, devolve a MESMA chave (recarregar a página não troca o QR code).
+    /// </summary>
+    public (string Chave, string Endereco) Iniciar2fa(string login)
+    {
+        var usuario = repositorio.Obter(login) ?? throw new ArgumentException($"Usuário '{login}' não existe.");
+        byte[] segredo;
+        if (usuario.Segredo2faPendente is { } pendente)
+            segredo = Decifrar(pendente);
+        else
+        {
+            segredo = Totp.GerarSegredo();
+            repositorio.Salvar(usuario with { Segredo2faPendente = Cifrar(segredo) });
+        }
+        return (Base32.Codificar(segredo), Totp.Endereco(Emissor2fa, usuario.Login, segredo));
+    }
+
+    /// <summary>
+    /// Termina o cadastro: o código do app precisa conferir com a chave nova (prova que o celular foi configurado).
+    /// Devolve os códigos de recuperação, para mostrar UMA vez, ou o motivo da recusa.
+    /// </summary>
+    public (string? Erro, IReadOnlyList<string> CodigosRecuperacao) Confirmar2fa(string login, string? codigo)
+    {
+        var usuario = repositorio.Obter(login);
+        if (usuario?.Segredo2faPendente is not { } pendente)
+            return ("O cadastro não foi iniciado. Recarregue a página para gerar o QR code.", []);
+        if (Totp.Verificar(Decifrar(pendente), codigo, relogio.GetUtcNow(), null) is not { } passo)
+            return ("O código não confere. Confira se o relógio do celular está certo e digite o código que aparece agora no app.", []);
+
+        var codigos = GerarCodigosRecuperacao();
+        repositorio.Salvar(usuario with
+        {
+            Segredo2fa = pendente,
+            Segredo2faPendente = null,
+            UltimoPasso2fa = passo,
+            CodigosRecuperacao = [.. codigos.Select(c => HashRecuperacao(c)!)],
+        });
+        return (null, codigos);
+    }
+
+    /// <summary>Desliga o 2FA (só para quem não é obrigado a ter), conferindo um código do app.</summary>
+    public string? Desativar2fa(string login, string? codigo)
+    {
+        var usuario = repositorio.Obter(login);
+        if (usuario is not { Tem2fa: true })
+            return "A verificação em duas etapas já está desligada.";
+        if (Exige2fa(usuario))
+            return "Para administradores a verificação em duas etapas é obrigatória.";
+        if (Totp.Verificar(Decifrar(usuario.Segredo2fa!), codigo, relogio.GetUtcNow(), usuario.UltimoPasso2fa) is null)
+            return "O código não confere.";
+        repositorio.Salvar(Sem2fa(usuario));
+        return null;
+    }
+
+    /// <summary>Troca os códigos de recuperação por 8 novos (os antigos deixam de valer), conferindo um código do app.</summary>
+    public (string? Erro, IReadOnlyList<string> CodigosRecuperacao) NovosCodigosRecuperacao(string login, string? codigo)
+    {
+        var usuario = repositorio.Obter(login);
+        if (usuario is not { Tem2fa: true })
+            return ("A verificação em duas etapas está desligada.", []);
+        if (Totp.Verificar(Decifrar(usuario.Segredo2fa!), codigo, relogio.GetUtcNow(), usuario.UltimoPasso2fa) is not { } passo)
+            return ("O código não confere.", []);
+        var codigos = GerarCodigosRecuperacao();
+        repositorio.Salvar(usuario with { UltimoPasso2fa = passo, CodigosRecuperacao = [.. codigos.Select(c => HashRecuperacao(c)!)] });
+        return (null, codigos);
+    }
+
+    private static Usuario Sem2fa(Usuario u) =>
+        u with { Segredo2fa = null, Segredo2faPendente = null, UltimoPasso2fa = null, CodigosRecuperacao = [] };
+
+    private static List<string> GerarCodigosRecuperacao() =>
+        [.. Enumerable.Range(0, QuantidadeCodigosRecuperacao).Select(_ =>
+        {
+            var c = string.Create(10, 0, (destino, _) =>
+            {
+                for (var i = 0; i < destino.Length; i++)
+                    destino[i] = CaracteresRecuperacao[RandomNumberGenerator.GetInt32(CaracteresRecuperacao.Length)];
+            });
+            return $"{c[..5]}-{c[5..]}";
+        })];
+
+    /// <summary>SHA-256 do código normalizado (sem hífen, espaço ou maiúsculas). O código tem ~49 bits aleatórios: não precisa de PBKDF2.</summary>
+    private static string? HashRecuperacao(string? codigo)
+    {
+        var limpo = new string((codigo ?? "").Where(char.IsLetterOrDigit).ToArray()).ToLowerInvariant();
+        return limpo.Length == 10 ? Convert.ToHexString(SHA256.HashData(Encoding.ASCII.GetBytes(limpo))) : null;
+    }
+
+    private string Cifrar(byte[] segredo) => Convert.ToBase64String(_cifrador.Cifrar(segredo));
+
+    private byte[] Decifrar(string cifrado) => _cifrador.Decifrar(Convert.FromBase64String(cifrado));
 
     /// <summary>Troca a senha. Devolve null se deu certo, ou o motivo (em português) se não deu.</summary>
     public string? TrocarSenha(string login, string? senhaAtual, string? novaSenha, string? confirmacao)
@@ -134,12 +289,13 @@ public sealed class ServicoAutenticacao(RepositorioUsuarios repositorio, TimePro
     /// <summary>
     /// "Esqueci a senha": gera uma senha temporária nova (mostrada UMA vez), desbloqueia e obriga a troca no próximo
     /// acesso. Só é chamado por quem tem acesso à máquina (rodar.cmd -RedefinirSenhaAdmin), nunca pelo site.
+    /// Também desliga o 2FA (celular perdido): o admin é obrigado a cadastrar de novo logo depois de trocar a senha.
     /// </summary>
     public string RedefinirSenha(string login)
     {
         var usuario = repositorio.Obter(login) ?? throw new ArgumentException($"Usuário '{login}' não existe.");
         var senha = GerarSenhaInicial();
-        repositorio.Salvar(usuario with { HashSenha = HashSenha.Gerar(senha), TrocarSenha = true, TentativasFalhas = 0, BloqueadoAteUtc = null });
+        repositorio.Salvar(Sem2fa(usuario) with { HashSenha = HashSenha.Gerar(senha), TrocarSenha = true, TentativasFalhas = 0, BloqueadoAteUtc = null });
         return senha;
     }
 
