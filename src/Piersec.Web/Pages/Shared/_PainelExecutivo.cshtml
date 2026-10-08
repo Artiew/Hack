@@ -211,6 +211,7 @@
                     </div>
                     <form method="get" asp-page="/Lote" asp-route-id="@lote.Id" asp-page-handler="" asp-fragment="simulacao" id="form-simulacao" data-url="@Url.Page("/Lote","Simular",new { id = lote.Id })">
                         <input type="hidden" name="simular" value="true"><input type="hidden" name="Secao" value="simulacao">
+                        <p class="meta">O ganho de cada item conta os de cima como feitos. O número grande mostra o efeito exato do que você marcar.</p>
                         @foreach (var acao in av.Acoes)
                         {
                             var simulavel = SimuladorRemediacao.PodeSimular(acao);

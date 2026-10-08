@@ -11,6 +11,14 @@ O briefing completo está em **`docs/PROMPT.md`** — leia antes de qualquer tar
 > foram executadas nem testadas**. O Windows da máquina do Ruan bloqueou os binários recém-compilados
 > (Smart App Control — ver **P-020** mais abaixo), e ele pediu para parar de tentar executar ali.
 >
+> **PASSO 1 JÁ FEITO (08/10/2026, máquina `unisanta` da faculdade).** A suíte rodou pela primeira vez desde
+> aquele commit: **303 testes, 1 falha** — exatamente o risco previsto aqui, e no arquivo previsto. O commit
+> `ec2566f` renomeou o título "O que fazer agora" para "Como resolver, em ordem" e, com isso, a página 1 deixou
+> de responder a terceira pergunta do manual. Corrigido no gerador (não no teste): **P-022**. Agora **303/303,
+> 0 falhas**, compilação sem avisos nem erros. **Passo 3 (relatório HTML/PDF) também feito** nesta máquina, com
+> 5 defeitos achados e corrigidos (P-023, P-024; ver "Continuidade — máquina da faculdade"). **Continua pendente:**
+> o passo 2 no navegador — animação do score (`executivo.js`) e entrada do executivo com 0, 1 e 2 lotes.
+>
 > **Na próxima máquina, antes de qualquer coisa:**
 > 1. `dotnet test --solution Piersec.slnx` — esperado **303 testes, 0 falhas**. Se falhar, a causa está nas
 >    alterações listadas abaixo, não no ambiente.
@@ -337,3 +345,47 @@ está funcionando a pretexto de embelezar.
   (a máquina do Ruan não tem `dados/`). MITRE ATT&CK saiu da lista: foi feito nesta sessão.
 - Análise do easter egg da organização (`qqdiz.com.br/bash.html`): os documentos escondidos confirmam os pesos do manual
   e as fases; o que falta no projeto está listado acima. Máquina do Ruan não tem `dados/` nem `var/`.
+
+## Continuidade — 08/10/2026 (máquina da faculdade `unisanta`: suíte finalmente rodou)
+- **Ambiente desta máquina:** Windows 10 Education **19045.2193** — o MESMO build do P-015, então o **CET vale aqui**
+  (os `.exe` do .NET 10 param com "doesn't fully support CET"; o `dotnet.exe` funciona). O `rodar.ps1` liga o
+  contorno sozinho. Smart App Control **não** existe no Windows 10, então o bloqueio do P-020/CLAUDE.md não aparece:
+  é a máquina onde dá para rodar a suíte.
+- **SDK:** o PATH tinha só .NET 6.0.101/6.0.108. Instalado o **10.0.401 em `C:\Users\unisanta\.dotnet`** pelo
+  `dotnet-install.ps1` oficial (só para o usuário, sem administrador), local que o `rodar.ps1` já procura.
+  `global.json` preservado. Para rodar à mão nesta máquina, numa janela de PowerShell:
+  `$d="$HOME\.dotnet"; $env:DOTNET_ROOT=$d; $env:Path="$d;$env:Path"` e o contorno do P-015
+  (`CscToolPath`/`CscToolExe` apontando para `var\contorno-cet\csc.cmd`, `UseSharedCompilation=false`,
+  `UseAppHost=false`); os testes por `dotnet exec tests\Piersec.Tests\bin\Release\net10.0\Piersec.Tests.dll`.
+  Sem o `DOTNET_ROOT` o erro é "You must install or update .NET", que **não** é o CET — não confundir os dois.
+- **Resultado:** 303 testes, 1 falha → corrigida (P-022) → **303/303, 0 falhas**, build Release sem avisos nem erros.
+  Não há `dados/` nem `var/` aqui: nenhum CSV real e nenhum relatório real foi lido ou gerado.
+- **Relatório conferido (passo 3 do aviso do topo), com os exemplos fictícios** numa instância temporária (porta 5447,
+  pasta de dados própria, usuário analista fictício; apagada depois). HTML e PDF baixados pelas rotas reais, PDF
+  convertido em imagem página a página (diretoria: 8 páginas; completo: 22). **Aprovado:** duas colunas lado a lado,
+  ícone em cada título, passos numerados com prazo/esforço/efeito/custo, faixa de 4 indicadores, selo "15 verificações,
+  15 aprovadas", tags equilibradas (div/section/table/ol), nenhum texto escapado duas vezes, números do score batendo.
+  **Defeitos encontrados nessa conferência — TODOS CORRIGIDOS** (pedido do Ruan: "arrume os erros e faça o commit"):
+  1. PDF: 3º cartão de risco ia sozinho para a página 2 → cabe na página 1 (P-024).
+  2. PDF: título "4. Plano de ação completo" órfão no pé da página → seção 4 começa em página nova (P-024).
+  3. Números do plano: "Melhora no score" calculada isolada não somava o "50 → 6" → agora na ORDEM DO PLANO,
+     contando as anteriores como feitas; fictícios: −40 e −4, soma 44 = 50 − 6 (P-023). Veio do `93ff58c`.
+  4. "(1 servidor e 0 outras)" → "(1 servidor)".
+  5. Matriz impacto × esforço 2 × 2 → 3 × 3 (cada ação na sua célula); anexo MITRE virou "I." depois do H
+     (severidades ajustadas: "J."); "Phishing" não se separa mais da definição.
+  Conferido de novo pela plataforma (instância temporária, fictícios): diretoria 8 → 7 páginas, completo 22 → 21.
+  Suíte: **306/306**, 0 avisos. Os 3 testes novos e os 2 ajustados FALHAM com o código antigo (conferido com `git stash`).
+- **Tela do lote:** abre com 200 depois do envio (302 → GET). Um 404 que apareceu no roteiro era do cliente HTTP do
+  PowerShell 5.1 seguindo o 302 sozinho; seguindo à mão, como o navegador, dá 200. Não é defeito da plataforma.
+- **Ainda não feito:** animação do score no navegador com o console aberto (`executivo.js`) e entrada do executivo
+  com 0, 1 e 2 lotes (risco de laço no redirecionamento do `Index`). Esta máquina não tem Node, então o roteiro
+  `tests/verificar-executivo.cjs` não roda aqui.
+- **Site real no ar** em `https://localhost:5001` com `var/` novo (admin criado nesta sessão; senha inicial mostrada
+  uma vez no terminal, troca e 2FA obrigatórios no 1º acesso). O certificado de `localhost` NÃO está confiável nesta
+  máquina (P-021): o navegador avisa "não seguro" até rodar `dotnet dev-certs https --trust`.
+- **Numeração do troubleshooting:** o Smart App Control está chamado de "P-020" na seção anterior deste arquivo, mas
+  em `docs/TROUBLESHOOTING.md` o P-020 é o QR code e o P-021 é o Brave. O Smart App Control **não está registrado**
+  no troubleshooting; quando for registrado, será P-025 (P-022 título da página 1, P-023 números do plano, P-024 PDF).
+- **Identidade do git neste clone:** estava vazia; configurada SÓ no repositório (`git config` local) como
+  `Ruan <tavaresdasilvaruan@gmail.com>`, igual aos commits anteriores. Remote: `github.com/Artiew/Hack` (privado).
+  Nesta sessão houve só commit local, sem push.

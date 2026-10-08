@@ -195,3 +195,38 @@ Requisito afetado: nenhum (ambiente) · Impacto: bloqueia o trabalho na faculdad
 - Ação local: `dotnet dev-certs https --trust`, seguida de `dotnet dev-certs https --check --trust`. TLS validado sem ignorar erros; login anônimo HTTP 200. Certificado servido corresponde ao certificado confiável.
 - Brave com perfil temporário reconheceu conexão `secure`; o processo original permanecia aberto desde antes da mudança de confiança. Orientado reinício completo com `brave://restart`; efeito no perfil original ainda não confirmado pelo usuário. Não desabilitar validação de certificados.
 - Sem mudança no código de HTTPS e sem exportar certificado/chave. A confiança desta máquina não é transportada pelo Git: configurar localmente no computador de destino.
+
+## P-022 · Página 1 do relatório perdeu a pergunta "o que fazer agora"
+Requisito afetado: RG5 / checklist do manual ("o resumo responde como estamos / mais grave / o que fazer") · Impacto: degrada nota
+- **Sintoma × Esperado:** `Primeira_pagina_responde_as_tres_perguntas_sem_codigos_tecnicos` falha — `Not found: "O que fazer agora"` × a página 1 respondendo as três perguntas.
+- **Reprodução:** na primeira máquina em que a suíte conseguiu rodar depois do commit `ec2566f`: `dotnet exec Piersec.Tests.dll` → 303 testes, 1 falha.
+- **Isolamento:** etapa = relatório. A entrada estava certa (o plano tinha 3 ações, o lote avaliou normalmente); só o título da seção mudou.
+- **Causa:** o commit `ec2566f` ("Relatório em duas colunas…") trocou a tabela de ações pela lista numerada `.passos` e, no caminho, renomeou o título de **"O que fazer agora"** para **"Como resolver, em ordem"**. O commit foi escrito e compilado, mas nunca executado (Smart App Control bloqueou os binários na máquina do Ruan), então nada avisou que a terceira pergunta do manual tinha saído da página.
+- **Teste que falha antes:** o próprio `Primeira_pagina_responde_as_tres_perguntas_sem_codigos_tecnicos` (os outros 302 passavam).
+- **Correção mínima:** o título volta a dizer "O que fazer agora, em ordem" (e "O que fazer agora" no caso sem ações), em `GeradorRelatorioHtml`. Corrigido no gerador, **não no teste**: a exigência é do manual, e enfraquecer a verificação esconderia a perda. A lista numerada com prazo, esforço, efeito no score e custo — o que o Ruan pediu para "dar a direção na hora" — continua igual.
+- **Verificação:** teste ✔ · suíte completa 303/303, 0 falhas ✔ · compilação sem avisos nem erros ✔. **Falta** conferir o HTML e o PDF na tela (itens 2 e 3 da lista do `CLAUDE.md`).
+- **Risco de regressão:** baixo (só o texto de um `<h3>`).
+- **Aprendizado:** renomear um título parece cosmético, mas o título ERA a prova de um requisito. Código que compila e nunca roda não está verificado — a suíte achou a perda no primeiro segundo em que pôde rodar.
+
+## P-023 · "Melhora no score" de cada ação não somava a queda do plano inteiro
+Requisito afetado: plano de remediação (10%) / clareza para o executivo · Impacto: degrada nota (número enganoso)
+- **Sintoma × Esperado:** exemplos fictícios: ação 1 "−40 pontos", ação 4 "−0,3 ponto" (soma 40,3), mas o mesmo relatório dizia "o plano leva o score de 50 para 6" (44). A ação 4 aparecia quase inútil ("−0,6%", "se sobrar tempo") quando, depois da ação 1, é ela que zera as falhas graves. A seção 3 dizia que corrigir o mesmo servidor tirava 7 pontos.
+- **Reprodução:** enviar `exemplos/vulnerabilidades-ficticio.csv` + `exemplos/alertas-ficticio.csv` e ler a tabela da seção 4.
+- **Isolamento:** etapa = plano (`PlanejadorAvaliacao.ComEfeitoECusto`). O score e o "de 50 para 6" estavam certos; a coluna por ação também, mas pela definição errada para o leitor.
+- **Causa:** cada ação era recalculada ISOLADA, tirando só os eventos dela do conjunto completo. A ação "corrigir a máquina" só leva o que sobra depois de "atualizar programas"; tirada sozinha, a máquina ainda tinha as falhas do programa, e quase nada mudava.
+- **Teste que falha antes:** `Melhora_de_cada_acao_segue_a_ordem_do_plano_e_soma_a_queda_do_plano_inteiro` (com o código antigo: soma 52,7 para uma queda de 75).
+- **Correção mínima:** recalcular NA ORDEM DO PLANO, contando as ações anteriores como feitas (mesma calculadora do score). Percentual continua sobre o score de hoje, para as partes somarem. Frase na seção 4 explica a regra; na tela, uma linha acima do simulador avisa que o número grande mostra o efeito exato do que for marcado.
+- **Verificação:** teste ✔ · suíte 306/306 ✔ · relatório fictício gerado pela plataforma: ação 1 −40, ação 4 −4 (−8,1%), soma 44 = 50 − 6 ✔.
+- **Risco de regressão:** médio-baixo: a primeira ação não muda; as seguintes passam a mostrar o efeito marginal. O simulador da tela não foi alterado (já calculava a união).
+- **Aprendizado:** dois números certos podem enganar juntos. Conferir se as partes mostradas lado a lado somam o total mostrado.
+
+## P-024 · PDF do executivo: 3º risco sozinho na página 2 e título do plano órfão
+Requisito afetado: RG6 / regra do corredor (resumo em 1 página) · Impacto: degrada nota (cosmético, mas é a 1ª folha)
+- **Sintoma × Esperado:** depois do redesenho em duas colunas (`ec2566f`), o 3º cartão de risco ia sozinho para a página 2 (~80% em branco); o título "4. Plano de ação completo" ficava no pé da página e a tabela na seguinte; no glossário, "Phishing" separado da definição. Esperado: resumo numa folha, título junto do conteúdo.
+- **Reprodução:** PDF da versão da diretoria com os exemplos fictícios, convertido em imagem página a página (`Windows.Data.Pdf`).
+- **Isolamento:** etapa = relatório (só CSS de impressão; o HTML estava equilibrado).
+- **Correção:** no papel, coluna dos cartões mais larga (1,4 : 1) e cartões compactos; seção 4 começa em página nova (classe `quebra`, como a seção 2); `.glossario dt{break-after:avoid}`. Tentado antes e descartado: `h2+p{break-after:avoid}` — o Edge não segura a frase junto da tabela e ainda partiu a frase ao meio.
+- **Junto (achados da mesma conferência):** matriz impacto × esforço passou de 2 × 2 para 3 × 3 (ações de impacto médio apareciam na célula de impacto ALTO); anexo MITRE ganhou letra (I, depois do H; o de severidades ajustadas virou J); ação de máquinas não escreve mais "(1 servidor e 0 outras)". Testes: `Matriz_de_impacto_e_esforco_tem_linha_de_impacto_medio`, `Acao_de_corrigir_maquinas_nao_escreve_e_0_outras`, título do anexo em `Relatorio_mostra_as_tecnicas_...`.
+- **Verificação:** versão da diretoria 8 → 7 páginas, completa 22 → 21; página 1 com os 3 cartões; suíte 306/306 ✔.
+- **Limite:** com dados reais, avisos extras na página 1 (confiança baixa, ambientes diferentes, fonte ausente) ainda podem empurrar o 3º cartão. Conferir com os 3 CSVs reais.
+- **Aprendizado:** layout de impressão só se confere imprimindo; compilar e passar nos testes não mostra página em branco.

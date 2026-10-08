@@ -77,7 +77,7 @@ public class RevisaoTests : IDisposable
         Assert.True(revisao.Validacao!.TudoCerto);
         var html = System.Text.Encoding.UTF8.GetString(new RepositorioLotes(_pasta).LerRelatorio(revisao.Id, "html")!);
         Assert.Contains($"Esta é uma REVISÃO do lote {Original.Id[..8]}", html);
-        Assert.Contains("I. Severidades ajustadas por pessoas", html);
+        Assert.Contains("J. Severidades ajustadas por pessoas", html);
         Assert.Contains("servidor isolado da internet", html);
     }
 

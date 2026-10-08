@@ -85,10 +85,10 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
             AnexoComoDecidimos(sb, lote);
             AnexoArquivos(sb, lote);
             AnexoLacunas(sb, lote);
-            AnexoMitre(sb, lote);
             AnexoMetodologia(sb);
             AnexoGlossario(sb, "G. Glossário");
             AnexoValidacao(sb, lote.Validacao);
+            AnexoMitre(sb, lote);
             AnexoAjustes(sb, lote);
         }
 
@@ -150,7 +150,7 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
         var antes = lote.Comparacao is { } c ? $" Antes dos ajustes, o score era {Inteiro(c.ScoreAnterior)}." : "";
         return $"Esta é uma REVISÃO do lote {lote.RevisaoDe[..8]}: " +
                $"{Formatar.Qtd(lote.Ajustes.Count, "severidade foi ajustada", "severidades foram ajustadas")} por pessoas que discordaram da plataforma, " +
-               $"cada uma com motivo registrado ({(diretoria ? ReferenciaVersaoCompleta : "anexo I")}).{antes}";
+               $"cada uma com motivo registrado ({(diretoria ? ReferenciaVersaoCompleta : "anexo J")}).{antes}";
     }
 
     private void AnexoAjustes(StringBuilder sb, Lote lote)
@@ -159,7 +159,7 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
             return;
         sb.Append($"""
             <section>
-            <h2>I. Severidades ajustadas por pessoas</h2>
+            <h2>J. Severidades ajustadas por pessoas</h2>
             <p>Revisão do lote {H(lote.RevisaoDe?[..8] ?? "")}. A plataforma não muda severidade sozinha: cada linha abaixo é uma pessoa
             discordando, com o motivo dela. O lote original continua guardado como foi calculado.</p>
             <table><thead><tr><th>Evento</th><th>De</th><th>Para</th><th>Quem e quando</th><th>Motivo</th><th>O que a plataforma tinha dito</th></tr></thead><tbody>
@@ -256,7 +256,7 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
         if (principais.Count > 0)
         {
             // Direção, não relatório: cada passo numerado, com o prazo e o efeito, para o executivo sair da leitura sabendo o que pedir.
-            sb.Append($"<div class=\"quadro\"><h3>{Ic("plano")}Como resolver, em ordem</h3><ol class=\"passos\">");
+            sb.Append($"<div class=\"quadro\"><h3>{Ic("plano")}O que fazer agora, em ordem</h3><ol class=\"passos\">");
             foreach (var acao in principais)
             {
                 var efeito = acao.PercentualScore is { } pct && pct > 0 ? $" Derruba {Pct(pct)} do risco." : "";
@@ -269,7 +269,7 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
         }
         else
         {
-            sb.Append($"<div class=\"quadro\"><h3>{Ic("plano")}Como resolver</h3><p>Nenhuma ação de correção foi proposta com os dados recebidos.</p></div>");
+            sb.Append($"<div class=\"quadro\"><h3>{Ic("plano")}O que fazer agora</h3><p>Nenhuma ação de correção foi proposta com os dados recebidos.</p></div>");
         }
         sb.Append("</div>");
         sb.Append("</section>");
@@ -438,9 +438,11 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
     private void SecaoPlano(StringBuilder sb, Lote lote, Avaliacao a, bool diretoria)
     {
         sb.Append($"""
-            <section>
+            <section class="quebra">
             <h2>{Ic("plano")}4. Plano de ação completo</h2>
-            <p>O resultado de cada ação é <strong>calculado</strong> contando as falhas que ela elimina. Prazos e esforço seguem as premissas {(diretoria ? "da " + ReferenciaVersaoCompleta : "do anexo F")}.</p>
+            <p>O resultado de cada ação é <strong>calculado</strong> contando as falhas que ela elimina. A melhora no score segue a ordem do plano:
+            cada ação conta as anteriores como já feitas, e por isso as melhoras somadas dão a queda do plano inteiro.
+            Prazos e esforço seguem as premissas {(diretoria ? "da " + ReferenciaVersaoCompleta : "do anexo F")}.</p>
             <table><thead><tr><th>#</th><th>Ação e como fazer</th><th>Resultado esperado</th><th>Melhora no score</th><th>Custo estimado</th><th>Impacto</th><th>Esforço</th><th>Prazo</th></tr></thead><tbody>
             """);
         foreach (var acao in a.Acoes)
@@ -497,21 +499,27 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
             sb.Append("</p>");
         }
 
-        string Celula(string quadrante)
+        // Cada ação vai para a célula do SEU impacto e do SEU esforço (3 × 3); o nome da célula vem da mesma regra que
+        // decide a ordem do plano. Uma matriz 2 × 2 obrigava a pôr ações de impacto médio numa célula de impacto alto.
+        Nivel[] niveis = [Nivel.Alto, Nivel.Medio, Nivel.Baixo];
+        Nivel[] esforcos = [Nivel.Baixo, Nivel.Medio, Nivel.Alto];
+        string Celula(Nivel impacto, Nivel esforco)
         {
-            var itens = a.Acoes.Where(x => x.Quadrante == quadrante).Select(x => $"#{x.Ordem}").ToList();
-            return $"<td><strong>{H(quadrante)}</strong><br>{(itens.Count == 0 ? "—" : H(string.Join(", ", itens)))}</td>";
+            var itens = a.Acoes.Where(x => x.NivelImpacto == impacto && x.Esforco == esforco).Select(x => $"#{x.Ordem}").ToList();
+            return $"<td><strong>{H(PlanejadorAvaliacao.Quadrante(impacto, esforco))}</strong><br>{(itens.Count == 0 ? "—" : H(string.Join(", ", itens)))}</td>";
         }
-        sb.Append($"""
-            <h3>Impacto × esforço</h3>
-            <table class="matriz"><tbody>
-            <tr><th></th><th>Esforço baixo ou médio</th><th>Esforço alto</th></tr>
-            <tr><th>Impacto alto</th>{Celula("Fazer agora")}{Celula("Planejar")}</tr>
-            <tr><th>Impacto baixo</th>{Celula("Se sobrar tempo")}{Celula("Não priorizar agora")}</tr>
-            </tbody></table>
-            <p class="meta">Ações de impacto médio entram em "Planejar".</p>
-            </section>
-            """);
+        sb.Append("<h3>Impacto × esforço</h3><table class=\"matriz\"><tbody><tr><th></th>");
+        foreach (var esforco in esforcos)
+            sb.Append($"<th>Esforço {H(NomeNivel(esforco))}</th>");
+        sb.Append("</tr>");
+        foreach (var impacto in niveis)
+        {
+            sb.Append($"<tr><th>Impacto {H(NomeNivel(impacto))}</th>");
+            foreach (var esforco in esforcos)
+                sb.Append(Celula(impacto, esforco));
+            sb.Append("</tr>");
+        }
+        sb.Append("</tbody></table></section>");
     }
 
     // ================= 5. Automação =================
@@ -734,7 +742,7 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
             }
         }
 
-        sb.Append($"<section><h2>{Ic("alvo")}Anexo — Técnicas de ataque (MITRE ATT&amp;CK)</h2>");
+        sb.Append($"<section><h2>I. Técnicas de ataque (MITRE ATT&amp;CK)</h2>");
         sb.Append($"""
             <p>O MITRE ATT&CK é um catálogo público das técnicas que atacantes usam. Ele serve para falar a mesma língua
             que o resto do mercado. <strong>Atenção ao que esta tabela é e ao que ela não é:</strong> as fontes deste lote
@@ -1052,7 +1060,7 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
         .grafico .barra{width:100%;max-width:none;height:14px}
         .grafico .num{text-align:right;white-space:nowrap}
         tr.atual td{font-weight:700;background:var(--fundo-claro)}
-        .matriz td,.matriz th{text-align:center;width:33%}
+        .matriz td,.matriz th{text-align:center;width:25%}
         .glossario dt{font-weight:700;margin-top:6px}.glossario dd{margin:0 0 4px 16px}
         code{font-family:Consolas,monospace;font-size:12px;word-break:break-all}
         td.id code{white-space:nowrap;word-break:normal}
@@ -1064,9 +1072,14 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
           h1{font-size:22px;margin:6px 0 2px}.capa .meta{font-size:11px;margin:2px 0}.selo-ok{margin:2px 0 0;padding:2px 8px}
           .diretoria{font-size:12px;line-height:1.35}.diretoria h2{font-size:17px;margin:10px 0 4px}.diretoria h3{font-size:13px;margin:8px 0 4px}
           .score-caixa{padding:6px 12px;margin:4px 0}.grande{font-size:48px}.rotulo{font-size:13px}.frase{font-size:14px}
-          .duas-colunas{gap:8px}.duas-colunas .quadro{padding:8px 10px}.passos li{margin:0 0 7px}
+          /* Os cartões de risco são a coluna mais alta: no papel ganham mais largura (1,4 : 1) e ficam compactos,
+             senão o 3º cartão vai sozinho para a página 2. */
+          .duas-colunas{gap:8px;grid-template-columns:1.4fr 1fr}.duas-colunas .quadro{padding:8px 10px}.passos li{margin:0 0 7px}
+          .duas-colunas h3{margin:0 0 6px;font-size:12px;padding-bottom:3px}.passos strong{font-size:12.5px}.passo-efeito{font-size:11.5px}
           .kpis{gap:6px;margin:6px 0}.kpi{padding:6px 8px}.kpi strong{font-size:17px}
-          .riscos{gap:6px}.risco{padding:7px 9px}.risco-titulo{font-size:13px}.risco-frase{font-size:12px}
+          .riscos{gap:6px}.risco{padding:5px 8px}.risco-topo{margin:0 0 2px}.risco-titulo{font-size:12.5px;margin:0 0 3px}
+          .risco-frase{font-size:11.5px;margin:0 0 3px;line-height:1.3}.risco-detalhe{font-size:10.5px;margin:0 0 3px;line-height:1.25}
+          .risco-acao{font-size:10.5px;padding-top:3px}.glossario dt{break-after:avoid}
           .aviso-forte{padding:4px 8px;margin:4px 0}.uma-coisa{font-size:12px;padding:5px 10px;margin:6px 0}}
         @media screen{
         body{max-width:1280px;padding:48px 56px 80px;font-size:17px;line-height:1.6}

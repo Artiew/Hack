@@ -171,6 +171,54 @@ public class ScoreEPlanoTests
         Assert.True(avaliacao.ScorePrevisto < avaliacao.Score.Valor);
     }
 
+    [Fact]
+    public void Melhora_de_cada_acao_segue_a_ordem_do_plano_e_soma_a_queda_do_plano_inteiro()
+    {
+        // A M1 tem o programa A (3 falhas) e o D (1). Atualizar A, B e C deixa só a D na M1; corrigir a M1 em seguida
+        // zera a máquina. Calculada isolada, essa segunda ação pareceria quase inútil (a M1 ainda teria as falhas do A),
+        // e a soma das melhoras não batia com o "de X para Y" do plano inteiro.
+        var eventos = new List<EventoSeguranca>();
+        var n = 0;
+        foreach (var (pacote, quantas, maquina) in new[] { ("A", 3, "M1"), ("D", 1, "M1"), ("B", 2, "M2"), ("C", 2, "M3") })
+            for (var i = 0; i < quantas; i++)
+                eventos.Add(Fabrica.Vulnerabilidade($"EV-{++n:00}", maquina, $"CVE-{pacote}{i}", pacote) with { TipoAtivo = "estacao" });
+
+        var avaliacao = new PlanejadorAvaliacao(Fabrica.Regras, Calculadora).Avaliar(eventos, [], SoVulnerabilidades);
+
+        var programas = avaliacao.Acoes.Single(a => a.Tipo == PlanejadorAvaliacao.AcaoAtualizarProgramas);
+        var maquinas = avaliacao.Acoes.Single(a => a.Tipo == PlanejadorAvaliacao.AcaoCorrigirMaquinas);
+        Assert.True(programas.Ordem < maquinas.Ordem);
+        var quedaDoPlano = avaliacao.Score.Valor!.Value - avaliacao.ScorePrevisto!.Value;
+        var somaDasMelhoras = avaliacao.Acoes.Sum(a => a.QuedaScore ?? 0);
+        Assert.InRange(somaDasMelhoras, quedaDoPlano - 0.2, quedaDoPlano + 0.2);   // cada queda é arredondada em 0,1
+    }
+
+    [Fact]
+    public void Acao_de_corrigir_maquinas_nao_escreve_e_0_outras()
+    {
+        // Um servidor com 4 programas de 1 falha cada: os 3 primeiros vão para "atualizar"; sobra 1 falha no servidor.
+        var eventos = new[] { "A", "B", "C", "D" }
+            .Select((pacote, i) => Fabrica.Vulnerabilidade($"EV-{i + 1:00}", "SRV-01", $"CVE-{pacote}0", pacote) with { TipoAtivo = "servidor" })
+            .ToList();
+
+        var avaliacao = new PlanejadorAvaliacao(Fabrica.Regras, Calculadora).Avaliar(eventos, [], SoVulnerabilidades);
+
+        var maquinas = avaliacao.Acoes.Single(a => a.Tipo == PlanejadorAvaliacao.AcaoCorrigirMaquinas);
+        Assert.Contains("(1 servidor)", maquinas.ComoFazer);
+        Assert.DoesNotContain("0 outras", maquinas.ComoFazer);
+    }
+
+    [Fact]
+    public void Matriz_de_impacto_e_esforco_tem_linha_de_impacto_medio()
+    {
+        // Antes era 2 × 2 e as ações de impacto médio apareciam na célula de impacto ALTO.
+        var lote = Fabrica.ProcessadorReal().Processar([Fabrica.Exemplo("vulnerabilidades-ficticio.csv"), Fabrica.Exemplo("alertas-ficticio.csv")]);
+        var html = Fabrica.Gerador().Gerar(lote);
+
+        Assert.Contains("<th>Impacto médio</th>", html);
+        Assert.Contains("<th>Esforço médio</th>", html);
+    }
+
     [Theory]
     [InlineData(Nivel.Alto, Nivel.Baixo, "Fazer agora")]
     [InlineData(Nivel.Alto, Nivel.Medio, "Fazer agora")]

@@ -111,6 +111,9 @@ public class MitreECustosTests
         Assert.Contains("MITRE", html);
         Assert.Contains("T1046", html);
         Assert.Contains("não dizem qual técnica foi usada", html);
+        // Anexo com letra, como os outros, e depois do H (antes ficava sem letra entre o E e o F).
+        Assert.Contains("<h2>I. Técnicas de ataque (MITRE ATT&amp;CK)</h2>", html);
+        Assert.True(html.IndexOf("H. Verificações", StringComparison.Ordinal) < html.IndexOf("I. Técnicas de ataque", StringComparison.Ordinal));
     }
 
     // ---------------- custo de correção ----------------

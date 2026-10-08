@@ -67,7 +67,10 @@ public sealed class PlanejadorAvaliacao(ConjuntoRegras regras, CalculadoraScore 
 
     /// <summary>
     /// Completa cada ação com duas respostas que o executivo pede: "quanto isso melhora o score?" e "quanto custa?".
-    /// A melhora vem de recalcular o score sem os eventos daquela ação (mesma calculadora do score oficial).
+    /// A melhora vem de recalcular o score (mesma calculadora do score oficial) NA ORDEM DO PLANO: cada ação conta as
+    /// anteriores como já feitas. Assim as melhoras somadas dão exatamente a queda do plano inteiro (o "de 50 para 6").
+    /// Calculada isolada, uma ação que só termina o que a anterior começou pareceria inútil: a máquina ainda teria as
+    /// falhas que a ação anterior resolve, e o score quase não mudaria.
     /// O custo vem de regras/custos.json e é sempre uma FAIXA, com a premissa declarada no relatório.
     /// </summary>
     private List<AcaoRecomendada> ComEfeitoECusto(List<AcaoRecomendada> acoes, IReadOnlyList<EventoSeguranca> eventos,
@@ -75,16 +78,19 @@ public sealed class PlanejadorAvaliacao(ConjuntoRegras regras, CalculadoraScore 
     {
         var custos = new CalculadoraCustos(regras.Custos);
         var total = score.Valor;
+        var feitas = new HashSet<string>(StringComparer.Ordinal);   // eventos resolvidos pelas ações anteriores do plano
+        var antes = total;                                           // score depois das ações anteriores
         var completas = new List<AcaoRecomendada>(acoes.Count);
-        foreach (var acao in acoes)
+        foreach (var acao in acoes.OrderBy(x => x.Ordem))
         {
             double? queda = null, percentual = null;
-            if (total is { } atual && atual > 0 && acao.EventoIds.Count > 0)
+            if (total is { } atual && atual > 0 && antes is { } scoreAntes && acao.EventoIds.Count > 0)
             {
-                var ids = acao.EventoIds.ToHashSet(StringComparer.Ordinal);
-                var sem = calculadora.Calcular(eventos.Where(e => !ids.Contains(e.Id)).ToList(), tiposMedidos, populacao).Valor ?? 0;
-                queda = Math.Round(Math.Max(atual - sem, 0), 1);
-                percentual = Math.Round(100 * queda.Value / atual, 1);
+                feitas.UnionWith(acao.EventoIds);
+                var depois = calculadora.Calcular(eventos.Where(e => !feitas.Contains(e.Id)).ToList(), tiposMedidos, populacao).Valor ?? 0;
+                queda = Math.Round(Math.Max(scoreAntes - depois, 0), 1);
+                percentual = Math.Round(100 * queda.Value / atual, 1);   // sempre sobre o score de HOJE, para as partes somarem
+                antes = depois;
             }
             var custo = custos.Calcular(acao.Tipo, acao.Maquinas);
             completas.Add(acao with
@@ -227,8 +233,8 @@ public sealed class PlanejadorAvaliacao(ConjuntoRegras regras, CalculadoraScore 
                 AcaoCorrigirMaquinas,
                 porMaquina.Count == 1 ? "Corrigir por completo a máquina mais vulnerável" : $"Corrigir por completo as {porMaquina.Count} máquinas mais vulneráveis",
                 porMaquina.Count == 1 ? "corrigir a máquina mais vulnerável" : $"corrigir as {porMaquina.Count} máquinas mais vulneráveis",
-                $"Aplicar todas as atualizações pendentes {(porMaquina.Count == 1 ? "nessa máquina" : "nessas máquinas")} " +
-                $"({Qtd(servidores, "servidor", "servidores")} e {Qtd(porMaquina.Count - servidores, "outra", "outras")}), começando pelos servidores. A lista está no anexo B.",
+                $"Aplicar todas as atualizações pendentes {(porMaquina.Count == 1 ? "nessa máquina" : "nessas máquinas")}" +
+                ComposicaoMaquinas(servidores, porMaquina.Count - servidores) + ". A lista está no anexo B.",
                 $"Elimina mais {Pct(pct)} das falhas graves ({Formatar.Numero(eliminadas.Count)}).",
                 pct, Plano.ImpactoDe(pct), Plano.EsforcoDe(atualizacoes), PrazoDe(eliminadas), porMaquina.Count, eliminadas));
             removidas.UnionWith(eliminadas.Select(e => e.Id));
@@ -288,6 +294,14 @@ public sealed class PlanejadorAvaliacao(ConjuntoRegras regras, CalculadoraScore 
         Quadrante = Quadrante(nivelImpacto, esforco),
         Maquinas = maquinas,
         EventoIds = eventos.Select(e => e.Id).Order(StringComparer.Ordinal).ToList(),
+    };
+
+    /// <summary>" (1 servidor e 2 outras), começando pelos servidores", " (1 servidor)" ou nada: nunca "e 0 outras".</summary>
+    private static string ComposicaoMaquinas(int servidores, int outras) => (servidores, outras) switch
+    {
+        ( > 0, > 0) => $" ({Qtd(servidores, "servidor", "servidores")} e {Qtd(outras, "outra", "outras")}), começando pelos servidores",
+        ( > 0, _) => $" ({Qtd(servidores, "servidor", "servidores")})",
+        _ => "",
     };
 
     /// <summary>Matriz impacto × esforço.</summary>
