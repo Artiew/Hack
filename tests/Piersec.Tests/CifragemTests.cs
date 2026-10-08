@@ -100,6 +100,21 @@ public class CifragemTests : IDisposable
     }
 
     [Fact]
+    public void Chave_inacessivel_e_preservada_e_nao_orienta_apagar_os_dados()
+    {
+        ChaveAnonimizacao.Obter(_pasta, _cifrador);
+        var arquivo = Path.Combine(_pasta, "segredos", "chave-anonimizacao.cifrado");
+        var bytes = File.ReadAllBytes(arquivo);
+        bytes[^1] ^= 0xFF; // arquivo fictício que não pode mais ser decifrado
+        File.WriteAllBytes(arquivo, bytes);
+
+        var erro = Assert.Throws<InvalidOperationException>(() => ChaveAnonimizacao.Obter(_pasta, _cifrador));
+
+        Assert.Equal(bytes, File.ReadAllBytes(arquivo));
+        Assert.Contains("Preserve as análises antigas", erro.Message);
+        Assert.DoesNotContain("-DoZero", erro.Message);
+    }
+    [Fact]
     public async Task Ciclo_completo_nao_deixa_nada_legivel_nem_temporario_no_disco()
     {
         var conversor = new ConversorPdf();

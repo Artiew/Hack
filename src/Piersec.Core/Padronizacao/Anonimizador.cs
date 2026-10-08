@@ -58,7 +58,7 @@ public static class ChaveAnonimizacao
             catch (CryptographicException)
             {
                 throw new InvalidOperationException(
-                    $"Não foi possível abrir {arquivo} (chave de cifra diferente?). Rode 'rodar.cmd -DoZero' para recomeçar do zero.");
+                    $"Não foi possível abrir {arquivo} (chave de cifra diferente?). Preserve as análises antigas com 'Reparar-AnalisesLocais.ps1' antes de iniciar um novo histórico local.");
             }
         }
 

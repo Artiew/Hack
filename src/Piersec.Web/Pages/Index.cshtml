@@ -23,7 +23,7 @@
             <p class="erro" role="alert">@Model.Erro</p>
         }
 
-        <form id="form-envio" method="post" enctype="multipart/form-data">
+        <form id="form-envio" method="post" asp-page="/Index" asp-page-handler="" enctype="multipart/form-data">
             <label class="zona-soltar" id="zona-soltar" for="arquivos">
                 <svg class="icone grande-icone" aria-hidden="true"><use href="#i-nuvem"/></svg>
                 <strong>Arraste os arquivos CSV para cá</strong>

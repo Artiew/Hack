@@ -140,7 +140,9 @@ O briefing completo está em **`docs/PROMPT.md`** — leia antes de qualquer tar
 ## Entrega para integração — 08/10/2026
 - Repositório original confirmado: raiz `47127bb`; branch `main`; ponto em comum `742499a`. `d4fa492` existe; `f4f5a35` não existe nesta cópia.
 - Autoria dos novos commits: Vitor Calazans, conforme autorização do usuário para manter a configuração existente.
-- Conferência desta entrega: `dotnet test --solution Piersec.slnx` com SDK 10.0.401 permanente: 277 aprovados, 0 falhas e 0 ignorados.
-- **Pendência não resolvida:** o usuário relatou “Algo deu errado” e impossibilidade de enviar CSV na Visão geral da instalação atual. O envio funcionou em instância isolada com exemplos fictícios. A exceção do terminal da instalação real não foi obtida; a causa ainda não foi identificada. Não considerar esse relato corrigido nem rodar `-DoZero` como solução.
+- Conferência desta entrega: `dotnet test --solution Piersec.slnx` com SDK 10.0.401 permanente: 278 aprovados, 0 falhas e 0 ignorados.
+- **P-019 diagnosticado e reparo local aplicado:** a Visão geral falhava ao carregar a chave de anonimização antiga, antes de exibir o formulário. As análises anteriores foram preservadas em `var/preservados/20261008-132715-89119317`; usuários, senhas, 2FA e chaves Data Protection mantidos. Plataforma Release reiniciada com novo histórico de análises. O usuário confirmou: “agora foi possivel enviar o csv”. Não transportar `var/` e não usar `-DoZero`. Ver procedimento e limites em `docs/TROUBLESHOOTING.md`.
 - A conta local criada nesta sessão não será transportada: usuários, senhas, chaves, lotes e relatórios ficam fora do Git e do bundle.
 - O pacote inclui as alterações de navegação/2FA discutidas nesta sessão; o usuário contestou a ampliação do escopo. Revisar essas alterações durante a integração, preservando a exigência original de 2FA para admin.
+
+- Envio (08/10/2026): formulário com destino explícito para evitar handler herdado da URL. Roteiro HTTP fictício de preservação + 7 cenários de envio aprovado; suíte atual: 278 aprovados, 0 falhas, 0 ignorados. Reparar-AnalisesLocais.ps1 só deve ser usado após diagnóstico de dados inacessíveis e com a plataforma fechada; inicia novo histórico e conserva o anterior localmente.
