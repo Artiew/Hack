@@ -393,9 +393,10 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
         {
             // A lista de máquinas (anexo B) só existe na versão completa.
             var comoFazer = diretoria ? acao.ComoFazer.Replace("A lista está no anexo B.", $"A lista está na {ReferenciaVersaoCompleta}.") : acao.ComoFazer;
-            var melhora = acao.QuedaScore is { } q && acao.PercentualScore is { } pct
+            // Ou a ação derruba o score (e dizemos quanto), ou não derruba. "Não calculado" deixaria o leitor em dúvida.
+            var melhora = acao.QuedaScore is { } q && acao.PercentualScore is { } pct && q > 0
                 ? $"<strong>−{H(Pct(pct))}</strong><br><span class=\"pequeno\">{H(Pontos(q))} a menos</span>"
-                : "<em>não calculado</em>";
+                : "<em>não baixa o score</em><br><span class=\"pequeno\">ver o resultado esperado</span>";
             var custo = acao.CustoMinimo is { } cmin && acao.CustoMaximo is { } cmax
                 ? H(Formatar.FaixaDinheiro((decimal)cmin, (decimal)cmax))
                 : "<em>sem premissa</em>";

@@ -6,7 +6,7 @@
     "maximo": 120,
     "premissa": "Hora de um técnico de infraestrutura, entre R$ 60 e R$ 120, incluindo encargos. Valor de referência de mercado assumido pela equipe; não veio dos dados."
   },
-  "arredondarPara": 500,
+  "arredondarPara": 250,
   "horasPorAcao": {
     "atualizar_programas": {
       "fixoMinimo": 2, "fixoMaximo": 4,

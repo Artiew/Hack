@@ -227,10 +227,13 @@ O briefing completo está em **`docs/PROMPT.md`** — leia antes de qualquer tar
 - **Gráficos (sem biblioteca, sem internet):** relatório tem barras de "peso de cada problema no score" e de
   "prejuízo potencial × custo do plano" na mesma escala, legíveis em preto e branco; a tela ganhou o painel
   "Peso de cada problema" e, em cada ação do plano, "melhora X% do score · custa entre R$ A e R$ B".
-- **Estado da verificação:** solução compila sem avisos nem erros; 12 testes novos em `MitreECustosTests`.
-  Numa janela em que o Windows liberou, a suíte rodou: **302 testes, 1 falha** — o piso do custo arredondava para zero,
-  **corrigido** (`ArredondarParaBaixo`) com teste próprio (`Acao_pequena_nao_custa_zero_reais`). A suíte **depois da
-  correção ainda não pôde ser executada** nesta máquina (ver abaixo).
+- **Estado da verificação: 303 testes aprovados, 0 falhas** (13 novos em `MitreECustosTests`), solução sem avisos nem erros.
+  Durante o caminho a suíte acusou o piso do custo arredondando para zero, corrigido em `ArredondarParaBaixo` com teste
+  próprio (`Acao_pequena_nao_custa_zero_reais`). Relatório conferido em print, gerado por envio real dos exemplos
+  fictícios numa instância temporária (login + 2FA + upload), depois apagada: anexo MITRE com a lacuna declarada
+  ("25 eventos sem técnica"), gráfico de peso dos problemas e comparação prejuízo × custo.
+- Ajustes depois da primeira conferência: "não calculado" virou **"não baixa o score"** (ação que não remove achado),
+  e `arredondarPara` passou de 500 para **250**, senão todas as ações saíam com a mesma faixa de preço.
 - **P-020 · Smart App Control bloqueia os binários recém-compilados.** Windows 11 com Smart App Control LIGADO
   (`HKLM\SYSTEM\CurrentControlSet\Control\CI\Policy` → `VerifiedAndReputablePolicyState = 1`) recusa carregar os
   `.dll` novos do projeto: `FileLoadException ... (0x800711C7)`. Não é vírus (o Defender não registrou detecção).
@@ -238,8 +241,7 @@ O briefing completo está em **`docs/PROMPT.md`** — leia antes de qualquer tar
   testados e SEM efeito: recompilar do zero, `dotnet exec`, copiar a saída para outra pasta. WSL não está instalado.
   Solução real: desligar o Smart App Control (decisão do usuário; é de mão única) ou rodar a suíte em outra máquina.
   Observação para a banca: o Defender marcou `_Layout.cshtml` dentro do zip baixado do GitHub (ID 2147751841) — falso positivo.
-- **Falta, nesta ordem:** 1) rodar a suíte completa depois da correção do custo (P-020 impede nesta máquina);
-  2) conferir o relatório novo (HTML e PDF) página por página, com os gráficos; 3) "tempo até doer";
+- **Falta, nesta ordem:** 1) conferir o relatório novo (HTML e PDF) página por página, com os gráficos; 3) "tempo até doer";
   4) deixar o relatório mais técnico e mais bonito, pedido do Ruan; 5) `docs/RESUMO_PARA_BANCA.md`;
   6) linha do tempo por máquina, mapa de calor, triagem de alertas; 7) rodar com os 3 CSVs reais
   (a máquina do Ruan não tem `dados/`). MITRE ATT&CK saiu da lista: foi feito nesta sessão.
