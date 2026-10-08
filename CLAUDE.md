@@ -92,6 +92,11 @@ O briefing completo está em **`docs/PROMPT.md`** — leia antes de qualquer tar
     `/DoisFatores`; recuperação por 8 códigos de uso único ou pelo "Esqueci a senha do admin". 272 testes.
     **Pendente: o Vitor ler o QR code com o celular de verdade** (a estrutura foi conferida em imagem, e o código
     calculado por fora bate com o do site). Admin zerar o 2FA de outro usuário (celular perdido) ainda não existe.
+  - **Sessão na faculdade (07/10/2026), para o Claude de casa:** 5 commits depois de `f57c016` (P-015/CET, relatório da
+    diretoria, docs, `rodar.ps1` com contorno automático, 2FA). Em casa: `git pull`, rodar os testes (272), abrir o site
+    e conferir. **Atenção:** em casa o admin já existente vai cair direto no cadastro do 2FA no próximo login (obrigatório
+    para admin): ter o celular à mão. Os 3 lotes antigos de casa não têm a versão da diretoria (reenviar para gerar).
+    O pen drive também tem uma cópia de trabalho em `<PEN>:\piersec` (com `var\` próprio) e o .NET 10 em `<PEN>:\.dotnet`.
   - **Falta, nesta ordem (recomendada ao Vitor):** 1) Automação no visual de cards/chips (vale 30% da nota);
     2) conferir o PDF página por página; 3) revisão de linguagem; 4) visão técnica (chips na lista de eventos,
     detalhe em cards); 5) telas Entrar/Trocar senha. Estimativa: 2 a 3 horas.
