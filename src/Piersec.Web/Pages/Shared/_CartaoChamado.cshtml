@@ -3,29 +3,59 @@
 @{
     var c = Model.Chamado;
     var sugestao = c.Estado == EstadoChamado.Sugerido;
+    var aberto = c.Estado == EstadoChamado.Aberto;
+    var aprovador = c.Historico.LastOrDefault(h => h.Evento == ServicoOperacao.EventoAprovado)?.Quem;
 }
-<article class="cartao chamado">
+<article class="cartao chamado card-selecionavel" id="@c.Numero" aria-labelledby="titulo-@c.Numero">
     <header>
-        <code>@c.Numero</code> <strong>@c.Titulo</strong>
-        <span class="meta">· @Acoes.Nome(c.Acao)</span>
+        <div class="card-meta"><code>@c.Numero</code> · @Acoes.Nome(c.Acao)</div>
+        <span class="tag chamado-estado @(aberto ? "chamado-aberto" : sugestao ? "chamado-sugestao" : "chamado-pendente")">
+            <svg class="icone" aria-hidden="true"><use href="@(aberto ? "#i-prancheta" : sugestao ? "#i-lista" : "#i-pessoas")" /></svg>
+            @c.Estado.Nome()
+        </span>
+        <h3 class="card-titulo" id="titulo-@c.Numero">@c.Titulo</h3>
     </header>
-    <p><span class="rotulo-curto">Por quê</span> @c.Motivo</p>
-    <p><span class="rotulo-curto">@(sugestao ? "Por que é só sugestão" : "Por que espera uma pessoa")</span> @c.MotivoDecisao</p>
-    <p class="meta">Confiança @c.Confianca (@c.PorQueConfianca)@(c.Ativos.Count > 0 ? " · " + Formatar.Qtd(c.Ativos.Count, "máquina", "máquinas") : "")@(c.EvidenciasTotal > 0 ? " · " + Formatar.Qtd(c.EvidenciasTotal, "evento", "eventos") + " como evidência" : "") ·
-        <a href="/automacao/@(c.Numero).txt">ver o chamado completo</a></p>
-    @if (Model.PodeDecidir)
+    <p>@c.Motivo</p>
+    <div class="tags chamado-indicadores">
+        <span class="tag">Confiança @c.Confianca</span>
+        @if (c.Ativos.Count > 0) { <span class="tag">@Formatar.Qtd(c.Ativos.Count, "máquina", "máquinas")</span> }
+        @if (c.EvidenciasTotal > 0) { <span class="tag">@Formatar.Qtd(c.EvidenciasTotal, "evento", "eventos") como evidência</span> }
+    </div>
+    @if (aberto)
+    {
+        <p class="meta">@(c.AgiuSozinho ? "Aberto pela plataforma, sozinha." : $"Aprovado por {aprovador}.")</p>
+    }
+    else
+    {
+        <p class="chamado-motivo"><strong>@(sugestao ? "Por que é só sugestão" : "Por que espera uma pessoa"):</strong> @c.MotivoDecisao</p>
+    }
+    <details class="chamado-detalhes">
+        <summary>Entender a decisão</summary>
+        <p><strong>Confiança @c.Confianca:</strong> @c.PorQueConfianca</p>
+        @if (aberto) { <p>@c.MotivoDecisao</p> }
+        <p><strong>Como desfazer:</strong> @c.ComoDesfazer</p>
+        <a href="/automacao/@(c.Numero).txt">Ver chamado completo · @c.Numero</a>
+    </details>
+    @if (Model.PodeDecidir && !aberto)
     {
         <div class="decisao">
-            <form method="post" asp-page-handler="Aprovar" class="em-linha">
+            <form method="post" asp-page="/Automacao" asp-page-handler="Aprovar" class="em-linha">
                 <input type="hidden" name="numero" value="@c.Numero">
                 <button type="submit">@(sugestao ? "Transformar em chamado" : "Aprovar")</button>
             </form>
-            <form method="post" asp-page-handler="Rejeitar" class="rejeitar">
+            <form method="post" asp-page="/Automacao" asp-page-handler="Rejeitar" class="rejeitar">
                 <input type="hidden" name="numero" value="@c.Numero">
                 <input type="text" name="motivo" required minlength="3" maxlength="@ServicoOperacao.TamanhoMaximoMotivo"
                        placeholder="Motivo (obrigatório)" aria-label="Motivo para @(sugestao ? "descartar" : "rejeitar") @c.Numero">
                 <button type="submit" class="botao-discreto">@(sugestao ? "Descartar" : "Rejeitar")</button>
             </form>
         </div>
+    }
+    else if (Model.PodeDecidir && aberto)
+    {
+        <form method="post" asp-page="/Automacao" asp-page-handler="Desfazer" class="decisao">
+            <input type="hidden" name="numero" value="@c.Numero">
+            <button type="submit" class="botao-discreto" title="@c.ComoDesfazer" aria-label="Desfazer @c.Numero">Desfazer</button>
+        </form>
     }
 </article>

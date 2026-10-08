@@ -15,7 +15,11 @@
     var log = chamados.SelectMany(c => c.Historico.Select(h => (c.Numero, h))).OrderByDescending(x => x.h.QuandoUtc).ThenByDescending(x => x.Numero).Take(60).ToList();
 }
 
-<h1>Operação automática</h1>
+<header class="cabecalho-pagina">
+    <p class="card-meta">OPERAÇÃO · RESPOSTA SIMULADA</p>
+    <h1>Automação</h1>
+    <p class="meta">Acompanhe o que a plataforma fez e decida o que precisa da sua aprovação.</p>
+</header>
 <p class="aviso-simulado"><strong>Tudo aqui é SIMULADO.</strong> A plataforma registra o chamado e gera o arquivo com o plano;
     ela nunca envia nada a outro sistema nem mexe em nenhuma máquina.</p>
 
@@ -24,14 +28,14 @@
     <p class="@(Model.MensagemOk ? "selo-ok" : "erro")" role="status">@Model.Mensagem</p>
 }
 
-<section class="cartao painel-op">
+<section class="painel-op automacao-resumo" aria-label="Resumo da operação">
     <div><span class="rotulo">Nível de autonomia</span><span class="valor">@cfg.NivelAutonomia de @RegrasAutomacao.NivelMaximo</span><span class="meta">@cfg.DescricaoNivel(cfg.NivelAutonomia)</span></div>
     <div><span class="rotulo">Modo ensaio</span><span class="valor">@(cfg.ModoEnsaio ? "ligado" : "desligado")</span><span class="meta">@(cfg.ModoEnsaio ? "mostra o que faria e não grava nada" : "as decisões são gravadas")</span></div>
     <div><span class="rotulo">Ações automáticas hoje</span><span class="valor">@feitasHoje de @cfg.LimiteAcoesPorDia</span><span class="meta">acima do limite, tudo espera uma pessoa</span></div>
     <div><span class="rotulo">Aguardando aprovação</span><span class="valor">@aguardando.Count</span><span class="meta">@Formatar.Qtd(abertos.Count, "chamado aberto", "chamados abertos")</span></div>
 </section>
 
-<details class="travas">
+<details class="travas card automacao-travas">
     <summary>Travas que valem em qualquer nível</summary>
     <ul>
         <li>Ação de <strong>alto impacto</strong> ou que <strong>não dá para desfazer</strong>: sempre espera aprovação humana.</li>
@@ -46,63 +50,52 @@
 
 @if (chamados.Count == 0)
 {
-    <p class="vazio">Nenhum chamado ainda. Envie um lote na tela inicial: a operação roda sozinha logo depois da análise.</p>
-}
-
-<h2>Aguardando aprovação (@aguardando.Count)</h2>
-@if (aguardando.Count == 0)
-{
-    <p class="vazio">Nada esperando decisão.</p>
-}
-@foreach (var c in aguardando)
-{
-    <partial name="_CartaoChamado" model="(c, Model.PodeDecidir)" />
-}
-
-@if (sugestoes.Count > 0)
-{
-    <h2>Sugestões (@sugestoes.Count)</h2>
-    <p class="meta">A plataforma não age sobre sugestões. Uma pessoa pode transformá-las em chamado ou descartá-las.</p>
-    @foreach (var c in sugestoes)
-    {
-        <partial name="_CartaoChamado" model="(c, Model.PodeDecidir)" />
-    }
-}
-
-<h2>Chamados abertos (@abertos.Count)</h2>
-@if (abertos.Count == 0)
-{
-    <p class="vazio">Nenhum chamado aberto.</p>
+    <section class="estado-vazio">
+        <svg class="grande-icone" aria-hidden="true"><use href="#i-robo" /></svg>
+        <h2>Nenhum chamado ainda</h2>
+        <p>Depois de analisar um lote, a plataforma organiza as ações e indica quais precisam de aprovação.</p>
+        <a class="botao" asp-page="/Index">@(Model.PodeDecidir ? "Enviar arquivos para análise" : "Ir para a visão geral")</a>
+    </section>
 }
 else
 {
-    <table>
-        <thead><tr><th>Nº</th><th>O que fazer</th><th>Quem abriu</th><th>Confiança</th><th>Arquivo</th>@if (Model.PodeDecidir) { <th>Desfazer</th> }</tr></thead>
-        <tbody>
-            @foreach (var c in abertos)
-            {
-                var aprovador = c.Historico.LastOrDefault(h => h.Evento == ServicoOperacao.EventoAprovado)?.Quem;
-                <tr>
-                    <td><code>@c.Numero</code></td>
-                    <td>@c.Titulo<div class="meta">@Acoes.Nome(c.Acao) · @Formatar.Qtd(c.Ativos.Count, "máquina", "máquinas") · @Formatar.Qtd(c.EvidenciasTotal, "evento", "eventos")</div></td>
-                    <td>@(c.AgiuSozinho ? "a plataforma, sozinha" : $"aprovado por {aprovador}")</td>
-                    <td>@c.Confianca</td>
-                    <td><a href="/automacao/@(c.Numero).txt">@(c.Numero).txt</a></td>
-                    @if (Model.PodeDecidir)
-                    {
-                        <td>
-                            <form method="post" asp-page-handler="Desfazer" class="em-linha">
-                                <input type="hidden" name="numero" value="@c.Numero">
-                                <button type="submit" class="botao-discreto" title="@c.ComoDesfazer">Desfazer</button>
-                            </form>
-                        </td>
-                    }
-                </tr>
-            }
-        </tbody>
-    </table>
+    <nav class="chips" aria-label="Ir para uma fila de chamados">
+        <a class="chip" href="#aprovacoes">Aguardando aprovação <span class="contagem">@aguardando.Count</span></a>
+        <a class="chip" href="#sugestoes">Sugestões <span class="contagem">@sugestoes.Count</span></a>
+        <a class="chip" href="#abertos">Abertos <span class="contagem">@abertos.Count</span></a>
+        @if (encerrados.Count > 0) { <a class="chip" href="#encerrados">Encerrados <span class="contagem">@encerrados.Count</span></a> }
+    </nav>
+    @if (!Model.PodeDecidir)
+    {
+        <p class="meta">Você está acompanhando a operação. As decisões são feitas por um administrador ou analista.</p>
+    }
+    <section class="automacao-fila" aria-labelledby="aprovacoes">
+        <h2 id="aprovacoes" tabindex="-1">Aguardando aprovação <span class="tag">@aguardando.Count</span></h2>
+        @if (aguardando.Count == 0) { <p class="card vazio">Nenhuma decisão pendente nesta fila.</p> }
+        @foreach (var c in aguardando)
+        {
+            <partial name="_CartaoChamado" model="(c, Model.PodeDecidir)" />
+        }
+    </section>
+    <section class="automacao-fila" aria-labelledby="sugestoes">
+        <h2 id="sugestoes" tabindex="-1">Sugestões <span class="tag">@sugestoes.Count</span></h2>
+        <p class="meta">Nada foi executado. Uma pessoa pode transformar a sugestão em chamado ou descartá-la.</p>
+        @if (sugestoes.Count == 0) { <p class="card vazio">Nenhuma sugestão no momento.</p> }
+        @foreach (var c in sugestoes)
+        {
+            <partial name="_CartaoChamado" model="(c, Model.PodeDecidir)" />
+        }
+    </section>
+    <section class="automacao-fila" aria-labelledby="abertos">
+        <h2 id="abertos" tabindex="-1">Chamados abertos <span class="tag">@abertos.Count</span></h2>
+        <p class="meta">Ações registradas de forma simulada. Cada chamado mostra quem decidiu e como desfazer.</p>
+        @if (abertos.Count == 0) { <p class="card vazio">Nenhum chamado aberto.</p> }
+        @foreach (var c in abertos)
+        {
+            <partial name="_CartaoChamado" model="(c, Model.PodeDecidir)" />
+        }
+    </section>
 }
-
 @if (ultimo is not null)
 {
     <h2>O que aconteceu no último lote</h2>
@@ -145,7 +138,7 @@ else
 
 @if (encerrados.Count > 0)
 {
-    <h2>Encerrados (@encerrados.Count)</h2>
+    <h2 id="encerrados" tabindex="-1">Encerrados <span class="tag">@encerrados.Count</span></h2>
     <table>
         <thead><tr><th>Nº</th><th>Chamado</th><th>Situação</th><th>Quando</th><th>Arquivo</th></tr></thead>
         <tbody>

@@ -311,3 +311,36 @@ button:disabled { opacity: .6; cursor: progress; }
 .link-perigo { color: var(--erro); }
 .confirmar { border: 2px solid var(--erro); margin: 16px 0; }
 .confirmar h2 { margin-top: 0; }
+
+/* Automação: mesma linguagem de cartões e chips da visão geral. */
+.automacao-resumo { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.automacao-resumo > div { padding: 22px; border: 1px solid var(--linha); border-radius: 14px; background: var(--superficie); gap: 10px; }
+.automacao-resumo > div:last-child { border-color: var(--destaque); background: var(--destaque-claro); }
+.automacao-resumo .meta { font-size: 14px; }
+.automacao-travas { margin-bottom: 28px; }
+.automacao-fila h2, #encerrados { display: flex; align-items: center; gap: 12px; scroll-margin-top: 24px; }
+.automacao-fila h2:focus-visible, #encerrados:focus-visible { outline: 3px solid var(--destaque); outline-offset: 4px; }
+.automacao-fila .chamado { border-radius: 14px; padding: 24px; overflow-wrap: anywhere; }
+.chamado header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
+.chamado .card-titulo { flex-basis: 100%; margin: 4px 0 0; }
+.chamado-estado { display: inline-flex; gap: 6px; align-items: center; font-weight: 600; }
+.chamado-pendente { color: var(--media); }
+.chamado-aberto { color: var(--baixa); }
+.chamado-sugestao { color: var(--destaque); }
+.chamado-indicadores { margin: 14px 0; }
+.chamado .chamado-motivo { background: var(--fundo); border-left: 3px solid var(--media); padding: 12px 16px; border-radius: 6px; }
+.chamado-detalhes { margin-top: 16px; }
+.chamado-detalhes summary { cursor: pointer; color: var(--destaque); font-weight: 600; }
+.chamado .decisao { border-top: 1px solid var(--linha); padding-top: 18px; }
+.chamado .rejeitar { min-width: 0; flex-wrap: wrap; }
+.chamado .rejeitar input[type=text] { min-width: 0; flex: 1 1 200px; }
+.estado-vazio h2 { margin-top: 12px; }
+@media (max-width: 1180px) {
+    .automacao-resumo { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+    .automacao-resumo { grid-template-columns: minmax(0, 1fr); }
+    .automacao-fila .chamado { padding: 18px; }
+    .chamado .decisao { align-items: stretch; flex-direction: column; }
+    .chamado .decisao button { width: 100%; }
+}
