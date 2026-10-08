@@ -14,7 +14,7 @@ namespace Piersec.Web.Pages;
 /// faz o mesmo ciclo e abre o resultado no fim.
 /// </summary>
 public sealed class IndexModel(CicloAnalise ciclo, RepositorioLotes repositorio, Auditoria auditoria, ServicoEnvios envios,
-    ILogger<IndexModel> log) : PageModel
+    LotesEmMemoria lotes, ILogger<IndexModel> log) : PageModel
 {
     public IReadOnlyList<ResumoLote> Lotes { get; private set; } = [];
     public string? Erro { get; private set; }
@@ -25,10 +25,32 @@ public sealed class IndexModel(CicloAnalise ciclo, RepositorioLotes repositorio,
 
         // O executivo não escolhe arquivo nem lote: entra e já cai no painel da análise mais recente.
         // As análises anteriores continuam acessíveis pelo histórico dentro do próprio painel.
-        if (!Sessao.PodeEnviar(User) && (Lotes.FirstOrDefault(l => l.Score is not null) ?? Lotes.FirstOrDefault()) is { } recente)
-            return RedirectToPage("/Lote", new { id = recente.Id });
+        //
+        // Antes de mandar para lá, confere se o lote ABRE. Um lote gravado com outra chave (P-019) deixaria o
+        // executivo preso numa tela de erro logo depois do login, sem lista para onde voltar. Se nenhum abrir,
+        // ele fica nesta página mesmo, que pelo menos mostra as análises existentes.
+        if (!Sessao.PodeEnviar(User) && PrimeiroQueAbre() is { } recente)
+            return RedirectToPage("/Lote", new { id = recente });
 
         return Page();
+    }
+
+    private string? PrimeiroQueAbre()
+    {
+        foreach (var resumo in Lotes.Where(l => l.Score is not null).Concat(Lotes).DistinctBy(l => l.Id).Take(3))
+        {
+            try
+            {
+                if (lotes.Obter(resumo.Id) is not null)
+                    return resumo.Id;
+            }
+            catch (Exception ex)
+            {
+                // Não esconder o problema: registra e tenta o próximo. Sem dado sensível no log.
+                log.LogWarning(ex, "Lote {Lote} não pôde ser aberto para o painel do executivo.", resumo.Id);
+            }
+        }
+        return null;
     }
 
     // Razor Pages valida o token anti-CSRF automaticamente em todo POST (inclusive os do JavaScript).

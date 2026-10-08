@@ -138,6 +138,7 @@
                 var t = Math.min((agora - inicio) / duracao, 1);
                 var suave = 1 - Math.pow(1 - t, 3);
                 var valor = partida + (destino - partida) * suave;
+                mostrado = valor; // guarda o que está NA TELA: se outra animação começar, ela parte daqui
                 alvoNumero.textContent = Math.round(valor).toLocaleString("pt-BR");
                 if (t < 1) animacao = requestAnimationFrame(passo);
                 else { mostrado = destino; animacao = null; }
@@ -145,14 +146,21 @@
             animacao = requestAnimationFrame(passo);
         }
 
+        // Para a contagem no meio do caminho (erro, ou score que voltou nulo): senão ela sobrescreve o "—".
+        function pararAnimacao() {
+            if (animacao) { cancelAnimationFrame(animacao); animacao = null; }
+        }
+
         function atualizarQueda(novo) {
             var queda = scoreAtual > 0 ? Math.max(scoreAtual - novo, 0) / scoreAtual * 100 : 0;
-            if (queda >= 0.5) {
-                alvoDelta.textContent = "−" + Math.round(queda) + "% do risco";
-                alvoDelta.removeAttribute("data-sem-mudanca");
-            } else {
-                alvoDelta.textContent = "nada marcado ainda";
-                alvoDelta.setAttribute("data-sem-mudanca", "");
+            if (alvoDelta) {
+                if (queda >= 0.5) {
+                    alvoDelta.textContent = "−" + Math.round(queda) + "% do risco";
+                    alvoDelta.removeAttribute("data-sem-mudanca");
+                } else {
+                    alvoDelta.textContent = "nada marcado ainda";
+                    alvoDelta.setAttribute("data-sem-mudanca", "");
+                }
             }
             if (alvoBarra) alvoBarra.style.width = Math.max(0, Math.min(novo, 100)) + "%";
         }
@@ -168,13 +176,14 @@
                 .then(function (r) { return r.json().then(function (corpo) { if (!r.ok) throw new Error(corpo.erro || "Não foi possível simular."); return corpo; }); })
                 .then(function (corpo) {
                     if (atual !== versao) return;
-                    if (corpo.score === null) { alvoNumero.textContent = "—"; }
+                    if (corpo.score === null) { pararAnimacao(); alvoNumero.textContent = "—"; atualizarQueda(scoreAtual); }
                     else { animarPara(corpo.score); atualizarQueda(corpo.score); }
                     alvoFaixa.textContent = corpo.faixa;
                     resultado.querySelector("[data-resumo-simulado]").textContent = corpo.resumo;
                 })
                 .catch(function (ex) {
                     if (atual !== versao || ex.name === "AbortError") return;
+                    pararAnimacao();
                     alvoNumero.textContent = "—";
                     alvoFaixa.textContent = "Não atualizado";
                     resultado.querySelector("[data-resumo-simulado]").textContent = "";

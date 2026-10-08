@@ -199,7 +199,7 @@
                             <span class="projecao-faixa" data-faixa-simulada>@(Model.ErroSimulacao is not null ? "Não atualizado" : Model.Simulacao?.Score.Faixa ?? s.Faixa)</span>
                         </div>
                         <div class="projecao-mudanca">
-                            <span class="projecao-delta" data-delta-simulado>@(quedaInicial >= 0.5 ? "−" + quedaInicial.ToString("0") + "% do risco" : "nada marcado ainda")</span>
+                            <span class="projecao-delta" data-delta-simulado data-sem-mudanca="@(quedaInicial >= 0.5 ? null : "")">@(quedaInicial >= 0.5 ? "−" + quedaInicial.ToString("0") + "% do risco" : "nada marcado ainda")</span>
                             <div class="projecao-barra" role="img" aria-label="Risco de 0 a 100">
                                 <span data-barra-hoje style="width:@N(Math.Clamp(scoreHoje,0,100))%"></span>
                                 <span data-barra-simulada style="width:@N(Math.Clamp(scoreMostrado,0,100))%"></span>

@@ -223,6 +223,16 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
         foreach (var avisoAmbiente in lote.FontesAusentes.Concat(lote.AvisosAmbiente))
             sb.Append($"<p class=\"aviso-forte\">⚠ {H(avisoAmbiente)}</p>");
 
+        // A mensagem principal vem ANTES das duas colunas: é a frase que decide a leitura inteira.
+        // (Ela não pode entrar no grid, senão vira uma terceira célula e quebra o lado a lado.)
+        if (a.FraseUmaCoisa is { } umaCoisa)
+        {
+            var previsto = a.ScorePrevisto is { } p && s.Valor is { } atual
+                ? $" Com as ações de correção, o score estimado cai de {Inteiro(atual)} para {Inteiro(p)}."
+                : "";
+            sb.Append($"<div class=\"uma-coisa\"><strong>SE FIZER SÓ UMA COISA:</strong> {H(umaCoisa)}{H(previsto)}</div>");
+        }
+
         sb.Append($"<div class=\"duas-colunas\"><div class=\"quadro\"><h3>{Ic("limite")}O que é mais grave</h3><div class=\"riscos\">");
         var n = 1;
         foreach (var r in a.Riscos)
@@ -241,15 +251,6 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
         if (a.Riscos.Count == 0)
             sb.Append("<p>Nenhum risco relevante encontrado nas fontes analisadas.</p>");
         sb.Append("</div></div>");
-
-        // A mensagem principal vem antes da tabela, para caber sempre na primeira página.
-        if (a.FraseUmaCoisa is { } umaCoisa)
-        {
-            var previsto = a.ScorePrevisto is { } p && s.Valor is { } atual
-                ? $" Com as ações de correção, o score estimado cai de {Inteiro(atual)} para {Inteiro(p)}."
-                : "";
-            sb.Append($"<div class=\"uma-coisa\"><strong>SE FIZER SÓ UMA COISA:</strong> {H(umaCoisa)}{H(previsto)}</div>");
-        }
 
         var principais = a.Acoes.Take(3).ToList();
         if (principais.Count > 0)

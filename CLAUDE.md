@@ -32,6 +32,24 @@ O briefing completo está em **`docs/PROMPT.md`** — leia antes de qualquer tar
 >
 > O que **foi** verificado antes do bloqueio (303 testes, 0 falhas, e print conferido): MITRE ATT&CK,
 > custo de correção, gráfico de peso dos problemas e a faixa de quatro indicadores.
+>
+> **Revisão por leitura (08/10/2026), já que não dava para executar.** Encontrados e corrigidos 6 problemas:
+> 1. **Grave (layout):** o bloco "SE FIZER SÓ UMA COISA" estava DENTRO de `.duas-colunas`, virando uma terceira
+>    célula do grid e empurrando "Como resolver" para a linha de baixo — ou seja, o lado a lado não aconteceria.
+>    Movido para antes do grid.
+> 2. **JS:** `mostrado` só era atualizado no fim da animação; marcando duas caixas rápido o número pulava para
+>    trás. Agora guarda a cada quadro o valor que está na tela.
+> 3. **JS:** animação em andamento continuava escrevendo por cima do "—" quando dava erro. Criado `pararAnimacao()`.
+> 4. **JS:** `alvoDelta` sem proteção contra ausência no HTML.
+> 5. **Razor:** sem nada marcado, "nada marcado ainda" saía com o destaque verde de melhora, porque o atributo
+>    `data-sem-mudanca` só era posto pelo JavaScript. Agora sai já do servidor.
+> 6. **Entrada do executivo:** se o lote mais recente estivesse ilegível (cenário do P-019), ele cairia numa tela
+>    de erro logo após o login, sem lista para onde voltar. `Index` agora confere se o lote abre, tenta os
+>    seguintes e, se nenhum abrir, mantém a lista.
+>
+> Também conferido por leitura, sem achar problema: equilíbrio de `<div>`/`<section>`/`<table>` no HTML gerado,
+> chaves do CSS do relatório e do `site.css`, e chaves/parênteses do `executivo.js`.
+> **Nada disso substitui rodar.** A lista de conferência acima continua valendo.
 
 ## As duas telas e para que serve cada uma (definido pelo Ruan, 08/10/2026)
 
