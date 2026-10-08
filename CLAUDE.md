@@ -33,6 +33,25 @@ O briefing completo está em **`docs/PROMPT.md`** — leia antes de qualquer tar
 > O que **foi** verificado antes do bloqueio (303 testes, 0 falhas, e print conferido): MITRE ATT&CK,
 > custo de correção, gráfico de peso dos problemas e a faixa de quatro indicadores.
 
+## As duas telas e para que serve cada uma (definido pelo Ruan, 08/10/2026)
+
+O projeto tem **duas saídas** e elas NÃO são a mesma coisa. Misturar as duas é o erro a evitar.
+
+| | **Visão geral** (tela, `/Lote/{id}`) | **Relatório** (HTML e PDF) |
+|---|---|---|
+| Quem lê | o executivo, assim que entra no sistema | quem receber o arquivo |
+| Para quê | bater o olho e **decidir o que fazer** | ler com calma e entender |
+| Peso | **muito visual**, o mínimo de texto | **menos visual, bem estruturado** |
+| Texto | só o necessário; pode usar **analogia** e comparação do dia a dia | pode ter mais texto, desde que organizado |
+| Regra | se não ajuda a decidir em segundos, é ruído | quem bater o olho tem que entender a estrutura na hora |
+
+Os dois servem à mesma ideia do projeto: **pegar a visão técnica e traduzir para um leigo**, alguém sem nenhum
+conhecimento de segurança. O executivo não precisa aprender a área para decidir.
+
+**Não é para fazer:** one-pager (tudo numa folha só) — o Ruan recusou; nem copiar layout de painel de mercado
+(o `leiame.txt` do easter egg proíbe e avisa que painel só-técnico reprova no desafio); nem quebrar o que já
+está funcionando a pretexto de embelezar.
+
 ## Quem é o usuário e como responder
 - Vitor, estudante de ADS (2º semestre), grupo de 3 iniciantes; sabe C# básico.
 - Responda em português. Para cada conceito, comando ou termo novo: 2–3 linhas simples (o que é, por que existe, o que vai fazer).
