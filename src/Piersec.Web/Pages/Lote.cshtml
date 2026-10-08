@@ -15,7 +15,7 @@
 
 <div class="cabecalho-pagina">
     <p><a href="/">← Visão geral</a></p>
-    <h1>Resumo do lote @(lote.Id[..8])</h1>
+    <p class="exec-eyebrow">Panorama de segurança · lote @(lote.Id[..8])</p><h1>Visão executiva</h1>
     <p class="meta">Processado em @Formatar.DataHora(lote.CriadoEmUtc, fuso) (horário de Brasília) ·
         @Formatar.Qtd(lote.Arquivos.Count(a => a.Fonte is not null), "arquivo analisado", "arquivos analisados") ·
         @Formatar.Qtd(lote.Eventos.Count, "evento", "eventos")</p>
@@ -82,150 +82,11 @@
     }
 </div>
 
-<div class="com-lateral">
-<div class="coluna-principal">
-
-@if (lote.Avaliacao is { } av)
-{
-    var s = av.Score;
-    <section class="card destaque-score faixa-@Texto(s.Faixa)" aria-label="Como estamos">
-        <div class="numero">
-            <span class="grande">@(s.Valor is { } valor ? Math.Round(valor).ToString("0") : "—")</span>
-            <span class="de">de 100</span>
-            <span class="contexto">@Model.ContextoScore()</span>
-        </div>
-        <div class="texto">
-            <p class="rotulo">Como estamos: <strong>risco @s.Faixa.ToLowerInvariant()</strong> <span class="meta">(0 = sem risco · 100 = risco máximo · confiança @s.Confianca)</span></p>
-            <p class="frase"><strong>@av.FraseSituacao</strong></p>
-            @if (Model.AvisoConfianca is not null)
-            {
-                <p class="aviso-forte" role="alert">⚠ @Model.AvisoConfianca</p>
-            }
-            @if (lote.Comparacao is { } c)
-            {
-                <p class="meta">Antes: @Math.Round(c.ScoreAnterior).ToString("0") de 100 — @c.Motivo.</p>
-            }
-            @if (av.FraseUmaCoisa is not null)
-            {
-                <p class="uma-coisa"><strong>Se fizer só uma coisa:</strong> @av.FraseUmaCoisa</p>
-            }
-        </div>
-    </section>
-
-    @foreach (var avisoAmbiente in lote.FontesAusentes.Concat(lote.AvisosAmbiente))
-    {
-        <p class="aviso-forte" role="alert">⚠ @avisoAmbiente</p>
-    }
-
-    <h2>O que é mais grave</h2>
-    <div class="cards">
-        @foreach (var r in av.Riscos)
-        {
-            <article class="card card-horizontal">
-                <div class="card-icone @(((Severidade?)r.Severidade).ClasseCss())"><svg class="icone" aria-hidden="true"><use href="#i-@(((Severidade?)r.Severidade).ClasseCss())"/></svg></div>
-                <div class="card-corpo">
-                    <p class="card-meta">@Visual.Selo(r.Severidade)</p>
-                    <h3 class="card-titulo">@r.Titulo</h3>
-                    <p>@r.OQueE</p>
-                    <p class="meta"><strong>Por que importa:</strong> @r.PorQueImporta</p>
-                    <p><strong>Como resolver:</strong> @r.ComoResolver</p>
-                    @if (tecnico && r.CorrelacaoIds.Count > 0)
-                    {
-                        <p class="card-rodape"><a href="@Ev(new FiltroEventos { Correlacao = string.Join(",", r.CorrelacaoIds) })">Ver evidências →</a></p>
-                    }
-                </div>
-            </article>
-        }
-    </div>
-
-    @if (lote.Servicos.Count > 0)
-    {
-        <h2>Serviços da empresa</h2>
-        <section class="card">
-            <p>
-                @if (GeradorRelatorioHtml.FrasePrejuizo(lote) is { } prejuizo)
-                {
-                    <strong>Em risco: @GeradorRelatorioHtml.ServicosEmRisco(lote, int.MaxValue).</strong> @prejuizo
-                }
-                else
-                {
-                    <strong>Nenhum serviço está em risco elevado ou pior</strong> <span>nas fontes analisadas.</span>
-                }
-            </p>
-            <table>
-                <thead><tr><th>Serviço</th><th>Situação</th><th class="num">Máquinas com falha grave</th><th class="num">Alertas que merecem análise</th><th>Prejuízo se for atingido</th></tr></thead>
-                <tbody>
-                    @foreach (var servico in lote.Servicos)
-                    {
-                        <tr>
-                            <td>@if (tecnico) { <a href="@Ev(new FiltroEventos { Servico = servico.Id })"><strong>@servico.Nome</strong></a> } else { <strong>@servico.Nome</strong> }</td>
-                            <td>@if (servico.EmRisco) { <strong>@servico.Faixa</strong> } else { @servico.Faixa }</td>
-                            <td class="num">@Formatar.Numero(servico.MaquinasComFalhaGrave) de @Formatar.Numero(servico.Maquinas)</td>
-                            <td class="num">@Formatar.Numero(servico.AlertasRelevantes)</td>
-                            <td>@(servico.Impacto is { } i ? Formatar.FaixaDinheiro(i.Minimo, i.Maximo) : "não estimado")</td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-            <p class="meta">Premissa: os dados não dizem que serviço cada máquina atende; a equipe ligou pelo nome e pelo tipo da máquina.
-                Os valores são faixas de referência deste exercício, não números da empresa (detalhes na seção 2 do relatório).</p>
-        </section>
-    }
-
-    @if (Model.FraseAchados is { } fraseAchados)
-    {
-        <h2>@GeradorRelatorioHtml.TituloAchados(av)</h2>
-        <section class="card">
-            <p><strong>@fraseAchados</strong></p>
-            <ol>
-                @foreach (var achado in av.AchadosPrincipais)
-                {
-                    <li>@achado.Texto</li>
-                }
-            </ol>
-        </section>
-    }
-
-    <h2>O que fazer agora</h2>
-    <table>
-        <thead><tr><th>#</th><th>Ação</th><th>Resultado esperado</th><th>Esforço</th><th>Prazo</th></tr></thead>
-        <tbody>
-            @foreach (var acao in av.Acoes)
-            {
-                <tr>
-                    <td class="num">@acao.Ordem</td>
-                    <td><strong>@acao.Titulo</strong><div class="meta">@acao.Quadrante</div>
-                        @if (tecnico && acao.EventoIds.Count > 0)
-                        {
-                            <a href="@Ev(new FiltroEventos { Acao = acao.Ordem })">ver @Formatar.Qtd(acao.EventoIds.Count, "falha", "falhas") →</a>
-                        }
-                    </td>
-                    <td>@acao.Impacto</td>
-                    <td>@(acao.Esforco switch { Nivel.Alto => "alto", Nivel.Medio => "médio", _ => "baixo" })</td>
-                    <td class="nowrap">até @acao.PrazoDias dias</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-}
-
-@if (lote.Operacao is { } op)
-{
-    <h2>O que a plataforma fez sozinha</h2>
-    <section class="card painel-op">
-        <div><span class="rotulo">@(op.Ensaio ? "Faria sozinha" : "Feito sozinho")</span><span class="valor">@op.Sozinho</span><span class="meta">chamados simulados, dentro das travas</span></div>
-        <div><span class="rotulo">Aguardando aprovação</span><span class="valor">@op.AguardandoAprovacao</span><span class="meta">uma pessoa decide na tela Automação</span></div>
-        <div><span class="rotulo">Fechados sozinhos</span><span class="valor">@op.Contar(Piersec.Core.Operacao.ResultadoItem.FechouSozinho)</span><span class="meta">o problema sumiu neste lote</span></div>
-        <div><span class="rotulo">Já existiam</span><span class="valor">@op.Contar(Piersec.Core.Operacao.ResultadoItem.JaExistia)</span><span class="meta">mesmo problema: não duplicou</span></div>
-    </section>
-    <p>Nível de autonomia @op.Nivel: @op.DescricaoNivel.@(op.Ensaio ? " MODO ENSAIO: nada foi gravado." : "")
-        @(op.LoteValidado ? "" : " Este lote não passou nas verificações: nada foi feito sozinho.")
-        <a href="/Automacao">Ver fila de aprovação, chamados e log de decisão →</a></p>
-}
+<partial name="_PainelExecutivo" model="Model" />
 
 @if (tecnico)
 {
-<div class="tecnico">
+<details class="tecnico exec-tecnico" id="visao-tecnica" data-etapa aria-labelledby="aba-visao-tecnica" hidden="@(Model.Lote.Avaliacao is not null && Model.SecaoAtual != "visao-tecnica" ? "hidden" : null)" open="@(Model.SecaoAtual == "visao-tecnica" ? "open" : null)"><summary>Abrir visão técnica e evidências</summary>
 <h2 id="achados">Achados (correlações)</h2>
 <p class="meta">Cada card é uma relação encontrada por uma regra declarada. "Ver mais" abre os eventos que formam o achado, até a linha do arquivo de origem.</p>
 <nav class="chips" aria-label="Filtrar achados por severidade">
@@ -364,60 +225,8 @@ else
         </tbody>
     </table>
 }
-</div>
+</details>
 }
-</div>
-
-<aside class="coluna-direita" aria-label="Resumo rápido">
-    @if (lote.Avaliacao is { } a2)
-    {
-        <section class="card lateral-card">
-            <h2>Score atual</h2>
-            <p class="numero-medio">@(a2.Score.Valor is { } sv ? Math.Round(sv).ToString("0") : "—") <span class="de">de 100</span></p>
-            <p><strong>Risco @a2.Score.Faixa.ToLowerInvariant()</strong> · @Model.ContextoScore()</p>
-            @if (a2.ScorePrevisto is { } prev)
-            {
-                <p class="meta">Com as ações de correção, cairia para <strong>@Math.Round(prev).ToString("0")</strong>.</p>
-            }
-        </section>
-
-        <section class="card lateral-card">
-            <h2>Próximas ações</h2>
-            @if (a2.Acoes.Count == 0)
-            {
-                <p class="vazio">Nenhuma ação necessária.</p>
-            }
-            <ol class="lista-lateral">
-                @foreach (var acao in a2.Acoes.Take(3))
-                {
-                    <li><strong>@acao.Titulo</strong><br><span class="prazo">até @acao.PrazoDias dias</span> <span class="meta">· @acao.Quadrante</span></li>
-                }
-            </ol>
-        </section>
-    }
-
-    <section class="card lateral-card">
-        <h2>Aguardando aprovação</h2>
-        @if (Model.Aguardando.Count == 0)
-        {
-            <p class="vazio">Nada esperando decisão.</p>
-        }
-        else
-        {
-            <p class="numero-medio">@Model.Aguardando.Count</p>
-            <ul class="lista-lateral">
-                @foreach (var ch in Model.Aguardando.Take(3))
-                {
-                    <li><code>@ch.Numero</code> @ch.Titulo</li>
-                }
-            </ul>
-        }
-        <p><a href="/Automacao">Abrir a fila de aprovação →</a></p>
-    </section>
-</aside>
-</div>
-
-@functions {
-    // "Alto" → "alto", "Crítico" → "critico": usado só no nome da classe CSS da faixa.
-    private static string Texto(string faixa) => Piersec.Core.Padronizacao.Texto.NormalizarChave(faixa);
+@section Scripts {
+    <script src="~/js/executivo.js" asp-append-version="true" defer></script>
 }

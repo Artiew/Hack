@@ -9,13 +9,14 @@
     var papel = User.IsInRole(Papeis.Admin) ? Papeis.Admin : User.IsInRole(Papeis.Analista) ? Papeis.Analista : Papeis.Executivo;
     var emAchados = caminho.Contains("/Evento", StringComparison.OrdinalIgnoreCase) || caminho.StartsWith("/Buscar", StringComparison.OrdinalIgnoreCase);
     var emVisaoGeral = !emAchados && (caminho == "/" || caminho.StartsWith("/Lote/", StringComparison.OrdinalIgnoreCase));
-    // Item ativo do menu: aria-current="page" (leitor de tela) + destaque azul-claro (CSS).
+    // Item ativo do menu: aria-current="page" (leitor de tela) + destaque de navegação (CSS).
     string? Ativo(string prefixo) => caminho.StartsWith(prefixo, StringComparison.OrdinalIgnoreCase) ? "page" : null;
 }
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@ViewData["Title"] · Plataforma de risco</title>
+    <script src="~/js/tema.js" asp-append-version="true"></script>
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true">
 </head>
 <body>
@@ -35,6 +36,8 @@
         <symbol id="i-sev-media" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="4" fill="currentColor"/><path d="M8 12h8" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></symbol>
         <symbol id="i-sev-baixa" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="m8 12.5 2.8 2.8L16.5 9.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
         <symbol id="i-nuvem" viewBox="0 0 24 24"><path d="M7 18a5 5 0 0 1-.6-9.96A6 6 0 0 1 18 9a4.5 4.5 0 0 1 0 9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M12 12v8M9 15l3-3 3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="i-sol" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+        <symbol id="i-lua" viewBox="0 0 24 24"><path d="M20 15.5A9 9 0 0 1 8.5 4a9 9 0 1 0 11.5 11.5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
     </svg>
 
     <a class="pular" href="#conteudo">Pular para o conteúdo</a>
@@ -64,7 +67,19 @@
                         <a href="/Auditoria" aria-current="@Ativo("/Auditoria")"><svg class="icone"><use href="#i-prancheta"/></svg>Auditoria</a>
                     }
                 </nav>
-                <p class="etiqueta">Protótipo · dados sintéticos · tudo local</p>
+                <div class="lateral-rodape">
+                    <details class="conta-menu">
+                        <summary><span class="conta-avatar" aria-hidden="true">@((User.Identity!.Name ?? "C")[..1].ToUpperInvariant())</span><span class="conta-identidade"><strong>@User.Identity!.Name</strong><span>@papel</span></span><span class="conta-seta" aria-hidden="true">⌃</span></summary>
+                        <nav class="conta-opcoes" aria-label="Opções da conta">
+                            <p class="conta-titulo">Minha conta</p>
+                            <a href="/DoisFatores" aria-current="@Ativo("/DoisFatores")"><svg class="icone" aria-hidden="true"><use href="#i-escudo"/></svg>Duas etapas</a>
+                            <button type="button" id="trocar-tema" aria-label="Trocar tema" aria-pressed="false" hidden><svg class="icone" aria-hidden="true"><use href="#i-lua"/></svg><span data-nome-tema>Tema: claro</span></button>
+                            <a href="/TrocarSenha" aria-current="@Ativo("/TrocarSenha")"><svg class="icone" aria-hidden="true"><use href="#i-chave"/></svg>Trocar senha</a>
+                            <form method="post" asp-page="/Sair"><button type="submit"><svg class="icone" aria-hidden="true"><use href="#i-sair"/></svg>Sair</button></form>
+                        </nav>
+                    </details>
+                    <p class="etiqueta">Protótipo · dados sintéticos · tudo local</p>
+                </div>
             </aside>
         }
         <div class="principal">
@@ -72,14 +87,6 @@
             {
                 <header class="topo">
                     <span class="selo-confidencial">Confidencial</span>
-                    <div class="usuario">
-                        <span><strong>@User.Identity!.Name</strong> <span class="meta">(@papel)</span></span>
-                        <a href="/DoisFatores" class="botao-discreto" aria-current="@Ativo("/DoisFatores")"><svg class="icone"><use href="#i-escudo"/></svg>Duas etapas</a>
-                        <a href="/TrocarSenha" class="botao-discreto" aria-current="@Ativo("/TrocarSenha")"><svg class="icone"><use href="#i-chave"/></svg>Trocar senha</a>
-                        <form method="post" asp-page="/Sair" class="em-linha">
-                            <button type="submit" class="botao-discreto"><svg class="icone"><use href="#i-sair"/></svg>Sair</button>
-                        </form>
-                    </div>
                 </header>
             }
             @if (!logado && User.Identity?.IsAuthenticated == true && !Sessao.FaltaSegundoFator(User))
@@ -96,6 +103,7 @@
             </main>
         </div>
     </div>
+    <script src="~/js/conta.js" asp-append-version="true" defer></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

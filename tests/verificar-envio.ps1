@@ -57,7 +57,7 @@ function Envio([string]$nome,[string]$csv,[bool]$assincrono,[string]$pagina = '/
             if (!$estado.loteId -or !$estado.concluido) { throw 'Análise não terminou no prazo.' }
             $resposta = Invoke-WebRequest ($urlTeste + '/Lote/' + $estado.loteId) -WebSession $sessao -SkipCertificateCheck
         }
-        if ($resposta.Content -notmatch '<h1>Resumo do lote ') { throw ('Envio não abriu o resultado: ' + $resposta.BaseResponse.RequestMessage.RequestUri.PathAndQuery) }
+        if ($resposta.Content -notmatch 'data-painel-executivo') { throw ('Envio não abriu o resultado: ' + $resposta.BaseResponse.RequestMessage.RequestUri.PathAndQuery) }
         Write-Output ('OK: ' + $nome + ' / segundo plano=' + $assincrono + ' / origem=' + $pagina)
     } finally { $corpo.Dispose() }
 }

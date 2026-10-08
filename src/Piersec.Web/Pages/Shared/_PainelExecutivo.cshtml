@@ -1,0 +1,217 @@
+@model LoteModel
+@using Piersec.Core.Analise
+@using System.Globalization
+@{
+    var lote = Model.Lote;
+    var tecnico = Sessao.PodeEnviar(User);
+    var av = lote.Avaliacao;
+    var fuso = Piersec.Core.Padronizacao.NormalizadorDatas.FusoBrasilia;
+    string Nota(double? valor) => valor is { } v ? Math.Round(v).ToString("0") : "—";
+    string Faixa(string faixa) => Piersec.Core.Padronizacao.Texto.NormalizarChave(faixa);
+    string? Oculta(string id) => Model.SecaoAtual == id ? null : "hidden";
+    string N(double numero) => numero.ToString("0.##", CultureInfo.InvariantCulture);
+}
+@if (av is not null)
+{
+    var s = av.Score;
+    var fatorPrincipal = s.Fatores.Where(f => f.Valor is not null && f.Contribuicao > 0).OrderByDescending(f => f.Contribuicao).FirstOrDefault();
+    var parcelaPrincipal = s.Valor is > 0 && fatorPrincipal is not null ? fatorPrincipal.Contribuicao / s.Valor.Value * 100 : 0;
+    var primeiraAcao = av.Acoes.OrderBy(a => a.Ordem).FirstOrDefault();
+    <div class="painel-executivo" data-painel-executivo>
+        <nav class="exec-atalhos" aria-label="Seções do painel">
+            <div class="exec-abas" data-abas>
+                <a id="aba-panorama" href="@Url.Page("/Lote",new {id=lote.Id,secao="panorama"})#panorama" data-aba="panorama" aria-current="@(Model.SecaoAtual == "panorama" ? "page" : null)">Panorama</a>
+                <a id="aba-servicos" href="@Url.Page("/Lote",new {id=lote.Id,secao="servicos"})#servicos" data-aba="servicos" aria-current="@(Model.SecaoAtual == "servicos" ? "page" : null)">Serviços em risco</a>
+                <a id="aba-simulacao" href="@Url.Page("/Lote",new {id=lote.Id,secao="simulacao"})#simulacao" data-aba="simulacao" aria-current="@(Model.SecaoAtual == "simulacao" ? "page" : null)">Plano de ação</a>
+                <a id="aba-fontes" href="@Url.Page("/Lote",new {id=lote.Id,secao="fontes"})#fontes" data-aba="fontes" aria-current="@(Model.SecaoAtual == "fontes" ? "page" : null)">Saúde das fontes</a>
+                @if (tecnico) { <a id="aba-visao-tecnica" href="@Url.Page("/Lote",new {id=lote.Id,secao="visao-tecnica"})#visao-tecnica" data-aba="visao-tecnica" aria-current="@(Model.SecaoAtual == "visao-tecnica" ? "page" : null)">Evidências técnicas</a> }
+            </div>
+            <div class="exec-troca" hidden>
+                <button type="button" class="botao-discreto" data-etapa-anterior aria-label="Seção anterior">←</button>
+                <span class="meta" data-posicao aria-live="polite"></span>
+                <button type="button" class="botao-discreto" data-etapa-proxima aria-label="Próxima seção">→</button>
+            </div>
+            <button type="button" class="botao-discreto apresentar" data-apresentar hidden>Apresentar <span aria-hidden="true">⤢</span></button>
+        </nav>
+        <div class="exec-etapa" id="panorama" data-etapa hidden="@Oculta("panorama")" aria-labelledby="aba-panorama">
+            <div class="exec-negocio" aria-label="Resumo para decisão">
+                <section class="exec-negocio-card exec-prejuizo" data-resumo-prejuizo>
+                    <h2>Prejuízo potencial</h2>
+                    <p class="negocio-valor">@(lote.Impacto is { } impacto ? Formatar.FaixaDinheiro(impacto.Minimo, impacto.Maximo) : "Não estimado")</p>
+                    <p class="meta">Exposição financeira se os serviços em risco forem atingidos.</p>
+                    <a href="@Url.Page("/Lote",new {id=lote.Id,secao="servicos"})#servicos">Ver serviços e premissas →</a>
+                </section>
+                <section class="exec-negocio-card" data-resumo-gasto>
+                    <h2>Gasto para corrigir</h2>
+                    <p class="negocio-valor">A estimar</p>
+                    <p class="meta">O lote não informa orçamento de correção. Não significa custo zero.</p>
+                    @if (primeiraAcao is not null) { <p class="negocio-esforco">Primeira ação: esforço <strong>@LoteModel.NomeEsforco(primeiraAcao.Esforco)</strong></p> }
+                    <a href="@Url.Page("/Lote",new {id=lote.Id,secao="simulacao"})#simulacao">Consultar o plano →</a>
+                </section>
+                <section class="exec-negocio-card" data-resumo-causa>
+                    <h2>Principal causa de risco</h2>
+                    @if (parcelaPrincipal > 50 && fatorPrincipal is not null)
+                    {
+                        <p class="negocio-causa">@fatorPrincipal.Nome</p>
+                        <p class="meta"><strong>@parcelaPrincipal.ToString("0.#")%</strong> da nota atual vem deste fator medido.</p>
+                    }
+                    else if (s.Valor is > 0)
+                    {
+                        <p class="negocio-causa">Risco distribuído</p><p class="meta">Nenhum fator medido responde sozinho por mais da metade da nota.</p>
+                    }
+                    else
+                    {
+                        <p class="negocio-causa">@(s.Valor is null ? "Dados insuficientes" : "Sem fator dominante")</p><p class="meta">@(s.Valor is null ? "Não há informação suficiente para apontar a principal causa." : "Os fatores medidos não contribuíram para risco nesta análise. Confira a cobertura antes de concluir.")</p>
+                    }
+                    <a href="@Url.Page("/Lote",new {id=lote.Id,secao="panorama"})#titulo-fatores">Entender a composição →</a>
+                </section>
+                <section class="exec-negocio-card exec-resolver" data-resumo-solucao>
+                    <h2>Como arrumar</h2>
+                    @if (primeiraAcao is not null)
+                    {
+                        <p class="negocio-acao">@primeiraAcao.Titulo</p><p class="meta">@primeiraAcao.Impacto</p>
+                        <p class="negocio-prazo">Primeiro passo · até <strong>@Formatar.Qtd(primeiraAcao.PrazoDias,"dia","dias")</strong></p>
+                    }
+                    else
+                    {
+                        <p class="negocio-acao">Conferir a cobertura</p><p class="meta">Não há ação proposta com os dados disponíveis. Verifique as fontes antes de decidir.</p>
+                    }
+                    <a href="@Url.Page("/Lote",new {id=lote.Id,secao="simulacao"})#simulacao">Ver plano e simular →</a>
+                </section>
+            </div>
+            <p class="exec-premissa-financeira">Prejuízo potencial é uma faixa de referência do exercício, não perda comprovada. O gasto de correção precisa de orçamento próprio.</p>
+            <section class="exec-sintese exec-sintese-apoio" aria-labelledby="titulo-sintese">
+                <p class="exec-eyebrow" id="titulo-sintese">Situação em uma frase</p><p class="exec-mensagem">@av.FraseSituacao</p>
+            </section>
+            <div class="exec-apoio" aria-label="Contexto da análise">
+                <section class="faixa-@Faixa(s.Faixa)"><h2>Risco geral</h2><p><strong>@Nota(s.Valor)<small> / 100</small></strong><span class="faixa-risco">@s.Faixa</span></p><span class="meta">Quanto menor, melhor.</span></section>
+                <section><h2>Tendência</h2>
+                    @if (lote.Comparacao is { } comp)
+                    {
+                        <p class="@(comp.Diferenca >= .5 ? "tendencia-pior" : comp.Diferenca <= -.5 ? "tendencia-melhor" : "")"><strong>@(comp.Diferenca >= .5 ? "↗ +" : comp.Diferenca <= -.5 ? "↘ −" : "→ ")@Math.Round(Math.Abs(comp.Diferenca)).ToString("0")</strong></p><span class="meta">@Model.ContextoScore()</span>
+                    }
+                    else { <p><strong>Primeira análise</strong></p><span class="meta">Ainda sem lote anterior para comparar.</span> }
+                </section>
+                <section><h2>Confiança</h2><p><strong>@s.Confianca</strong><span>@s.PercentualMedido.ToString("0")% do peso medido</span></p><a href="@Url.Page("/Lote",new {id=lote.Id,secao="fontes"})#fontes">Ver cobertura das fontes →</a></section>
+            </div>
+            @if (Model.AvisoConfianca is not null) { <p class="exec-limite"><svg class="icone" aria-hidden="true"><use href="#i-sev-alta"/></svg>@Model.AvisoConfianca</p> }
+            <details class="exec-mais-panorama"><summary>Ver composição e evolução do risco</summary><div class="exec-contexto exec-panorama-detalhes">
+                <section class="exec-painel" aria-labelledby="titulo-fatores">
+                    <div class="exec-titulo"><h2 id="titulo-fatores">O que pesa no risco</h2><span class="exec-eyebrow">Composição</span></div>
+                    @foreach (var fator in s.Fatores.OrderByDescending(f => f.Contribuicao))
+                    {
+                        <div class="exec-fator">
+                            <div><strong>@fator.Nome</strong><span>@(fator.Valor is null ? "Não medido" : fator.Contribuicao.ToString("0.#"))</span></div>
+                            @if (fator.Valor is not null)
+                            {
+                                <svg class="exec-barra" viewBox="0 0 200 6" aria-hidden="true"><rect class="barra-fundo" width="200" height="6" rx="3"/><rect class="barra-valor" width="@N(Math.Clamp(fator.Contribuicao,0,100)*2)" height="6" rx="3"/></svg>
+                            }
+                            <details><summary>Como foi medido</summary><p class="meta">@fator.Explicacao</p></details>
+                        </div>
+                    }
+                    <p class="meta exec-nota">As parcelas medidas formam a nota geral. Itens sem dados ficam fora da conta e reduzem a confiança.</p>
+                </section>
+                <section class="exec-painel" aria-labelledby="titulo-historico">
+                    <div class="exec-titulo"><h2 id="titulo-historico">Evolução do risco</h2><span class="exec-eyebrow">Até 6 análises</span></div>
+                    @if (Model.Historico.Count > 1)
+                    {
+                        <svg class="exec-historico" viewBox="0 0 400 185" role="img" aria-labelledby="hist-titulo hist-desc">
+                            <title id="hist-titulo">Histórico do score, de 0 a 100</title><desc id="hist-desc">Quanto menor, melhor. Cada barra abre a análise daquela data.</desc>
+                            <path class="hist-grade" d="M30 25H390 M30 85H390 M30 145H390"/><text class="hist-eixo" x="0" y="29">100</text><text class="hist-eixo" x="8" y="89">50</text><text class="hist-eixo" x="16" y="149">0</text>
+                            @for (var i = 0; i < Model.Historico.Count; i++)
+                            {
+                                var item = Model.Historico[i]; var x = 42 + i * 58; var altura = Math.Clamp(item.Score ?? 0,0,100)*1.2;
+                                <a href="/Lote/@item.Id" aria-label="Análise de @Formatar.DataHora(item.CriadoEmUtc,fuso): @(item.Score is null ? "sem medição" : Nota(item.Score) + " de 100")">
+                                    <rect class="hist-barra @(item.Id == lote.Id ? "hist-atual" : "")" x="@x" y="@N(145-altura)" width="34" height="@N(Math.Max(altura,1))" rx="3"/>
+                                    <text class="hist-valor" x="@(x+17)" y="@N(135-altura)" text-anchor="middle">@Nota(item.Score)</text>
+                                    <text class="hist-data" x="@(x+17)" y="166" text-anchor="middle">@TimeZoneInfo.ConvertTime(item.CriadoEmUtc,fuso).ToString("dd/MM")</text>
+                                </a>
+                            }
+                        </svg>
+                        <details class="historico-tabela"><summary>Ver datas e valores</summary><ul>@foreach (var item in Model.Historico) { <li><a href="/Lote/@item.Id">@Formatar.DataHora(item.CriadoEmUtc,fuso)</a>: @Nota(item.Score) / 100</li> }</ul></details>
+                    }
+                    else { <p class="vazio">O histórico começa aqui.</p><p class="meta">Envie uma nova análise para acompanhar a evolução.</p> }
+                    @if (lote.Comparacao is { } comparacao) { <p class="exec-nota">@comparacao.Motivo.</p> }
+                    <p class="meta exec-nota">As fontes e os ambientes podem variar entre lotes. Compare também a cobertura.</p>
+                </section>
+
+            </div></details>
+        </div>
+        <div class="exec-etapa" id="servicos" data-etapa hidden="@Oculta("servicos")" aria-labelledby="aba-servicos">
+                <section class="exec-painel" aria-labelledby="titulo-servicos">
+                    <div class="exec-titulo"><div><p class="exec-eyebrow">Impacto no negócio</p><h2 id="titulo-servicos">Onde estamos mais expostos</h2></div><span class="exec-contagem">@Formatar.Qtd(lote.Servicos.Count(sv => sv.EmRisco),"serviço em risco","serviços em risco")</span></div>
+                    @if (lote.Servicos.Count == 0) { <p class="vazio">Não há dados suficientes para avaliar os serviços.</p> }
+                    @foreach (var servico in lote.Servicos)
+                    {
+                        <details class="exec-servico">
+                            <summary><span><strong>@servico.Nome</strong><span class="meta">@Formatar.Qtd(servico.MaquinasComFalhaGrave,"máquina com falha grave","máquinas com falha grave") · @Formatar.Qtd(servico.AlertasRelevantes,"alerta relevante","alertas relevantes")</span></span><span class="faixa-risco faixa-@Faixa(servico.Faixa)">@servico.Faixa</span><span class="servico-impacto">@(servico.Impacto is { } valor ? Formatar.FaixaDinheiro(valor.Minimo,valor.Maximo) : "Sem estimativa")<small>se for atingido</small></span><span class="servico-expandir" aria-hidden="true">⌄</span></summary>
+                            <div class="servico-prova"><p><strong>Base desta conclusão:</strong> @Formatar.Qtd(servico.Eventos,"registro analisado","registros analisados") em @Formatar.Qtd(servico.Maquinas,"máquina","máquinas"). A faixa combina as falhas e os alertas disponíveis para o serviço.</p><p class="meta">Premissa: a ligação entre máquina e serviço foi deduzida pelo nome e pelo tipo da máquina.</p>
+                            @if (servico.Impacto is { } premissa) { <p class="meta">Faixa financeira: @premissa.Premissa</p> }
+                            @if (tecnico) { <a href="@Links.Eventos(lote.Id,new Piersec.Core.Consulta.FiltroEventos { Servico = servico.Id })">Conferir os eventos de origem →</a> }
+                            </div>
+                        </details>
+                    }
+                    <p class="meta exec-nota">Valores de referência do exercício, não perdas comprovadas da empresa. Abra um serviço para ver a base e as premissas.</p>
+                    @if (lote.Servicos.Any(sv => sv.EmRisco && sv.Impacto is null)) { <p class="exec-limite">Há serviço em risco sem faixa financeira. O total estimado é parcial.</p> }
+                </section>
+
+        </div>
+        <div class="exec-etapa" id="simulacao" data-etapa hidden="@Oculta("simulacao")" aria-labelledby="aba-simulacao">
+            <div class="exec-plano-grade"><div class="exec-principal">
+                <section class="exec-painel" aria-labelledby="titulo-plano">
+                    <div class="exec-titulo"><div><p class="exec-eyebrow">Escolha o próximo passo</p><h2 id="titulo-plano">E se corrigirmos?</h2></div><span class="exec-contagem">Simulação</span></div>
+                    <p class="meta">Marque as correções para recalcular o risco. Nenhuma mudança é executada.</p>
+                    <form method="get" asp-page="/Lote" asp-route-id="@lote.Id" asp-page-handler="" asp-fragment="simulacao" id="form-simulacao" data-url="@Url.Page("/Lote","Simular",new { id = lote.Id })">
+                        <input type="hidden" name="simular" value="true"><input type="hidden" name="Secao" value="simulacao">
+                        @foreach (var acao in av.Acoes)
+                        {
+                            var simulavel = SimuladorRemediacao.PodeSimular(acao);
+                            <div class="exec-acao">
+                                @if (simulavel) { <input type="checkbox" id="acao-@acao.Ordem" name="acoesSelecionadas" value="@acao.Ordem" checked="@(Model.Selecionadas.Contains(acao.Ordem) ? "checked" : null)"> }
+                                else { <svg class="icone meta" aria-hidden="true"><use href="#i-lista"/></svg> }
+                                <div class="acao-conteudo">
+                                    @if (simulavel) { <label for="acao-@acao.Ordem">@acao.Titulo</label> } else { <strong>@acao.Titulo</strong> }
+                                    <p>@acao.Impacto</p><p class="meta">Esforço @LoteModel.NomeEsforco(acao.Esforco) · até @Formatar.Qtd(acao.PrazoDias,"dia","dias") · @acao.Quadrante</p>
+                                    <details><summary>Como realizar</summary><p>@acao.ComoFazer</p>@if (tecnico && acao.EventoIds.Count > 0) { <a href="@Links.Eventos(lote.Id,new Piersec.Core.Consulta.FiltroEventos { Acao = acao.Ordem })">Ver falhas relacionadas →</a> }</details>
+                                </div>
+                            </div>
+                        }
+                        @if (av.Acoes.Count == 0) { <p class="vazio">Nenhuma ação de correção foi proposta com os dados disponíveis.</p> }
+                        <div class="simulacao-comandos"><button type="submit">Recalcular cenário</button><a href="/Lote/@lote.Id#simulacao" data-limpar-simulacao>Limpar seleção</a></div>
+                    </form>
+                    <div class="exec-projecao" id="resultado-simulacao" aria-live="polite" aria-atomic="true">
+                        <div><span class="exec-rotulo">Risco atual</span><strong>@Nota(s.Valor)</strong><span>@s.Faixa</span></div><span class="projecao-seta" aria-hidden="true">→</span><div><span class="exec-rotulo">Cenário simulado</span><strong data-score-simulado>@(Model.ErroSimulacao is not null ? "—" : Nota(Model.Simulacao?.Score.Valor ?? s.Valor))</strong><span data-faixa-simulada>@(Model.ErroSimulacao is not null ? "Não atualizado" : Model.Simulacao?.Score.Faixa ?? s.Faixa)</span></div>
+                        <p data-resumo-simulado>@(Model.Simulacao is { } sim ? LoteModel.ResumoSimulacao(sim) : "Selecione as correções disponíveis.")</p>
+                        <p class="erro" data-erro-simulacao hidden="@(Model.ErroSimulacao is null ? "hidden" : null)">@Model.ErroSimulacao</p>
+                    </div>
+                    <p class="meta exec-nota">Projeção com as mesmas fontes e máquinas. Investigar alertas ou medir novos fatores não garante redução de risco e não entra como correção. A faixa financeira acima continua sendo uma premissa, não uma economia garantida.</p>
+                </section>
+        @if (av.Riscos.Count > 0)
+        {
+            <section class="exec-painel exec-riscos" aria-labelledby="titulo-riscos"><div class="exec-titulo"><div><p class="exec-eyebrow">Pontos de atenção</p><h2 id="titulo-riscos">O que exige uma decisão</h2></div></div>
+            @foreach (var risco in av.Riscos) { <details><summary>@Visual.Selo(risco.Severidade)<strong>@risco.Titulo</strong><span aria-hidden="true">＋</span></summary><p>@risco.OQueE</p><p><strong>Por que importa:</strong> @risco.PorQueImporta</p><p><strong>Como resolver:</strong> @risco.ComoResolver</p>@if(tecnico && risco.CorrelacaoIds.Count > 0) { <a href="@Links.Eventos(lote.Id,new Piersec.Core.Consulta.FiltroEventos { Correlacao = string.Join(",",risco.CorrelacaoIds) })">Conferir evidências →</a> }</details> }
+            @if (Model.FraseAchados is not null) { <p class="exec-nota">@Model.FraseAchados</p> }
+            </section>
+        }
+
+            </div><aside class="exec-contexto" aria-label="Decisões da operação">
+                <section class="exec-painel exec-decisao">
+                    <p class="exec-eyebrow">Operação simulada</p><h2>Decisões pendentes</h2><p class="exec-valor">@Model.Aguardando.Count</p>
+                    @if (lote.Operacao is { } op) { <details class="exec-operacao"><summary>O que ocorreu neste lote</summary><p class="meta">Nível @op.Nivel: @op.DescricaoNivel</p><p class="meta">@(op.Ensaio ? "Abriria sem pessoa" : "Abriu sem pessoa"): @Formatar.Qtd(op.Sozinho,"chamado simulado","chamados simulados") · @Formatar.Qtd(op.Contar(Piersec.Core.Operacao.ResultadoItem.FechouSozinho),"fechado","fechados") · @Formatar.Qtd(op.Contar(Piersec.Core.Operacao.ResultadoItem.JaExistia),"já existia","já existiam").</p>@if(op.Ensaio) { <p class="meta">Modo ensaio: nada foi gravado.</p> }@if(!op.LoteValidado) { <p class="exec-limite">Lote não validado: nada foi feito sozinho.</p> }</details> }
+                    <p class="meta">@(Model.Aguardando.Count == 0 ? "Nenhuma aprovação esperando uma pessoa." : "A equipe precisa avaliar as ações propostas.")</p><a href="/Automacao">Abrir Automação →</a>
+                </section>
+
+            </aside></div>
+        </div>
+        <div class="exec-etapa" id="fontes" data-etapa hidden="@Oculta("fontes")" aria-labelledby="aba-fontes">
+        <section class="exec-painel exec-fontes" aria-labelledby="titulo-fontes"><div class="exec-titulo"><div><p class="exec-eyebrow">Qualidade da informação</p><h2 id="titulo-fontes">Saúde das fontes</h2></div><span class="exec-contagem">@Formatar.Qtd(lote.Arquivos.Count(a => a.Fonte is not null),"arquivo reconhecido","arquivos reconhecidos") de @lote.Arquivos.Count</span></div>
+            <div class="fontes-grade">@foreach (var arquivo in lote.Arquivos) { <div class="fonte-item"><strong>@(arquivo.Fonte ?? "Fonte não reconhecida")</strong><span class="meta fonte-nome">@arquivo.Nome</span><span class="@(arquivo.Fonte is null ? "erro" : arquivo.RegistrosLidos == 0 || arquivo.RegistrosRejeitados > 0 || arquivo.Lacunas > 0 ? "fonte-atencao" : "fonte-ok")">@(arquivo.Fonte is null ? "Não processado" : arquivo.RegistrosLidos == 0 ? "Sem registros" : arquivo.RegistrosRejeitados > 0 || arquivo.Lacunas > 0 ? "Lido com ressalvas" : "Leitura concluída")</span><p class="meta">@Formatar.Qtd(arquivo.RegistrosLidos,"registro lido","registros lidos") · @Formatar.Qtd(arquivo.RegistrosRejeitados,"rejeitado","rejeitados")</p>@if(arquivo.MotivoNaoProcessado is not null){<p>@arquivo.MotivoNaoProcessado</p>}</div> }</div>
+            @foreach (var aviso in lote.FontesAusentes.Concat(lote.AvisosAmbiente)) { <p class="exec-limite">⚠ @aviso</p> }
+            <p class="meta exec-nota">Confiança @s.Confianca: @s.PercentualMedido.ToString("0")% do peso previsto foi medido. Informações ausentes continuam fora da avaliação.</p>
+        </section>
+        <details class="exec-painel exec-glossario"><summary>Entenda os termos do painel</summary><dl><dt>Score de risco</dt><dd>Indicador de 0 a 100. Quanto maior, maior o risco identificado nas fontes analisadas.</dd><dt>Confiança</dt><dd>Quanto da avaliação pôde ser sustentado pelos dados disponíveis. Não é a probabilidade de um ataque acontecer.</dd><dt>Prejuízo potencial</dt><dd>Faixa de referência para o impacto de um incidente. Não é uma perda confirmada ou um valor contábil da empresa.</dd><dt>Simulação</dt><dd>Recalcula um cenário supondo que as correções escolhidas foram concluídas. Não altera máquinas, chamados ou análises salvas.</dd></dl></details>
+
+        </div>
+    </div>
+}
+else { <section class="estado-vazio"><h2>Não foi possível medir o risco deste lote.</h2><p>Confira as fontes disponíveis antes de tomar uma decisão.</p></section> }
