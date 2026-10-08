@@ -200,7 +200,12 @@ O briefing completo está em **`docs/PROMPT.md`** — leia antes de qualquer tar
 - Como funciona: a página define `ViewData["Entrada"]` e o `_Layout` acrescenta `conteudo-entrada` ao `<main>`;
   o CSS novo fica no fim de `site.css`. Para dar o mesmo visual a outra tela de acesso, basta o `ViewData`.
 - Evidência: 289 testes aprovados, 0 falhas; prints de uma instância temporária com pasta de dados separada, já encerrada.
-- **Falta, nesta ordem:** 1) mesmo visual em Trocar senha e Código de duas etapas; 2) MITRE ATT&CK (único item
+- Mesmo visual aplicado a **/TrocarSenha** e **/SegundoFator** (08/10/2026). A centralização usa `.principal-entrada`
+  (flex) + `.conteudo-entrada` (`flex: 1`), para o cartão se centralizar no espaço que sobra quando há faixa de aviso
+  no topo — é o caso da troca de senha obrigatória. `TrocarSenha` ganhou destino explícito (`asp-page`), como manda P-013.
+  Ponta a ponta com usuários fictícios: troca de senha concluída pelo formulário novo; 2FA ativado, logout, login e
+  código conferido na tela nova; os 3 formulários com token anti-CSRF. 289 testes aprovados.
+- **Falta, nesta ordem:** 1) MITRE ATT&CK (único item
   obrigatório ainda em aberto: `"mitre": []` em `regras/frameworks.json` e `regras/correlacao.json`);
   3) custo para corrigir e "tempo até doer"; 4) relatório mais técnico e mais bonito (HTML/PDF).
 - Análise do easter egg da organização (`qqdiz.com.br/bash.html`): os documentos escondidos confirmam os pesos do manual

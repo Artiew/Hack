@@ -605,10 +605,11 @@ body[data-apresentacao] .exec-tecnico:not([hidden]) { display: block; }
     .conta-menu { padding-top: 8px; }
 }
 /* ---------- tela de acesso (/Entrar): centralizada na janela, cartão maior ---------- */
+.principal-entrada { display: flex; flex-direction: column; }
 .conteudo-entrada {
     display: grid;
     place-items: center;
-    min-height: 100vh;
+    flex: 1 1 auto;   /* ocupa o que sobra quando ha faixa de aviso no topo (ex.: troca de senha obrigatoria) */
     max-width: none;
     padding: 32px 20px;
 }
@@ -634,11 +635,13 @@ body[data-apresentacao] .exec-tecnico:not([hidden]) { display: block; }
 .entrada .formulario input { padding: 14px 16px; font-size: 18px; border-radius: 8px; }
 .entrada .formulario button { margin-top: 26px; width: 100%; padding: 15px 20px; font-size: 18px; }
 
+.entrada .formulario .ajuda-campo { margin: 6px 0 0; font-size: 13.5px; }
 .entrada .aviso-forte, .entrada .erro { margin: 0 0 18px; font-size: 15px; }
+.entrada-saida { text-align: center; margin: 18px 0 0; }
 .entrada-rodape { text-align: center; color: var(--suave); font-size: 13px; margin: 24px 0 0; }
 
 @media (max-width: 560px) {
-    .conteudo-entrada { padding: 24px 16px; min-height: auto; }
+    .conteudo-entrada { padding: 24px 16px; }
     .entrada-cartao { padding: 26px 20px; }
     .entrada-cartao h1 { font-size: 25px; }
 }

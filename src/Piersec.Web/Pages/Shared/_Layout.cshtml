@@ -11,6 +11,8 @@
     var emVisaoGeral = !emAchados && (caminho == "/" || caminho.StartsWith("/Lote/", StringComparison.OrdinalIgnoreCase));
     // Item ativo do menu: aria-current="page" (leitor de tela) + destaque de navegação (CSS).
     string? Ativo(string prefixo) => caminho.StartsWith(prefixo, StringComparison.OrdinalIgnoreCase) ? "page" : null;
+    // Telas de acesso (Entrar, Trocar senha, Código de verificação): cartão centralizado na janela.
+    var entrada = ViewData["Entrada"] is not null;
 }
 <head>
     <meta charset="utf-8">
@@ -82,7 +84,7 @@
                 </div>
             </aside>
         }
-        <div class="principal">
+        <div class="principal @(entrada ? "principal-entrada" : null)">
             @if (logado)
             {
                 <header class="topo">
@@ -98,8 +100,7 @@
                     </form>
                 </header>
             }
-            @* Telas de acesso (ex.: /Entrar) pedem ViewData["Entrada"] para ficarem centralizadas na janela. *@
-            <main id="conteudo" class="conteudo @(ViewData["Entrada"] is not null ? "conteudo-entrada" : null)" tabindex="-1">
+            <main id="conteudo" class="conteudo @(entrada ? "conteudo-entrada" : null)" tabindex="-1">
                 @RenderBody()
             </main>
         </div>

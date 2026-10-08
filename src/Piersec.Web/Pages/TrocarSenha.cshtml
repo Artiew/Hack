@@ -2,31 +2,44 @@
 @model TrocarSenhaModel
 @{
     ViewData["Title"] = "Trocar senha";
+    ViewData["Entrada"] = true; // centraliza a tela na janela (ver .conteudo-entrada no site.css)
 }
 
-<div class="estreito">
-    <h1>Trocar senha</h1>
-    @if (Model.Obrigatoria)
-    {
-        <p class="aviso-forte" role="alert">Primeiro acesso: troque a senha inicial antes de continuar.</p>
-    }
-    <p class="meta">
-        A nova senha precisa ter pelo menos @ServicoAutenticacao.TamanhoMinimoNovaSenha caracteres, com letras e também números ou símbolos,
-        ser diferente da atual e não conter o nome de usuário.
-    </p>
+<div class="entrada">
+    <div class="entrada-marca">
+        <svg aria-hidden="true"><use href="#i-chave"/></svg>
+        <span>
+            <strong>Plataforma de risco</strong>
+            <span>Piersec · Semana de TI 2026</span>
+        </span>
+    </div>
 
-    @if (Model.Erro is not null)
-    {
-        <p class="erro" role="alert">@Model.Erro</p>
-    }
+    <div class="cartao entrada-cartao">
+        <h1>Trocar senha</h1>
+        @if (Model.Obrigatoria)
+        {
+            <p class="aviso-forte" role="alert">Primeiro acesso: troque a senha inicial antes de continuar.</p>
+        }
+        <p class="meta">
+            A nova senha precisa ter pelo menos @ServicoAutenticacao.TamanhoMinimoNovaSenha caracteres, com letras e também números ou símbolos,
+            ser diferente da atual e não conter o nome de usuário.
+        </p>
 
-    <form method="post" class="cartao formulario">
-        <label for="atual">Senha atual</label>
-        <input id="atual" name="Atual" type="password" autocomplete="current-password" required maxlength="128">
-        <label for="nova">Nova senha</label>
-        <input id="nova" name="Nova" type="password" autocomplete="new-password" required minlength="@ServicoAutenticacao.TamanhoMinimoNovaSenha" maxlength="128">
-        <label for="confirmacao">Repita a nova senha</label>
-        <input id="confirmacao" name="Confirmacao" type="password" autocomplete="new-password" required maxlength="128">
-        <button type="submit">Trocar senha</button>
-    </form>
+        @if (Model.Erro is not null)
+        {
+            <p class="erro" role="alert">@Model.Erro</p>
+        }
+
+        <form method="post" asp-page="/TrocarSenha" class="formulario">
+            <label for="atual">Senha atual</label>
+            <input id="atual" name="Atual" type="password" autocomplete="current-password" required maxlength="128" autofocus>
+            <label for="nova">Nova senha</label>
+            <input id="nova" name="Nova" type="password" autocomplete="new-password" required minlength="@ServicoAutenticacao.TamanhoMinimoNovaSenha" maxlength="128">
+            <label for="confirmacao">Repita a nova senha</label>
+            <input id="confirmacao" name="Confirmacao" type="password" autocomplete="new-password" required maxlength="128">
+            <button type="submit">Trocar senha</button>
+        </form>
+    </div>
+
+    <p class="entrada-rodape">Protótipo · dados sintéticos · tudo local</p>
 </div>

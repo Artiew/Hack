@@ -2,27 +2,41 @@
 @model SegundoFatorModel
 @{
     ViewData["Title"] = "Código de verificação";
+    ViewData["Entrada"] = true; // centraliza a tela na janela (ver .conteudo-entrada no site.css)
 }
 
-<div class="estreito">
-    <h1>Código de verificação</h1>
-    <p class="meta">Abra o app de autenticação no celular (Google Authenticator, Microsoft Authenticator…) e digite o código de 6 dígitos
-        da <strong>Piersec</strong>. Sem o celular? Use um dos códigos de recuperação que você guardou.</p>
+<div class="entrada">
+    <div class="entrada-marca">
+        <svg aria-hidden="true"><use href="#i-escudo"/></svg>
+        <span>
+            <strong>Plataforma de risco</strong>
+            <span>Piersec · Semana de TI 2026</span>
+        </span>
+    </div>
 
-    @if (Model.Erro is not null)
-    {
-        <p id="erro-codigo" class="erro" role="alert">@Model.Erro</p>
-    }
+    <div class="cartao entrada-cartao">
+        <h1>Código de verificação</h1>
+        <p class="meta">Abra o app de autenticação no celular (Google Authenticator, Microsoft Authenticator…) e digite o código de 6 dígitos
+            da <strong>Piersec</strong>. Sem o celular? Use um dos códigos de recuperação que você guardou.</p>
 
-    <form method="post" asp-page="/SegundoFator" class="cartao formulario" novalidate>
-        <input type="hidden" name="ReturnUrl" value="@Model.ReturnUrl">
-        <label for="codigo">Código</label>
-        <input id="codigo" name="Codigo" autocomplete="one-time-code" inputmode="text" required maxlength="20" autofocus
-               placeholder="Digite o código do aplicativo" aria-describedby="ajuda-codigo@(Model.Erro is not null ? " erro-codigo" : "")" aria-invalid="@(Model.Erro is not null ? "true" : "false")">
-        <p id="ajuda-codigo" class="meta">O código aparece no aplicativo do celular. Digite-o acima; este botão apenas confere o código informado.</p>
-        <button type="submit">Confirmar</button>
-    </form>
-    <form method="post" asp-page="/Sair" class="em-linha">
+        @if (Model.Erro is not null)
+        {
+            <p id="erro-codigo" class="erro" role="alert">@Model.Erro</p>
+        }
+
+        <form method="post" asp-page="/SegundoFator" class="formulario" novalidate>
+            <input type="hidden" name="ReturnUrl" value="@Model.ReturnUrl">
+            <label for="codigo">Código</label>
+            <input id="codigo" name="Codigo" autocomplete="one-time-code" inputmode="text" required maxlength="20" autofocus
+                   placeholder="Digite o código do aplicativo" aria-describedby="ajuda-codigo@(Model.Erro is not null ? " erro-codigo" : "")" aria-invalid="@(Model.Erro is not null ? "true" : "false")">
+            <p id="ajuda-codigo" class="meta ajuda-campo">O código aparece no aplicativo do celular. Digite-o acima; este botão apenas confere o código informado.</p>
+            <button type="submit">Confirmar</button>
+        </form>
+    </div>
+
+    <form method="post" asp-page="/Sair" class="entrada-saida">
         <button type="submit" class="botao-discreto">Cancelar e voltar ao login</button>
     </form>
+
+    <p class="entrada-rodape">Protótipo · dados sintéticos · tudo local</p>
 </div>
