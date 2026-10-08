@@ -10,9 +10,9 @@
     <p class="meta">Além da senha, o login pede um código de 6 dígitos que o app do celular gera a cada 30 segundos.
         Quem descobrir a sua senha não entra sem o seu celular. Tudo funciona sem internet: o site e o app calculam o código sozinhos.</p>
 
-    @if (Sessao.PrecisaConfigurar2fa(User))
+    @if (Sessao.PrecisaConfigurar2fa(User) && !u.Tem2fa)
     {
-        <p class="aviso-forte" role="alert">Administradores precisam ativar a verificação em duas etapas antes de continuar.</p>
+        <p class="aviso-forte" role="alert">Falta concluir o cadastro do seu administrador. Leia o QR code abaixo com o aplicativo de autenticação, digite o código de 6 dígitos e clique em Ativar. Depois, guarde os códigos de recuperação e clique em Já guardei, continuar para liberar as outras páginas.</p>
     }
     @if (Model.Erro is not null)
     {

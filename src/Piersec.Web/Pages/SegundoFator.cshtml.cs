@@ -22,6 +22,14 @@ public sealed class SegundoFatorModel(ServicoAutenticacao servico, RepositorioUs
         if (await ForaDaEtapa() is { } fora)
             return fora;
 
+        // O formulário deixa a validação de presença no servidor para sempre mostrar uma mensagem na página.
+        // Campo vazio não é uma tentativa de adivinhar o código e não deve bloquear a conta.
+        if (string.IsNullOrWhiteSpace(Codigo))
+        {
+            Erro = "Digite o código de 6 dígitos do aplicativo ou um código de recuperação antes de confirmar.";
+            return Page();
+        }
+
         var login = User.Identity!.Name!;
         var tentativa = servico.ConfirmarSegundoFator(login, Codigo);
         Codigo = null;

@@ -45,9 +45,14 @@ public static class Sessao
             new(ClaimFalta2fa, (agora + PrazoSegundoFator).ToUnixTimeSeconds().ToString(System.Globalization.CultureInfo.InvariantCulture)),
         ]);
 
-    private static Task Gravar(HttpContext contexto, List<Claim> claims) =>
-        contexto.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme,
-            new ClaimsPrincipal(new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme)));
+    private static async Task Gravar(HttpContext contexto, List<Claim> claims)
+    {
+        var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme));
+        await contexto.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+        // A resposta pode renderizar formulários logo após mudar a etapa do login (ativação do 2FA).
+        // Seus tokens precisam usar a mesma identidade que acabou de ser gravada no cookie.
+        contexto.User = principal;
+    }
 
     public static Task SairAsync(HttpContext contexto) =>
         contexto.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);

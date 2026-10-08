@@ -11,14 +11,15 @@
 
     @if (Model.Erro is not null)
     {
-        <p class="erro" role="alert">@Model.Erro</p>
+        <p id="erro-codigo" class="erro" role="alert">@Model.Erro</p>
     }
 
-    <form method="post" asp-page="/SegundoFator" class="cartao formulario">
+    <form method="post" asp-page="/SegundoFator" class="cartao formulario" novalidate>
         <input type="hidden" name="ReturnUrl" value="@Model.ReturnUrl">
         <label for="codigo">Código</label>
         <input id="codigo" name="Codigo" autocomplete="one-time-code" inputmode="text" required maxlength="20" autofocus
-               placeholder="123456 ou abcde-fghij">
+               placeholder="Digite o código do aplicativo" aria-describedby="ajuda-codigo@(Model.Erro is not null ? " erro-codigo" : "")" aria-invalid="@(Model.Erro is not null ? "true" : "false")">
+        <p id="ajuda-codigo" class="meta">O código aparece no aplicativo do celular. Digite-o acima; este botão apenas confere o código informado.</p>
         <button type="submit">Confirmar</button>
     </form>
     <form method="post" asp-page="/Sair" class="em-linha">

@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 @{
-    // Quem só passou da senha (falta o código do 2FA) ainda não entrou: sem menu, sem nome no topo.
-    var logado = User.Identity?.IsAuthenticated == true && !Sessao.FaltaSegundoFator(User);
+    // Só oferecer a navegação quando todas as etapas obrigatórias de acesso estiverem concluídas.
+    var logado = User.Identity?.IsAuthenticated == true && !Sessao.FaltaSegundoFator(User)
+        && !Sessao.PrecisaTrocarSenha(User) && !Sessao.PrecisaConfigurar2fa(User);
     var caminho = Context.Request.Path.Value ?? "/";
     var tecnico = logado && Sessao.PodeEnviar(User);
     var papel = User.IsInRole(Papeis.Admin) ? Papeis.Admin : User.IsInRole(Papeis.Analista) ? Papeis.Analista : Papeis.Executivo;
@@ -79,6 +80,15 @@
                             <button type="submit" class="botao-discreto"><svg class="icone"><use href="#i-sair"/></svg>Sair</button>
                         </form>
                     </div>
+                </header>
+            }
+            @if (!logado && User.Identity?.IsAuthenticated == true && !Sessao.FaltaSegundoFator(User))
+            {
+                <header class="topo">
+                    <span>Conclua @(Sessao.PrecisaTrocarSenha(User) ? "a troca de senha" : "o cadastro da verificação em duas etapas") para acessar a plataforma.</span>
+                    <form method="post" asp-page="/Sair" class="em-linha">
+                        <button type="submit" class="botao-discreto">Sair e voltar ao login</button>
+                    </form>
                 </header>
             }
             <main id="conteudo" class="conteudo" tabindex="-1">
