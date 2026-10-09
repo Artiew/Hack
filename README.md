@@ -1,79 +1,99 @@
-# Plataforma de risco — Hackathon Piersec 2026
+# ARV Security — Hackathon Piersec 2026
 
-Protótipo que recebe CSVs de ferramentas de segurança, padroniza os dados, classifica a severidade com justificativa,
-correlaciona eventos, calcula um score de risco de 0 a 100, monta um plano de ação e gera sozinho um relatório
-executivo (HTML e PDF) cuja primeira página é escrita para quem não é da área. Uma operação automática (simulada) abre
-chamados sozinha dentro de travas e deixa o resto numa fila de aprovação humana.
-**Estado atual: Fase 6** (score, plano, relatório para leigo, validação, login, operação automática simulada, serviços e prejuízo em faixas, visão técnica com rastro até a linha do CSV e "discordar da severidade"). O que está provado fica em
-[`docs/REQUISITOS.md`](docs/REQUISITOS.md); o que sabemos dos dados, em [`docs/FONTES.md`](docs/FONTES.md).
+Plataforma local que recebe CSVs de segurança, padroniza registros, classifica severidade com justificativa,
+correlaciona eventos, calcula score de risco e gera relatórios executivo e técnico em HTML e PDF.
+A operação automática registra chamados e prepara planos **simulados**, com aprovação humana conforme as regras.
 
-> Uso restrito ao ambiente do hackathon. Não publique este repositório: os dados do desafio não podem sair da máquina.
+Os dados do desafio, relatórios gerados, contas e chaves ficam somente na máquina e não acompanham o código da entrega.
 
-## Como rodar
+## Como iniciar
 
-Requisitos: Windows, [SDK do .NET 10](https://dot.net) e Microsoft Edge ou Google Chrome (usado para gerar o PDF).
+Requisitos: Windows, SDK do .NET 10 compatível com `global.json` (10.0.401 ou versão permitida por essa configuração)
+e Microsoft Edge ou Google Chrome para gerar os PDFs.
 
-**Jeito mais fácil:** dois cliques em **`Abrir Plataforma.cmd`**, na pasta do projeto. Esqueceu a senha do admin?
-Dois cliques em **`Esqueci a senha do admin.cmd`** (gera uma senha temporária, mostrada uma vez, com troca obrigatória).
-Dica: deixe o navegador salvar a senha ao entrar; ele guarda cifrada e preenche sozinho.
+Dois cliques em **Abrir Plataforma.cmd** compilam a solução, iniciam o site e abrem o navegador.
+Esse atalho pula a execução dos testes. Mantenha o terminal aberto enquanto usar o site.
 
-Pelo terminal (PowerShell, na pasta do projeto):
+Pelo PowerShell, na pasta do projeto:
+
 ```powershell
-.\rodar.ps1                        # compila, roda os testes, sobe o site e abre o navegador
-.\rodar.ps1 -DoZero                # o mesmo, apagando antes tudo de var\ (lotes, relatórios, usuários, auditoria, chaves)
-.\rodar.ps1 -RedefinirSenhaAdmin   # esqueceu a senha do admin
-```
-Se o PowerShell bloquear scripts, use `powershell -ExecutionPolicy Bypass -File .\rodar.ps1` com os mesmos parâmetros.
-
-O site fica em **https://localhost:5001**. Pelo terminal, se algum teste falhar, o site não sobe; os atalhos de dois cliques
-pulam os testes e abrem direto.
-
-**Primeiro acesso:** na primeira execução (ou depois de `-DoZero`) é criado o usuário `admin`. A senha inicial, de
-8 caracteres, aparece **uma única vez** no terminal (ou vem da variável `ADMIN_SENHA_INICIAL`, se tiver exatamente
-8 caracteres). No primeiro login a troca de senha é obrigatória. O admin cria os outros usuários em **Usuários**
-(papéis: admin, analista, executivo).
-
-**Verificação em duas etapas (2FA):** depois da senha, o login pede o código de 6 dígitos de um app de autenticação
-(Google ou Microsoft Authenticator). É **obrigatória para o admin** (logo depois de trocar a senha, o site mostra um QR
-code para cadastrar o app) e opcional para os outros, em **Duas etapas**, no topo da tela. Funciona sem internet. Ao
-ativar, o site mostra 8 códigos de recuperação, uma única vez: guarde-os. Admin sem celular e sem códigos:
-`Esqueci a senha do admin.cmd` gera uma senha temporária e desliga o 2FA, que deve ser cadastrado de novo.
-
-- **Dados do desafio:** coloque os CSVs em `dados/` (fora do git) e envie os três juntos pela tela.
-- **Sem os dados do desafio:** envie os arquivos de `exemplos/`. São **fictícios, criados por nós**, no mesmo formato das
-  fontes reais (inclusive linhas entre aspas e data com vírgula) e com erros de propósito (nota inválida, máquina em branco,
-  texto malicioso, coluna a mais, arquivo de fonte desconhecida).
-
-## Como está organizado
-
-```
-src/Piersec.Core/        regras de negócio, sem tela
-  Coleta/                leitor de CSV + um adaptador por fonte (IAdaptadorFonte)
-  Padronizacao/          datas → UTC, nomes de ativos, anonimização
-  Analise/               regras (JSON), severidade, correlação, tipo de máquina, score, plano de ação
-  Pipeline/              lote: coleta → padronização → severidade → correlação; ciclo completo
-  Armazenamento/         lotes salvos em var/lotes/{id}/
-  Operacao/              automação: gatilhos, decisão (travas), chamados simulados
-  Consulta/              filtros da visão técnica (número → eventos → linha do CSV)
-  Relatorio/             HTML do relatório e conversão para PDF pelo navegador
-src/Piersec.Web/         telas (ASP.NET Core Razor Pages)
-tests/Piersec.Tests/     testes automatizados (xUnit v3), sempre com dados fictícios
-regras/                  severidade, correlacao, frameworks, ativos, score, plano, automacao, servicos (.json; editáveis; validados ao subir)
-exemplos/                CSVs fictícios para demonstração
-dados/                   CSVs do desafio (fora do git)
-var/                     dados gerados (fora do git)
+.\rodar.ps1
 ```
 
-- **Nova fonte:** criar uma classe que implementa `IAdaptadorFonte` e registrá-la no `Program.cs`.
-- **Automação:** em `regras/automacao.json`, `nivelAutonomia` (0 = só sugere … 3 = mais autonomia), `modoEnsaio` (true =
-  mostra o que faria sem gravar) e `limiteAcoesPorDia`. Nada é enviado a outro sistema: o chamado é um arquivo na tela Automação.
-- **Ajustar uma regra:** editar `regras/*.json`. Se houver erro (tipo inexistente, parâmetro faltando, `{campo}` errado),
-  a plataforma não sobe e diz o que corrigir.
+Esse comando compila, executa os testes e inicia o site. Se o PowerShell bloquear scripts:
 
-## Variáveis de ambiente (opcionais)
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\rodar.ps1
+```
 
-| Variável | Para quê |
+Endereço: **https://localhost:5001**. Para conferir o certificado HTTPS de desenvolvimento:
+
+```powershell
+dotnet dev-certs https --trust
+```
+
+Se a plataforma já estiver aberta, o atalho abre o navegador para a instância existente.
+Para carregar alterações de código, encerre essa instância com Ctrl+C e inicie novamente.
+
+## Primeiro acesso e recuperação
+
+Na primeira execução é criado o usuário `admin` com uma senha aleatória de oito caracteres,
+mostrada uma vez no terminal, ou obtida da variável `ADMIN_SENHA_INICIAL` se ela tiver exatamente oito caracteres.
+A troca da senha e o cadastro da verificação em duas etapas são obrigatórios para administradores.
+
+O admin cria contas com os perfis admin, analista e executivo. O perfil executivo tem acesso à visão executiva;
+admin e analista também acessam o relatório técnico. O 2FA é opcional para os demais perfis.
+
+Guarde os códigos de recuperação em local privado. Se esquecer a senha do admin, encerre a plataforma e use
+**Esqueci a senha do admin.cmd**. Esse atalho gera uma senha temporária e desativa o fator antigo;
+será necessário trocar a senha e cadastrar o aplicativo novamente.
+
+O parâmetro `-DoZero` de `rodar.ps1` apaga o armazenamento local, inclusive lotes, usuários, auditoria e chaves.
+Não é necessário para iniciar normalmente.
+
+## Envio e limites da análise
+
+- Envie os CSVs autorizados pela tela **Visão geral**. Fontes suportadas: vulnerabilidades, alertas e inventário de exposição à internet.
+- Vários arquivos do mesmo tipo não representam várias fontes distintas. Uma correlação exige os vínculos previstos nas regras;
+  quando esses vínculos não existem, a plataforma informa a limitação. Correlação não comprova invasão.
+- O score varia de 0 a 100, sendo 100 o máximo risco no modelo. Fatores ausentes não viram zero;
+  a cobertura e a confiança indicam quanto foi possível medir. Score baixo com dados incompletos não comprova segurança completa.
+- Prejuízo e custo são faixas estimadas pelas premissas do exercício, não perdas comprovadas, orçamento aprovado ou economia garantida.
+- O simulador recalcula um cenário projetado; não altera máquinas. A operação não envia comandos a sistemas externos.
+- As verificações conferem consistência interna, não a veracidade das fontes. Relatórios reprovados são sinalizados;
+  suspeita de credencial no filtro final retém o conteúdo.
+- Lotes, relatórios e estado da operação são armazenados cifrados. Um PDF baixado precisa ser protegido por quem o guarda.
+
+## Arquivos necessários
+
+| Caminho | Finalidade |
 |---|---|
-| `ADMIN_SENHA_INICIAL` | Senha inicial do `admin` na primeira execução (exatamente 8 caracteres). Sem ela, é sorteada e mostrada no terminal. |
-| `PIERSEC_CHAVE_ANONIMIZACAO` | Chave (base64, ≥ 32 bytes) para anonimizar usuários. Sem ela, a chave é criada (cifrada) em `var/segredos/`. |
-| `PIERSEC_NAVEGADOR` | Caminho do Edge/Chrome, se não estiver no lugar padrão. |
+| `src/Piersec.Core/` | Coleta, padronização, avaliação, operação, validação e relatórios |
+| `src/Piersec.Web/` | Aplicação web, páginas e estilos |
+| `regras/` | Configurações de severidade, score, plano, custos, correlação, fontes e automação |
+| `tests/Piersec.Tests/` | Testes da solução, com dados fictícios definidos no código |
+| `Piersec.slnx` e `global.json` | Solução e configuração do SDK e dos testes |
+| `rodar.ps1` e atalhos `.cmd` | Inicialização e recuperação do admin |
+| `.gitignore` | Exclusão de dados, saídas geradas, arquivos de compilação e segredos |
+| `Reparar-AnalisesLocais.ps1` | Preservação de análises antigas quando suas chaves não abrem na máquina atual |
+
+A solução inclui o projeto de testes na compilação, mesmo quando o atalho não executa os testes.
+Não remover `tests/Piersec.Tests/`. Os exemplos usados pela suíte estão em `DadosFicticios.cs`;
+a pasta `exemplos/` não é necessária.
+
+Para executar a suíte:
+
+```powershell
+dotnet test --solution Piersec.slnx
+```
+
+## Configurações opcionais
+
+| Variável | Finalidade |
+|---|---|
+| `ADMIN_SENHA_INICIAL` | Senha inicial do admin, somente na criação da primeira conta |
+| `PIERSEC_CHAVE_ANONIMIZACAO` | Chave de anonimização em base64, com no mínimo 32 bytes; se ausente, a plataforma cria e guarda uma chave cifrada |
+| `PIERSEC_NAVEGADOR` | Caminho do Edge ou Chrome, quando não estiver no local padrão |
+
+Nunca colocar os valores dessas variáveis no código, no Git ou na documentação de entrega.
+As regras em `regras/*.json` são validadas na inicialização; configuração inválida impede o site de iniciar.
