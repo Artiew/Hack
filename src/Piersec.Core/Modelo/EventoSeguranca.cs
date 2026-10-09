@@ -8,12 +8,14 @@ public static class TiposEvento
 {
     public const string Vulnerabilidade = "vulnerabilidade";
     public const string Alerta = "alerta";
+    public const string Exposicao = "exposicao";
 
     /// <summary>Nome para o leitor (ex.: "faltou o arquivo de alertas do firewall").</summary>
     public static string Descricao(string tipo) => tipo switch
     {
         Vulnerabilidade => "vulnerabilidades (falhas nos programas das máquinas)",
         Alerta => "alertas do firewall",
+        Exposicao => "inventário de exposição à internet",
         _ => tipo,
     };
 }
@@ -40,6 +42,15 @@ public sealed record EventoSeguranca
 
     /// <summary>Nome do ativo já normalizado (maiúsculas, sem espaços sobrando).</summary>
     public required string Ativo { get; init; }
+
+    /// <summary>Exposição declarada no inventário. Nulo = desconhecido, nunca acesso fechado.</summary>
+    public bool? ExpostoInternet { get; init; }
+
+    /// <summary>Identificador opcional de ambiente informado pela fonte, distinto do nome do arquivo.</summary>
+    public string? AmbienteDeclarado { get; init; }
+
+    /// <summary>Alvo explicitamente informado no alerta; não é presumido a partir do coletor/firewall.</summary>
+    public string? AtivoAlvo { get; init; }
 
     /// <summary>Tipo do ativo (ex.: "servidor", "estacao", "rede"), deduzido por regras/ativos.json.</summary>
     public string? TipoAtivo { get; init; }

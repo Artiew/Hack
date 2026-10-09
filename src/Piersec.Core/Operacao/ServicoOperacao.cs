@@ -377,7 +377,7 @@ public sealed partial class ServicoOperacao
 
         var sb = new StringBuilder();
         sb.AppendLine($"CHAMADO {c.Numero} - SIMULADO");
-        sb.AppendLine("Gerado pela Plataforma de risco. Nenhum sistema externo foi acionado: este arquivo é o artefato.");
+        sb.AppendLine("Gerado pela ARV Security. Nenhum sistema externo foi acionado: este arquivo é o artefato.");
         sb.AppendLine("Classificação: CONFIDENCIAL - uso interno");
         sb.AppendLine(new string('=', 72));
         sb.AppendLine($"Título:      {c.Titulo}");

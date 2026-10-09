@@ -34,6 +34,9 @@ internal static class Fabrica
     public static ProcessadorLote ProcessadorReal() =>
         new([new AdaptadorVulnerabilidades(), new AdaptadorAlertasSiem()], Anonimizador(), Datas(), Regras, new RelogioFixo(Agora));
 
+    public static ProcessadorLote ProcessadorTresFontes() =>
+        new([new AdaptadorVulnerabilidades(), new AdaptadorAlertasSiem(), new AdaptadorExposicaoInternet()], Anonimizador(), Datas(), Regras, new RelogioFixo(Agora));
+
     public static GeradorRelatorioHtml Gerador() => new(NormalizadorDatas.FusoBrasilia, Regras);
 
     public static Core.Validacao.ValidadorLote Validador() => new(Regras, new RelogioFixo(Agora));

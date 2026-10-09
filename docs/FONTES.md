@@ -59,3 +59,9 @@ Cabeçalho: `timestamp, agent.name, rule.description, data.devname, rule.level, 
 3. As exportações foram cortadas em 10.000 linhas?
 4. O firewall "Aurora" protege o mesmo ambiente das máquinas vulneráveis?
 5. Em que fuso estão as datas dos alertas?
+
+## Fonte adicional suportada — 09/10/2026
+
+Inventário de exposição à internet: `asset.name,internet.exposed,observed_at`, opcionais `asset.os` e `environment.id`. Adaptador independente de scanner e SIEM; não executa varredura. Formato, limites e exemplos próprios em `exemplos/LEIA-ME-tres-fontes.md`.
+
+As novas correlações exigem `environment.id` informado nas fontes e ativo normalizado comum. Alertas também precisam de `destination.asset` explícito para a cadeia de três fontes. `data.devname` continua como coletor, nunca presumido como alvo. Campos oficiais ausentes não devem ser inventados. A disponibilidade/autorização de terceira fonte para a apresentação oficial segue pendente.

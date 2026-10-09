@@ -114,6 +114,13 @@ public sealed class AnalisadorServicos(ConjuntoRegras regras)
                 ({ } f, { } a) => Math.Max(f, a),
             };
 
+            var inventario = evs.Where(e => e.Tipo == TiposEvento.Exposicao).ToList();
+            if (inventario.Count > 0)
+            {
+                var exposicao = _calculadora.Calcular(inventario, new HashSet<string> { TiposEvento.Exposicao }).Valor;
+                if (exposicao is { } exp) nota = nota is { } atual ? Math.Max(atual, exp) : exp;
+            }
+
             servicos.Add(new RiscoServico
             {
                 Id = def.Id,

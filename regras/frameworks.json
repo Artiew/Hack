@@ -8,6 +8,11 @@
       "iso": ["A.8.8"],
       "observacao": "Técnicas POSSÍVEIS, não observadas: uma falha conhecida pode virar entrada pela rede (T1190), pulo entre máquinas (T1210) ou execução pelo programa do usuário (T1203). Qual delas depende de exposição à internet e de exploração ativa, e os dados não trazem nenhuma das duas."
     },
+    "exposicao": {
+      "mitre": [],
+      "nist": ["ID.RA-01"], "cis": ["13.3"], "iso": ["A.8.20"],
+      "observacao": "Inventário de acesso externo declarado, relacionado à avaliação de risco e proteção/monitoramento de rede. Não é evidência de técnica MITRE executada nem certificação de conformidade."
+    },
     "alerta": {
       "mitre": [],
       "nist": ["DE.CM-01", "DE.AE-02"],

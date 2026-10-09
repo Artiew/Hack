@@ -14,6 +14,7 @@ public sealed class PlanejadorAvaliacao(ConjuntoRegras regras, CalculadoraScore 
     public const string AcaoCorrigirMaquinas = "corrigir_maquinas";
     public const string AcaoInvestigarPicos = "investigar_picos";
     public const string AcaoMedirFatores = "medir_fatores";
+    public const string AcaoRevisarExposicao = "revisar_exposicao";
 
     private RegrasPlano Plano => regras.Plano;
 
@@ -256,13 +257,28 @@ public sealed class PlanejadorAvaliacao(ConjuntoRegras regras, CalculadoraScore 
                 Plano.PrazoInvestigacaoDias, picos.SelectMany(c => c.Ativos).Distinct().Count(), []));
         }
 
+        var encadeadas = Correlacoes(correlacoes, "ativo_exposto_com_vulnerabilidade_e_alerta");
+        if (encadeadas.Count > 0 && picos.Count == 0)
+            acoes.Add(Nova(AcaoInvestigarPicos, "Verificar os alertas ligados a máquinas expostas", "verificar alertas em máquinas expostas",
+                "Pedir à equipe que confira os alertas direcionados, o acesso externo e as falhas do mesmo ativo. As evidências estão nas correlações do relatório completo; não presumir invasão.",
+                "Confere a relação entre três fontes e orienta a resposta; preparar o plano não reduz o score.",
+                null, Nivel.Alto, Nivel.Baixo, Plano.PrazoInvestigacaoDias, encadeadas.Count, []));
+
+        var expostos = eventos.Where(e => e.Tipo == TiposEvento.Exposicao && e.ExpostoInternet == true && e.Ativo != ContextoConversao.NaoInformado)
+            .Select(e => e.Ativo).Distinct().Count();
+        if (expostos > 0)
+            acoes.Add(Nova(AcaoRevisarExposicao, "Revisar e restringir os acessos pela internet", "revisar os acessos pela internet",
+                $"Pedir à equipe que confirme a necessidade do acesso externo em {Qtd(expostos, "máquina", "máquinas")}. Restringir acessos desnecessários com aprovação e validar o inventário após a mudança.",
+                "Reduz caminhos de entrada se acessos desnecessários forem fechados. O score só muda após novo inventário confirmar a alteração.",
+                null, Nivel.Medio, Nivel.Medio, Plano.PrazoInvestigacaoDias, expostos, []));
+
         // 4) Medir o que hoje não é medido
         var naoMedidos = score.Fatores.Where(f => f.Valor is null).ToList();
         if (naoMedidos.Count > 0)
         {
             acoes.Add(Nova(
                 AcaoMedirFatores,
-                "Passar a medir o que hoje está no escuro",
+                "Completar a análise de segurança",
                 "passar a medir o que falta",
                 $"Incluir nas próximas análises: {Lista(naoMedidos.Select(f => f.Nome.ToLowerInvariant()))}. " +
                 $"Hoje o score usa só {score.PercentualMedido:0}% do que deveria.",
@@ -346,6 +362,32 @@ public sealed class PlanejadorAvaliacao(ConjuntoRegras regras, CalculadoraScore 
                 _ => $"Ações {Lista(numeros)} do plano.",
             };
         }
+
+        var encadeadas = Correlacoes(correlacoes, "ativo_exposto_com_vulnerabilidade_e_alerta");
+        var expostasComFalha = Correlacoes(correlacoes, "ativo_exposto_com_vulnerabilidade");
+        if (encadeadas.Count > 0 || expostasComFalha.Count > 0)
+        {
+            var relacionadas = encadeadas.Count > 0 ? encadeadas : expostasComFalha;
+            candidatos.Add(new RiscoNegocio
+            {
+                Titulo = encadeadas.Count > 0 ? "Máquinas expostas com falhas graves e sinais de ataque" : "Falhas graves em máquinas acessíveis pela internet",
+                OQueE = $"{Qtd(relacionadas.Count, "máquina identificada", "máquinas identificadas")} por fontes distintas, com o mesmo ativo e ambiente declarados.",
+                PorQueImporta = "A combinação merece prioridade de conferência. Não comprova invasão nem que a falha conhecida tenha sido explorada.",
+                ComoResolver = $"Revisar acessos, corrigir programas e verificar os alertas. {Acoes(AcaoRevisarExposicao, AcaoAtualizarProgramas, AcaoInvestigarPicos)}",
+                Severidade = relacionadas.Max(c => c.Severidade),
+                CorrelacaoIds = relacionadas.Select(c => c.Id).ToList(),
+            });
+        }
+        var expostos = eventos.Where(e => e.Tipo == TiposEvento.Exposicao && e.ExpostoInternet == true && e.Ativo != ContextoConversao.NaoInformado).Select(e => e.Ativo).Distinct().Count();
+        if (expostos > 0 && encadeadas.Count == 0 && expostasComFalha.Count == 0)
+            candidatos.Add(new RiscoNegocio
+            {
+                Titulo = $"{Qtd(expostos, "máquina acessível", "máquinas acessíveis")} pela internet",
+                OQueE = "O inventário informa acesso externo direto. Não comprova que o acesso seja indevido nem que tenha ocorrido invasão.",
+                PorQueImporta = "Acesso externo pode ampliar os caminhos de entrada. A equipe deve confirmar sua necessidade e as proteções existentes.",
+                ComoResolver = $"Revisar e restringir acessos desnecessários. {Acoes(AcaoRevisarExposicao)}",
+                Severidade = Severidade.Media,
+            });
 
         var maquinasVuln = eventos.Where(e => e.Tipo == TiposEvento.Vulnerabilidade && e.Ativo != ContextoConversao.NaoInformado)
             .Select(e => e.Ativo).Distinct().Count();
@@ -434,6 +476,9 @@ public sealed class PlanejadorAvaliacao(ConjuntoRegras regras, CalculadoraScore 
         var maquinas = eventos.Where(e => e.Tipo == TiposEvento.Vulnerabilidade && e.Ativo != ContextoConversao.NaoInformado)
             .Select(e => e.Ativo).Distinct().Count();
         var partes = new List<string>();
+        var expostos = eventos.Where(e => e.Tipo == TiposEvento.Exposicao && e.ExpostoInternet == true && e.Ativo != ContextoConversao.NaoInformado).Select(e => e.Ativo).Distinct().Count();
+        if (expostos > 0)
+            partes.Add($"{Qtd(expostos, "máquina tem", "máquinas têm")} acesso declarado pela internet");
         if (graves.Count > 0)
             partes.Add($"{Pct(Percentual(graves.Select(e => e.Ativo).Distinct().Count(), maquinas))} das máquinas usam programas com falhas graves já conhecidas");
         if (eventos.Any(e => e.Tipo == TiposEvento.Alerta && e.Severidade >= Severidade.Media))

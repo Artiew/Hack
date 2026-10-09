@@ -1,0 +1,45 @@
+@page
+@attribute [Microsoft.AspNetCore.Authorization.AllowAnonymous]
+@{
+    ViewData["Title"] = "Recuperar acesso";
+    ViewData["Entrada"] = true;
+}
+
+<div class="entrada entrada-recuperacao">
+    <div class="entrada-marca">
+        <svg aria-hidden="true"><use href="#i-escudo"/></svg>
+        <span>
+            <strong>ARV Security</strong>
+            <span>Piersec · Semana de TI 2026</span>
+        </span>
+    </div>
+    <section class="cartao entrada-cartao" aria-labelledby="titulo-recuperar">
+        <span class="recuperacao-emblema" aria-hidden="true"><svg class="icone"><use href="#i-chave"/></svg></span>
+        <h1 id="titulo-recuperar">Recuperar acesso</h1>
+        <p class="meta">Escolha abaixo a orientação para sua conta. A recuperação é feita localmente, sem envio de e-mail.</p>
+
+        <section class="recuperacao-usuario" aria-labelledby="titulo-usuario">
+            <h2 id="titulo-usuario">Esqueci minha senha</h2>
+            <p>Procure o administrador responsável pela plataforma para recuperar seu acesso. Informe apenas seu nome de usuário.</p>
+            <p class="meta">Não compartilhe senhas nem códigos de autenticação.</p>
+        </section>
+
+        <details class="recuperacao-admin">
+            <summary>Sou responsável pela conta admin</summary>
+            <ol>
+                <li>No computador da plataforma, encerre o servidor com <kbd>Ctrl</kbd> + <kbd>C</kbd> no terminal em que ele está rodando.</li>
+                <li>Na pasta do projeto, abra <strong>Esqueci a senha do admin.cmd</strong> e confirme a recuperação.</li>
+                <li>Anote a senha temporária exibida no terminal, entre com o usuário <strong>admin</strong> e escolha uma nova senha.</li>
+            </ol>
+            <p class="meta">Esse atalho recupera somente o usuário <strong>admin</strong>. Ele também desliga o 2FA dessa conta; será necessário cadastrar o aplicativo novamente após trocar a senha.</p>
+        </details>
+
+        <details class="recuperacao-admin">
+            <summary>Tenho a senha, mas perdi o celular</summary>
+            <p>Entre com sua senha e use um dos códigos de recuperação guardados na tela “Código de verificação”. Cada código vale uma vez.</p>
+            <p class="meta">Sem esses códigos, procure o responsável pela plataforma. Para a conta admin, siga a orientação acima.</p>
+        </details>
+        <a class="botao recuperacao-voltar" asp-page="/Entrar">Voltar para entrar</a>
+    </section>
+    <p class="entrada-rodape">Protótipo · dados sintéticos · tudo local</p>
+</div>

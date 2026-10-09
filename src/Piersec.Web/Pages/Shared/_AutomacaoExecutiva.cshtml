@@ -1,0 +1,128 @@
+@model AutomacaoModel
+@using Piersec.Core.Operacao
+@{
+    var chamados = Model.Estado.Chamados;
+    var fuso = Piersec.Core.Padronizacao.NormalizadorDatas.FusoBrasilia;
+    var aguardando = chamados.Where(c => c.Estado == EstadoChamado.AguardandoAprovacao).ToList();
+    var preparados = chamados.Where(c => c.Estado == EstadoChamado.Aberto).ToList();
+    var sugestoes = chamados.Where(c => c.Estado == EstadoChamado.Sugerido).ToList();
+    var resolvidos = chamados.Where(c => c.Estado == EstadoChamado.Resolvido).ToList();
+    var cancelados = chamados.Where(c => c.Estado is EstadoChamado.Rejeitado or EstadoChamado.Desfeito).ToList();
+    var filas = new (string Id, string Nome, string Descricao, IReadOnlyList<Chamado> Itens)[]
+    {
+        ("equipe", "Aguardando a equipe", "A equipe de TI precisa avaliar e aprovar o próximo passo.", aguardando),
+        ("preparados", "Planos preparados", "O plano foi registrado na simulação. Isso não significa que a correção foi aplicada.", preparados),
+        ("melhorias", "Melhorias sugeridas", "Recomendações para a equipe avaliar; nenhuma ação foi aplicada.", sugestoes),
+        ("resolvidos", "Resolvidos nos dados", "O problema deixou de aparecer nos dados usados para conferir. Não é uma confirmação de correção feita pela plataforma.", resolvidos),
+        ("cancelados", "Não seguiram adiante", "Sugestões recusadas ou planos cancelados pela equipe. Não contam como problemas resolvidos.", cancelados),
+    };
+    string? Gatilho(Chamado c) => Model.Config.Playbooks.FirstOrDefault(p => p.Id == c.PlaybookId)?.Gatilho;
+    string Titulo(Chamado c) => Gatilho(c) switch
+    {
+        Gatilhos.ProgramaComFalhasGraves => "Atualizar programas com falhas conhecidas",
+        Gatilhos.MaquinaComFalhasGraves => "Corrigir falhas nos equipamentos",
+        Gatilhos.MaquinaAcumulaFalhas => "Avaliar a pausa de um equipamento em risco",
+        Gatilhos.PicoDeAlertas => "Verificar atividade suspeita na rede",
+        Gatilhos.FatorNaoMedido => "Completar a análise de segurança",
+        _ => "Avaliar a recomendação de segurança",
+    };
+    string Importancia(Chamado c) => Gatilho(c) switch
+    {
+        Gatilhos.ProgramaComFalhasGraves or Gatilhos.MaquinaComFalhasGraves => "Falhas conhecidas podem facilitar acessos indevidos. As atualizações ajudam a reduzir essa exposição.",
+        Gatilhos.MaquinaAcumulaFalhas => "Um equipamento concentra falhas graves. A pausa pode reduzir a exposição, mas também interromper o trabalho.",
+        Gatilhos.PicoDeAlertas => "Houve uma concentração de alertas. A equipe precisa verificar o que aconteceu; os alertas não comprovam uma invasão.",
+        Gatilhos.FatorNaoMedido => "Faltam informações para avaliar parte do risco. Coletar esses dados melhora a análise, sem corrigir falhas por si só.",
+        _ => "A equipe precisa avaliar o problema e os possíveis efeitos para a empresa.",
+    };
+    string ProximoPasso(Chamado c) => c.Estado switch
+    {
+        EstadoChamado.Resolvido => "Continuar acompanhando as próximas análises para verificar se o problema volta.",
+        EstadoChamado.Rejeitado => "A equipe recusou a proposta. Ela não será retomada automaticamente.",
+        EstadoChamado.Desfeito => "A equipe cancelou o plano. Isso não comprova que o problema foi resolvido.",
+        _ => Gatilho(c) switch
+        {
+            Gatilhos.ProgramaComFalhasGraves or Gatilhos.MaquinaComFalhasGraves => "Planejar as atualizações com a equipe de TI e conferir o resultado em uma nova análise.",
+            Gatilhos.MaquinaAcumulaFalhas => "Combinar a possível parada com o responsável, corrigir as falhas e verificar a retomada do trabalho.",
+            Gatilhos.PicoDeAlertas => "Confirmar se as tentativas foram bloqueadas e se há necessidade de resposta da equipe.",
+            Gatilhos.FatorNaoMedido => "Pedir à equipe os dados que faltam e incluí-los nas próximas análises.",
+            _ => "Pedir à equipe de TI uma avaliação antes de seguir com o plano.",
+        },
+    };
+    string Abrangencia(Chamado c)
+    {
+        if (Gatilho(c) == Gatilhos.FatorNaoMedido)
+        {
+            var id = c.Chave.Split("fator:").Last();
+            var assunto = id switch
+            {
+                "vulnerabilidades" => "Falhas nos programas",
+                "ameacas" => "Sinais de ataque",
+                "exposicao" => "Exposição à internet",
+                "erroHumano" => "Proteção contra golpes",
+                "deteccao" => "Capacidade de perceber e responder a problemas",
+                _ => "Informações que faltam",
+            };
+            return "Cobertura da análise · " + assunto;
+        }
+        if (c.Ativos.Count == 0) return "Equipamentos não informados";
+        var onde = c.TiposAtivo.Count == 1 ? c.TiposAtivo[0] switch
+        {
+            "servidor" => "Sistemas da empresa",
+            "rede" => "Rede da empresa",
+            "estacao" => "Computadores da equipe",
+            _ => "Equipamentos da empresa",
+        } : "Equipamentos da empresa";
+        return onde + " · " + Formatar.Qtd(c.Ativos.Count, "equipamento", "equipamentos");
+    }
+}
+<div class="automacao-executiva" data-automacao-executiva>
+    <header class="cabecalho-pagina">
+        <p class="card-meta">ACOMPANHAMENTO DA SEGURANÇA</p>
+        <h1>Automação</h1>
+        <p class="meta">O que precisa da equipe e quais planos já estão preparados.</p>
+    </header>
+    <p class="aviso-simulado"><strong>Simulação.</strong> Os planos ficam registrados aqui. Nenhum equipamento é alterado.</p>
+    @if (Model.Config.ModoEnsaio)
+    {
+        <p class="meta">A plataforma está mostrando uma prévia, sem registrar novos planos. Os itens abaixo são registros anteriores.</p>
+    }
+    <section class="auto-exec-resumo" aria-label="Situação dos planos">
+        <a class="auto-exec-kpi auto-exec-atencao" href="#equipe"><span>Aguardando a equipe</span><strong>@aguardando.Count</strong><span class="meta">Precisam de avaliação e aprovação</span></a>
+        <a class="auto-exec-kpi" href="#preparados"><span>Planos preparados</span><strong>@preparados.Count</strong><span class="meta">Registrados na simulação</span></a>
+        <a class="auto-exec-kpi" href="#melhorias"><span>Melhorias sugeridas</span><strong>@sugestoes.Count</strong><span class="meta">Propostas para a equipe avaliar</span></a>
+        <a class="auto-exec-kpi auto-exec-resolvidos" href="#resolvidos"><span>Resolvidos nos dados</span><strong>@resolvidos.Count</strong><span class="meta">Deixaram de aparecer na verificação</span></a>
+    </section>
+    <p class="auto-exec-responsavel"><svg class="icone" aria-hidden="true"><use href="#i-pessoas" /></svg><span>Você acompanha por aqui. Administradores e analistas avaliam e aprovam os planos.</span></p>
+    @if (chamados.Count == 0)
+    {
+        <section class="estado-vazio"><h2>Nenhum plano registrado</h2><p>Quando a equipe analisar os arquivos, as recomendações aparecerão aqui.</p><a asp-page="/Index">Voltar à visão geral →</a></section>
+    }
+    @foreach (var fila in filas)
+    {
+        if (fila.Id == "cancelados" && fila.Itens.Count == 0) { continue; }
+        <details class="auto-exec-fila" id="@fila.Id">
+            <summary><span>@fila.Nome</span><span class="auto-exec-contagem">@fila.Itens.Count</span></summary>
+            <p class="meta">@fila.Descricao</p>
+            @if (fila.Itens.Count == 0) { <p class="vazio">Nenhum item nesta situação.</p> }
+            @foreach (var c in fila.Itens.OrderByDescending(c => c.AtualizadoEmUtc))
+            {
+                <article class="auto-exec-item" aria-labelledby="exec-@c.Numero">
+                    <p class="auto-exec-escopo">@Abrangencia(c)</p>
+                    <h2 id="exec-@c.Numero">@Titulo(c)</h2>
+                    <p>@Importancia(c)</p>
+                    <div class="auto-exec-passo"><strong>Próximo passo</strong><p>@ProximoPasso(c)</p></div>
+                    <details class="auto-exec-acompanhar">
+                        <summary>Ver acompanhamento · @c.Numero</summary>
+                        <p class="meta">Atualizado em @Formatar.DataHora(c.AtualizadoEmUtc, fuso).</p>
+                        @if (c.Estado == EstadoChamado.Aberto) { <p>@(c.AgiuSozinho ? "Plano preparado automaticamente pela plataforma, de forma simulada." : "Plano registrado após aprovação da equipe, de forma simulada.")</p> }
+                        <a href="/Lote/@c.LoteUltimaVez">Ver a análise relacionada →</a>
+                    </details>
+                </article>
+            }
+        </details>
+    }
+    @if (Model.Estado.UltimoResultado is { } ultimo)
+    {
+        <p class="meta auto-exec-ultima">Última análise: @Formatar.DataHora(ultimo.QuandoUtc, fuso) · <a href="/Lote/@ultimo.LoteId">Abrir visão executiva →</a>@if (!ultimo.LoteValidado) { <span class="erro"> · Os dados precisam ser revisados pela equipe.</span> }@if (ultimo.Ensaio) { <span> · Prévia sem novos planos registrados.</span> }</p>
+    }
+</div>

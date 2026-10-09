@@ -11,6 +11,17 @@ public sealed class ClassificadorSeveridade(RegrasSeveridade regras)
 {
     public (EventoSeguranca Evento, Lacuna? Lacuna) Classificar(EventoSeguranca evento)
     {
+        if (evento.Tipo == TiposEvento.Exposicao)
+        {
+            var severidadeExposicao = evento.ExpostoInternet switch { true => Severidade.Media, false => Severidade.Baixa, _ => (Severidade?)null };
+            var texto = evento.ExpostoInternet switch
+            {
+                true => "Média: o inventário declara acesso pela internet. Isso aumenta a superfície de ataque, mas não comprova vulnerabilidade explorável nem invasão; por isso não é Crítica.",
+                false => "Baixa: o inventário declara ausência de acesso direto pela internet. Isso não comprova ausência de falhas ou de outros caminhos de ataque.",
+                _ => "Sem classificação: a exposição não foi informada de forma válida; não foi considerada segura.",
+            };
+            return (evento with { Severidade = severidadeExposicao, Justificativa = texto }, null);
+        }
         if (evento.Cvss is { } nota)
             return (PorCvss(evento, nota), null);
         if (evento.NivelOrigem is { } nivel)

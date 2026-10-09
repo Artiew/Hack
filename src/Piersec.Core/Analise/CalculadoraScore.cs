@@ -40,6 +40,7 @@ public sealed class CalculadoraScore(RegrasScore regras, RegrasAtivos ativos)
             {
                 ("vulnerabilidades", true) => Vulnerabilidades(eventos, maquinasConhecidas),
                 ("ameacas", true) => Ameacas(eventos),
+                ("exposicao", true) => Exposicao(eventos),
                 _ => ((double?)null, $"Não medido: {def.SemDados}."),
             };
             return new FatorScore
@@ -122,6 +123,19 @@ public sealed class CalculadoraScore(RegrasScore regras, RegrasAtivos ativos)
             $"média {n[Severidade.Media]:0}, baixa {n[Severidade.Baixa]:0}) e mais {regras.PontosPorFalhaAdicional:0} por falha a mais, até {regras.TetoPorMaquina:0}. " +
             $"O fator é a média de {Formatar.Numero(maquinas.Count)} máquinas (servidores pesam mais); " +
             $"{Formatar.Numero(noTeto)} delas chegaram ao máximo. Máquinas sem nenhuma falha não aparecem no arquivo do scanner.");
+    }
+
+    private static (double?, string) Exposicao(IReadOnlyList<EventoSeguranca> eventos)
+    {
+        var inventario = eventos.Where(e => e.Tipo == TiposEvento.Exposicao).ToList();
+        if (inventario.Count == 0 || inventario.Any(e => e.Ativo == ContextoConversao.NaoInformado || e.ExpostoInternet is null || e.DataUtc is null))
+            return (null, "Não medido: inventário vazio ou com ativo, data ou exposição desconhecidos; complete os dados antes de calcular.");
+        var ativos = inventario.GroupBy(e => e.Ativo, StringComparer.Ordinal).ToList();
+        if (ativos.Any(g => g.Select(e => e.ExpostoInternet).Distinct().Count() != 1 || g.Select(e => e.AmbienteDeclarado).Where(x => x is not null).Distinct().Count() > 1))
+            return (null, "Não medido: inventário com estados ou ambientes divergentes para o mesmo ativo; confira os arquivos.");
+        var expostos = ativos.Count(g => g.First().ExpostoInternet == true);
+        return (100.0 * expostos / ativos.Count,
+            $"{Formatar.Qtd(expostos, "máquina exposta", "máquinas expostas")} de {Formatar.Numero(ativos.Count)} máquinas do inventário. Cada máquina conta uma vez. Mede acesso declarado pela internet, não probabilidade de invasão; não comprova cobertura de toda a empresa.");
     }
 
     private (double?, string) Ameacas(IReadOnlyList<EventoSeguranca> eventos)

@@ -50,6 +50,23 @@
       "justificativa": "A máquina {ativo} tem {quantidade} e também aparece em {alertas}. Uma máquina vulnerável que já está sendo alvo de atividade suspeita tem chance muito maior de ser invadida.",
       "severidade": "Critica",
       "frameworks": { "mitre": ["T1190", "T1210"], "nist": ["ID.RA-01", "DE.AE-02"], "cis": ["7.4", "13.1"], "iso": ["A.8.8", "A.8.16"] }
+    },
+    {
+      "id": "COR-EXPOSTO-E-FALHA", "nome": "Máquina exposta com falha grave",
+      "tipo": "ativo_exposto_com_vulnerabilidade", "parametros": { "severidadeMinima": "Alta" },
+      "titulo": "{ativo}: acesso pela internet e {quantidade}",
+      "justificativa": "No ambiente declarado {ambiente}, o inventário informa acesso externo em {ativo}, e o scanner informa {quantidade} nesse mesmo ativo. A relação é por identificadores explícitos; o scanner não informa data da falha. Isso prioriza a conferência de acesso e correção, mas não comprova exploração ou que a falha esteja no serviço acessível.",
+      "severidade": "maior_dos_eventos",
+      "frameworks": { "mitre": ["T1190"], "nist": ["ID.RA-01", "PR.PS-02"], "cis": ["7.3", "7.4"], "iso": ["A.8.8", "A.8.20"] }
+    },
+    {
+      "id": "COR-TRES-FONTES", "nome": "Exposição, falha e alerta direcionado",
+      "tipo": "ativo_exposto_com_vulnerabilidade_e_alerta",
+      "parametros": { "severidadeMinima": "Alta", "severidadeMinimaAlerta": "Media", "janelaHoras": 24 },
+      "titulo": "{ativo}: exposto, com {quantidade} e {alertas}",
+      "justificativa": "Três fontes se relacionam pelo mesmo ativo {ativo} e ambiente declarado {ambiente}: inventário exposto, scanner com {quantidade} e {alertas} cujo destination.asset identifica essa máquina. Alerta e inventário estão separados por no máximo {janela} horas; a data da falha não é informada pelo scanner. É coexistência contextual, não prova de invasão ou exploração dessa falha. MITRE indica um caminho possível, não uma técnica confirmada.",
+      "severidade": "maior_dos_eventos",
+      "frameworks": { "mitre": ["T1190"], "nist": ["ID.RA-01", "DE.AE-02", "PR.PS-02"], "cis": ["7.4", "13.1"], "iso": ["A.8.8", "A.8.16", "A.8.20"] }
     }
   ]
 }

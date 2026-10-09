@@ -1,15 +1,15 @@
 # Matriz de requisitos
 
 Regra: ✅ só para o que foi **executado e provado**. ⚠️ parcial · ❌ não feito · ❓ depende de informação que ainda não temos.
-Atualizado ao fim da **Fase 6** (serviços e prejuízo, visão técnica com rastro até a linha, discordar da severidade). Números dos dados reais vêm de contagens (`docs/FONTES.md`).
+Atualizado em **09/10/2026**: resumo da diretoria, terceira fonte e correlação executados com exemplos fictícios. As seções antigas abaixo preservam o histórico; consultar também o estado atual em CLAUDE.md. Números dos dados reais vêm de contagens (`docs/FONTES.md`).
 
 ## Requisitos funcionais (manual 4.1)
 
 | Req. | O que o manual exige | Evidência (arquivo/teste/tela) | Status |
 |---|---|---|---|
-| RF1 | Ler ≥ 3 fontes diferentes | 3 arquivos reais lidos de ponta a ponta: 29.564 registros, 0 rejeitados (`AdaptadorVulnerabilidades`, `AdaptadorAlertasSiem`, `FontesReaisTests`). Por estrutura são **2 ferramentas** em 3 arquivos: contagem de "fontes" aguarda o mentor | ⚠️ |
+| RF1 | Ler ≥ 3 fontes diferentes | Três adaptadores de produção: scanner, SIEM e inventário de exposição. `ExposicaoInternetTests` e `CorrelacaoTresFontesTests`; envio fictício de três fontes provado no navegador. A terceira fonte oficial ainda depende de dados/autorização da organização | ✅ suporte / ❓ dados oficiais |
 | RF2 | Converter para modelo comum | `EventoSeguranca` para as fontes reais: datas → UTC (10.000/10.000 alertas com data), ativos normalizados, CVSS com ponto ou vírgula, Windows-1252 tratado (P-007), linhas embrulhadas e data partida tratadas (P-005). Testes `FontesReaisTests`, `PadronizacaoTests`, `LeitorCsvTests` | ✅ |
-| RF3 | Correlacionar com regras claras e reproduzíveis | 5 regras em `regras/correlacao.json` (validadas na inicialização), com justificativa e frameworks; mesma entrada = mesma saída (`Mesma_entrada_gera_exatamente_a_mesma_saida`); regras sem resultado mostram o motivo. Dados reais: 548 correlações. Limite: **sem chave comum entre alertas e vulnerabilidades** (0 máquinas em comum); MITRE pendente | ⚠️ |
+| RF3 | Correlacionar fontes por regras claras | Sete regras JSON, incluindo exposição + falha e exposição + falha + alerta direcionado. Vínculo explícito por ativo/ambiente, alvo e janela temporal; três evidências navegáveis provadas. MITRE como hipótese, não ataque confirmado. Dados antigos sem essas chaves não ganham relações inventadas | ✅ exemplos fictícios / ⚠️ dados sem vínculo |
 | RF4 | Crítica/Alta/Média/Baixa com justificativa | `ClassificadorSeveridade` + `regras/severidade.json` (CVSS oficial, níveis do SIEM, textos). 100% dos eventos reais com justificativa, inclusive "por que não é Crítica" (`SeveridadeTests`). Falta o contexto (exposição, serviço) — Fase 3 ; **discordar da severidade**: o analista ajusta com motivo obrigatório, o que cria uma revisão do lote recalculada (o original não muda), com anexo J no relatório, V15 e auditoria (`RevisaoTests`). Ainda falta usar exposição/criticidade do serviço no cálculo da severidade | ⚠️ |
 | RF5 | Score 0–100 com fatores | `CalculadoraScore` + `regras/score.json`: direção escrita ("100 = risco máximo"), 5 fatores com contribuição (soma = score, teste), fator sem dados = "não medido" (não vira zero), confiança, faixas com nome, comparação com o lote anterior e motivo (`Comparacao_com_o_lote_anterior...`), sanidade: limpo → 0 "Baixo", caótico → ≥ 80 "Crítico"; **"3 achados explicam X% do risco"** recalculando o score sem cada achado, e dizendo "o risco está espalhado" quando explicam menos de 30% (`ScoreEPlanoTests`). Dados reais: 74 (Alto), confiança média (55% do peso medido) | ✅ |
 | RF6 | Relatório gerado automaticamente | Upload dos 3 arquivos reais → HTML + PDF em ~3,5 s, sem intervenção (ensaio do zero com `rodar.cmd -DoZero`). Página 1 para a diretoria (como estamos / mais grave / o que fazer / se fizer só uma coisa), seções de score, plano e limites, anexos técnicos e glossário. Falta validação antes de emitir (RF8) | ⚠️ |
@@ -147,3 +147,33 @@ Gasto monetário de remediação ainda depende de orçamento: não existe no mod
 Menu da conta (08/10/2026): botão com nome/papel no rodapé esquerdo abre Duas etapas, Tema, Trocar senha e Sair. Roteiro fictício prova destinos, destaque ativo, token de saída, logout, Enter/Esc/foco, clique fora, uso sem JavaScript e 390 px sem transbordamento.
 
 Validação consolidada da entrega (08/10/2026): **289 aprovados, 0 falhas, 0 ignorados**; build Web Debug sem avisos/erros; roteiros fictícios de envio, 2FA e visão executiva aprovados. Cadastro pendente de 2FA ilegível pode ser recriado, com aviso, sem substituir fator já ativo. A falha de login 2FA do admin real relatada depois continua sem diagnóstico: o usuário cancelou a investigação. HTTPS confiável verificado nesta máquina e em Brave temporário; a confiança no certificado precisa ser configurada em cada computador.
+
+### Automação para o perfil executivo — 09/10/2026
+
+- Visão própria de acompanhamento em `_AutomacaoExecutiva.cshtml`: pendências da equipe, planos preparados, melhorias sugeridas e problemas que deixaram de aparecer nos dados. Cancelamentos separados de resoluções.
+- Linguagem simples por tipo de ação, motivo e próximo passo; detalhes progressivos com link à análise. Controles e configuração operacional continuam na visão técnica. Ações seguem simuladas e o executivo não aprova/rejeita/desfaz.
+- Verificado com contas/arquivos fictícios: permissões, contagens, estados, navegação por teclado e sem JavaScript; temas claro/escuro em quatro larguras sem rolagem lateral; 318 testes aprovados e build sem avisos/erros.
+
+## Verificação sequencial — 09/10/2026
+
+1. PDF da diretoria: 7 → 2 páginas no cenário fictício; resumo, impacto/custo e prioridades. Sem tabelas técnicas, CVEs, pacotes ou glossário. Avisos de cobertura e validação permanecem. Relatório completo preservado.
+2. Terceira fonte: inventário de exposição exportado. Fator por ativo único; vazio, desconhecido, inválido ou contraditório = não medido. Três fontes válidas cobrem 75% do modelo, não 100% do ambiente. Não há varredura.
+3. Correlação: exemplos próprios de scanner/SIEM/inventário com ambiente e ativo comuns; alvo explícito no alerta, separado do coletor; máximo 24 horas entre alerta e inventário. Cada vínculo abre três eventos e origens. Não prova exploração nem simultaneidade da vulnerabilidade, cuja fonte não informa data.
+
+Evidência final: 353 testes aprovados, 0 falhas, 0 ignorados; build sem avisos/erros; QA isolado com 15 validações, evidências navegáveis, simulador, 2 temas e 3 larguras. Diretoria com 2 páginas nas três etapas. Não foram acessados CSVs/relatórios do desafio.
+
+Premissas novas: custos.json inclui revisão de exposição (2–4 horas fixas + 0,5–1,5 hora por máquina); score.json associa exposicao ao novo tipo; correlacao.json adiciona duas regras e janela 24h, sem alterar os limites antigos; frameworks.json inclui inventário como contexto de avaliação/proteção de rede. Valores são premissas de exercício.
+
+Reprodução e formatos: `exemplos/LEIA-ME-tres-fontes.md`. Para a banca, somente dados e fontes autorizados. Não interpretar três exemplos inventados como prova de que a organização forneceu três fontes utilizáveis.
+
+
+### Atualização — glossário para a diretoria (09/10/2026)
+
+A pedido do usuário, a versão da diretoria passa a ter uma terceira página com dez termos explicados em linguagem simples. As duas primeiras continuam dedicadas ao panorama e às decisões. O relatório completo mantém seu glossário técnico.
+
+Verificação: 353 testes aprovados, 0 falhas e 0 ignorados; exportação fictícia em instância isolada conferida com três páginas, glossário somente na terceira e paginação correta. A terceira página foi revisada visualmente. Relatórios já gerados não são reescritos: gerar novo lote para obter a atualização.
+
+
+### Estado para o commit e push — 09/10/2026
+
+O usuário escolheu manter a exclusão da pasta `exemplos/`. A suíte executada nesse estado teve **288 aprovados, 65 falhas e 0 ignorados**, por ausência dos arquivos fictícios usados pelos testes (`FileNotFoundException`). A evidência anterior de 353/353 vale para o estado com os exemplos presentes; não representa esta entrega sem eles. Nenhum teste foi removido ou desativado. Roteiros de demonstração que citam os exemplos também não podem ser reproduzidos sem esses arquivos.

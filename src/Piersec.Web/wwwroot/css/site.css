@@ -685,18 +685,24 @@ body[data-apresentacao] .exec-tecnico:not([hidden]) { display: block; }
 }
 a.calor-celula:hover { transform: scale(1.04); outline: 2px solid var(--tinta); outline-offset: 1px; }
 .calor-vazio { background: transparent; border: 1px dashed var(--linha); color: var(--suave); font-weight: 400; }
-.calor-0 { background: color-mix(in srgb, var(--critica) 5%, var(--superficie)); color: var(--suave); }
-.calor-1 { background: color-mix(in srgb, var(--critica) 12%, var(--superficie)); }
-.calor-2 { background: color-mix(in srgb, var(--critica) 20%, var(--superficie)); }
-.calor-3 { background: color-mix(in srgb, var(--critica) 28%, var(--superficie)); }
-.calor-4 { background: color-mix(in srgb, var(--critica) 36%, var(--superficie)); }
-.calor-5 { background: color-mix(in srgb, var(--critica) 45%, var(--superficie)); }
-.calor-6 { background: color-mix(in srgb, var(--critica) 55%, var(--superficie)); color: var(--tinta-botao); }
-.calor-7 { background: color-mix(in srgb, var(--critica) 65%, var(--superficie)); color: var(--tinta-botao); }
-.calor-8 { background: color-mix(in srgb, var(--critica) 75%, var(--superficie)); color: var(--tinta-botao); }
-.calor-9 { background: color-mix(in srgb, var(--critica) 86%, var(--superficie)); color: var(--tinta-botao); }
-.calor-10 { background: var(--critica); color: var(--tinta-botao); }
-.calor-legenda { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--suave); margin-top: auto; }
+.calor-sev-critica { --calor-cor: var(--critica); }
+.calor-sev-alta { --calor-cor: var(--alta); }
+.calor-sev-media { --calor-cor: var(--media); }
+.calor-sev-baixa { --calor-cor: var(--baixa); }
+.calor-0 { --calor-peso: 3%; }
+.calor-1 { --calor-peso: 6%; }
+.calor-2 { --calor-peso: 9%; }
+.calor-3 { --calor-peso: 12%; }
+.calor-4 { --calor-peso: 15%; }
+.calor-5 { --calor-peso: 19%; }
+.calor-6 { --calor-peso: 23%; }
+.calor-7 { --calor-peso: 27%; }
+.calor-8 { --calor-peso: 30%; }
+.calor-9 { --calor-peso: 33%; }
+.calor-10 { --calor-peso: 35%; }
+.calor-celula:not(.calor-vazio), .calor-escala i { background: color-mix(in srgb, var(--calor-cor, var(--suave)) var(--calor-peso), var(--superficie)); color: var(--tinta); }
+.calor-celula:not(.calor-vazio) { border: 1px solid color-mix(in srgb, var(--calor-cor, var(--suave)) 60%, var(--linha)); }
+.calor-legenda { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; color: var(--suave); margin-top: auto; }
 .calor-escala { display: inline-flex; gap: 3px; }
 .calor-escala i { display: inline-block; width: 26px; height: 12px; border-radius: 3px; }
 @media (prefers-reduced-motion: reduce) { .calor-celula, .dash-kpi { transition: none; } }
@@ -846,3 +852,151 @@ a.calor-celula:hover { transform: scale(1.04); outline: 2px solid var(--tinta); 
 .painel-executivo .exec-riscos > details > p, .painel-executivo .exec-riscos > details > a { font-size: 15px; }
 .painel-executivo .fonte-item { font-size: 15px; }
 .painel-executivo .exec-glossario > summary, .painel-executivo .exec-glossario dl { font-size: 15px; }
+
+/* Duas etapas: cartão centralizado, leitura do QR e confirmação com espaço próprio. */
+.seguranca-2fa { width: 100%; max-width: 920px; min-width: 0; }
+.seguranca-cabecalho { text-align: center; max-width: 620px; margin: 0 auto 28px; }
+.seguranca-emblema { display: inline-grid; place-items: center; width: 52px; height: 52px; border: 1px solid var(--linha); border-radius: 16px; color: var(--destaque); background: var(--destaque-claro); }
+.seguranca-emblema .icone { width: 28px; height: 28px; }
+.seguranca-legenda { margin: 14px 0 6px; font-size: 12px; letter-spacing: .12em; font-weight: 700; color: var(--destaque); }
+.seguranca-cabecalho h1 { margin: 0 0 10px; font-size: clamp(25px, 3vw, 32px); line-height: 1.25; }
+.seguranca-cabecalho .meta { margin: 0; font-size: 16px; }
+.seguranca-2fa > .aviso-forte { font-size: 15px; border-width: 1px; border-left-width: 4px; margin: 0 0 20px; }
+.seguranca-feedback { display: block; margin: 0 0 20px; padding: 14px 18px; }
+.seguranca-cartao { padding: 32px; border-top: 3px solid var(--destaque); box-shadow: var(--sombra); }
+.seguranca-cartao h2 { margin: 0 0 12px; font-size: 20px; line-height: 1.4; }
+.seguranca-cartao p { font-size: 15px; }
+.seguranca-configurar { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px 36px; }
+.seguranca-preparo { grid-column: 1 / -1; padding-bottom: 22px; border-bottom: 1px solid var(--linha); }
+.seguranca-preparo p { margin: 0; }
+.seguranca-leitura { grid-column: 1; grid-row: 2; padding-right: 36px; border-right: 1px solid var(--linha); }
+.seguranca-confirmacao { grid-column: 2; grid-row: 2; }
+.seguranca-passo { display: inline-grid; place-items: center; width: 28px; height: 28px; margin-right: 6px; border-radius: 50%; background: var(--destaque-claro); color: var(--destaque); font-size: 14px; vertical-align: 1px; }
+.seguranca-leitura > .meta, .seguranca-confirmacao > .meta { margin: 0 0 20px; }
+.seguranca-leitura .qr { width: 208px; margin: 0 auto 20px; padding: 8px; background: #fff; border-radius: 10px; }
+.seguranca-chave summary, .seguranca-gerenciar summary { cursor: pointer; color: var(--destaque); font-size: 15px; font-weight: 600; }
+.seguranca-chave p { font-size: 14px; }
+.seguranca-chave code.chave-2fa { display: block; padding: 12px; border: 1px solid var(--linha); border-radius: 8px; background: var(--fundo); font-size: 14px; overflow-wrap: anywhere; }
+.seguranca-cartao .formulario { display: flex; gap: 10px; margin: 20px 0 0; }
+.seguranca-cartao .formulario label { font-weight: 600; font-size: 15px; }
+.seguranca-cartao .formulario input { width: 100%; min-width: 0; padding: 14px 16px; font-size: 24px; letter-spacing: .22em; text-align: center; background: var(--fundo); }
+.seguranca-cartao .formulario button { width: 100%; margin-top: 6px; padding: 14px 16px; font-size: 16px; }
+.seguranca-nota { grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--suave); margin: 0; padding-top: 22px; border-top: 1px solid var(--linha); }
+.seguranca-gerenciar { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--linha); }
+.seguranca-cartao .codigos-recuperacao { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 24px 0; }
+.seguranca-cartao .codigos-recuperacao li { text-align: center; padding: 12px; border: 1px solid var(--linha); border-radius: 8px; background: var(--fundo); }
+.seguranca-continuar { display: block; text-align: center; }
+@media (max-width: 700px) {
+    .seguranca-cartao { padding: 24px 20px; }
+    .seguranca-configurar { display: flex; flex-direction: column; gap: 24px; }
+    .seguranca-preparo { order: 0; }
+    .seguranca-leitura { order: 1; padding: 0 0 24px; border-right: 0; border-bottom: 1px solid var(--linha); }
+    .seguranca-confirmacao { order: 2; }
+    .seguranca-nota { order: 3; justify-content: flex-start; }
+    .seguranca-cartao h2 { font-size: 18px; }
+    .seguranca-cartao .codigos-recuperacao code { font-size: 14px; }
+}
+
+/* Login e recuperação: ação secundária junto da senha, sem competir com Entrar. */
+.entrada .formulario .entrada-recuperar { align-self: flex-end; margin-top: 4px; padding: 4px 0; border-radius: 3px; font-size: 14px; font-weight: 600; text-underline-offset: 4px; text-decoration: none; }
+.entrada .formulario .entrada-recuperar:hover { text-decoration: underline; }
+.entrada .formulario .entrada-recuperar + button { margin-top: 12px; }
+.entrada-recuperacao { max-width: 520px; }
+.recuperacao-emblema { display: inline-grid; place-items: center; width: 44px; height: 44px; margin-bottom: 18px; border: 1px solid var(--linha); border-radius: 12px; color: var(--destaque); background: var(--destaque-claro); }
+.recuperacao-usuario h2 { margin: 0 0 8px; font-size: 18px; }
+.recuperacao-usuario p, .recuperacao-admin { font-size: 15px; }
+.recuperacao-usuario .meta { font-size: 14px; }
+.recuperacao-admin { padding: 18px 0; border-top: 1px solid var(--linha); }
+.recuperacao-admin summary { cursor: pointer; font-weight: 600; color: var(--destaque); }
+.recuperacao-admin ol { padding-left: 22px; }
+.recuperacao-admin kbd { font: inherit; font-weight: 600; }
+.recuperacao-voltar { display: block; text-align: center; margin-top: 12px; padding: 14px 18px; }
+
+/* Executivo: confiança informativa, sem atalho para a aba técnica de fontes. */
+.dash-kpi.kpi-estatico::after { display: none; }
+.dash-kpi.kpi-estatico:hover { transform: none; border-color: var(--linha); }
+
+/* Prioridades financeiras: coral para exposição, âmbar para correção.
+   As cores distinguem o assunto; não representam limites monetários ou retorno garantido. */
+.kpi-prejuizo {
+    --financeiro-inicio: #fff0e8; --financeiro-fim: #ffd5c4;
+    --financeiro-tinta: #6e1b16; --financeiro-acento: #9d2b20;
+    --financeiro-borda: #e58e73; --financeiro-onda: rgba(157, 43, 32, .09);
+}
+.kpi-custo {
+    --financeiro-inicio: #fff6dc; --financeiro-fim: #ffe29b;
+    --financeiro-tinta: #65400b; --financeiro-acento: #80500b;
+    --financeiro-borda: #dfbb69; --financeiro-onda: rgba(128, 80, 11, .10);
+}
+@media (prefers-color-scheme: dark) {
+    :root:not([data-tema=claro]) .kpi-prejuizo {
+        --financeiro-inicio: #48251f; --financeiro-fim: #6b2d25;
+        --financeiro-tinta: #ffece4; --financeiro-acento: #ffb08e;
+        --financeiro-borda: #a65d48; --financeiro-onda: rgba(255, 176, 142, .10);
+    }
+    :root:not([data-tema=claro]) .kpi-custo {
+        --financeiro-inicio: #3b2e19; --financeiro-fim: #59401e;
+        --financeiro-tinta: #ffedc9; --financeiro-acento: #ffd27c;
+        --financeiro-borda: #98753b; --financeiro-onda: rgba(255, 210, 124, .10);
+    }
+}
+:root[data-tema=escuro] .kpi-prejuizo {
+    --financeiro-inicio: #48251f; --financeiro-fim: #6b2d25;
+    --financeiro-tinta: #ffece4; --financeiro-acento: #ffb08e;
+    --financeiro-borda: #a65d48; --financeiro-onda: rgba(255, 176, 142, .10);
+}
+:root[data-tema=escuro] .kpi-custo {
+    --financeiro-inicio: #3b2e19; --financeiro-fim: #59401e;
+    --financeiro-tinta: #ffedc9; --financeiro-acento: #ffd27c;
+    --financeiro-borda: #98753b; --financeiro-onda: rgba(255, 210, 124, .10);
+}
+.dash-kpi.kpi-financeiro {
+    isolation: isolate; overflow: hidden;
+    background: linear-gradient(120deg, var(--financeiro-inicio), var(--financeiro-fim));
+    color: var(--financeiro-tinta); border-color: var(--financeiro-borda);
+}
+.kpi-financeiro::before {
+    content: ""; position: absolute; width: 300px; height: 300px; right: -120px; bottom: -180px;
+    background: repeating-radial-gradient(circle, transparent 0 23px, var(--financeiro-onda) 24px 26px, transparent 27px 44px);
+    z-index: -1; pointer-events: none;
+}
+.kpi-financeiro .kpi-rotulo, .kpi-financeiro .kpi-nota { color: var(--financeiro-tinta); }
+.kpi-financeiro .kpi-topo .icone, .dash-kpi.kpi-financeiro::after { color: var(--financeiro-acento); }
+.dash-kpi.kpi-financeiro:hover { border-color: var(--financeiro-acento); }
+
+/* O custo cobre o plano inteiro; este prazo identifica somente a primeira ação. */
+.kpi-prazo { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 4px 10px; margin-top: 6px; padding: 8px 22px 0 0; border-top: 1px solid currentColor; font-size: 13px; line-height: 1.4; }
+.kpi-prazo strong { font-size: 14px; font-weight: 700; }
+
+/* Automação do executivo: situação e próximo passo, sem controles operacionais. */
+.auto-exec-resumo { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin: 24px 0 18px; }
+.auto-exec-kpi { display: flex; flex-direction: column; gap: 6px; padding: 20px; border: 1px solid var(--linha); border-radius: 14px; background: var(--superficie); color: var(--tinta); text-decoration: none; min-width: 0; }
+.auto-exec-kpi > span:first-child { font-size: 15px; font-weight: 600; }
+.auto-exec-kpi > strong { font-size: 34px; line-height: 1.2; }
+.auto-exec-kpi .meta { font-size: 14px; }
+.auto-exec-kpi:hover { border-color: var(--destaque); }
+.auto-exec-atencao { border-color: var(--destaque); background: var(--destaque-claro); }
+.auto-exec-atencao > strong { color: var(--destaque); }
+.auto-exec-resolvidos > strong { color: var(--baixa); }
+.auto-exec-responsavel { display: flex; align-items: flex-start; gap: 10px; color: var(--suave); font-size: 15px; margin: 0 0 28px; }
+.auto-exec-responsavel .icone { margin-top: 3px; }
+.auto-exec-fila { border-top: 1px solid var(--linha); padding: 18px 0; scroll-margin-top: 24px; }
+.auto-exec-fila > summary { font-size: 20px; font-weight: 650; cursor: pointer; }
+.auto-exec-contagem { display: inline-block; min-width: 28px; margin-left: 10px; padding: 1px 9px; border-radius: 999px; background: var(--superficie); border: 1px solid var(--linha); font-size: 14px; text-align: center; vertical-align: 2px; }
+.auto-exec-item { background: var(--superficie); border: 1px solid var(--linha); border-radius: 14px; padding: 22px; margin-top: 16px; overflow-wrap: anywhere; }
+.auto-exec-item h2 { font-size: 20px; margin: 4px 0 10px; }
+.auto-exec-item > p { margin: 0 0 14px; }
+.auto-exec-item .auto-exec-escopo { color: var(--suave); font-size: 14px; margin-bottom: 4px; }
+.auto-exec-passo { border-left: 3px solid var(--destaque); padding-left: 14px; margin: 18px 0; }
+.auto-exec-passo strong { color: var(--destaque); font-size: 14px; }
+.auto-exec-passo p { margin: 4px 0 0; }
+.auto-exec-acompanhar { padding-top: 14px; border-top: 1px solid var(--linha); font-size: 15px; }
+.auto-exec-acompanhar > summary { color: var(--destaque); cursor: pointer; }
+.auto-exec-ultima { padding-top: 14px; border-top: 1px solid var(--linha); }
+@media (max-width: 1180px) { .auto-exec-resumo { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) {
+    .auto-exec-resumo { gap: 10px; }
+    .auto-exec-kpi { padding: 14px; }
+    .auto-exec-item { padding: 18px; }
+}
+@media (max-width: 360px) { .auto-exec-resumo { grid-template-columns: minmax(0, 1fr); } }

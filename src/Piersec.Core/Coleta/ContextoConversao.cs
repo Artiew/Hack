@@ -43,6 +43,19 @@ public sealed class ContextoConversao(
     public static string NormalizarAtivo(string? valor) =>
         string.Join(' ', (valor ?? "").Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)).ToUpperInvariant();
 
+    /// <summary>Metadados opcionais de vínculo: só identificadores curtos; texto inválido não vira chave de correlação.</summary>
+    public string? ConverterIdentificadorDeclarado(string? valor, long linha, string campo)
+    {
+        if (string.IsNullOrWhiteSpace(valor)) return null;
+        var identificador = NormalizarAtivo(valor);
+        if (identificador.Length > 120 || identificador.Any(c => !char.IsLetterOrDigit(c) && !" ._-".Contains(c)))
+        {
+            RegistrarLacuna(linha, campo, "identificador declarado inválido: use até 120 letras, números, espaços, ponto, hífen ou sublinhado; não usado para correlação");
+            return null;
+        }
+        return identificador;
+    }
+
     public string? ConverterUsuario(string? valor, long linha)
     {
         if (!string.IsNullOrWhiteSpace(valor))

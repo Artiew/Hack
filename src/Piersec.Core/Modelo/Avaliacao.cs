@@ -120,7 +120,11 @@ public sealed record Avaliacao
 }
 
 /// <summary>Comparação com o lote anterior (tendência).</summary>
-public sealed record ComparacaoLote(string LoteAnteriorId, DateTimeOffset DataAnterior, double ScoreAnterior, double Diferenca, string Motivo);
+public sealed record ComparacaoLote(string LoteAnteriorId, DateTimeOffset DataAnterior, double ScoreAnterior, double Diferenca, string Motivo)
+{
+    /// <summary>Mesmos fatores com valores disponíveis nos dois lotes. Nulo quando o histórico não permite confirmar.</summary>
+    public bool? MesmosFatoresMedidos { get; init; }
+}
 
 /// <summary>
 /// Um dos problemas que mais pesam no score: um programa, uma máquina ou um grupo de alertas.

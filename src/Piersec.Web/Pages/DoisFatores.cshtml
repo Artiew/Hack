@@ -2,88 +2,106 @@
 @model DoisFatoresModel
 @{
     ViewData["Title"] = "Verificação em duas etapas";
+    ViewData["Entrada"] = true;
     var u = Model.Usuario;
 }
 
-<div class="estreito">
-    <h1>Verificação em duas etapas</h1>
-    <p class="meta">Além da senha, o login pede um código de 6 dígitos que o app do celular gera a cada 30 segundos.
-        Quem descobrir a sua senha não entra sem o seu celular. Tudo funciona sem internet: o site e o app calculam o código sozinhos.</p>
+<div class="seguranca-2fa">
+    <header class="seguranca-cabecalho">
+        <span class="seguranca-emblema" aria-hidden="true"><svg class="icone"><use href="#i-escudo"/></svg></span>
+        <p class="seguranca-legenda">SEGURANÇA DA CONTA</p>
+        <h1>Verificação em duas etapas</h1>
+        <p class="meta">Uma camada extra de proteção: além da senha, use o código do app de autenticação no seu celular.</p>
+    </header>
 
     @if (Sessao.PrecisaConfigurar2fa(User) && !u.Tem2fa)
     {
-        <p class="aviso-forte" role="alert">Falta concluir o cadastro do seu administrador. Leia o QR code abaixo com o aplicativo de autenticação, digite o código de 6 dígitos e clique em Ativar. Depois, guarde os códigos de recuperação e clique em Já guardei, continuar para liberar as outras páginas.</p>
+        <p class="aviso-forte" role="alert"><strong>Conclua a proteção da sua conta de administrador.</strong> Siga as etapas abaixo e, depois de ativar, guarde os códigos de recuperação para liberar o acesso à plataforma.</p>
     }
     @if (Model.Erro is not null)
     {
-        <p class="erro" role="alert">@Model.Erro</p>
+        <p class="erro seguranca-feedback" role="alert">@Model.Erro</p>
     }
     @if (Model.Mensagem is not null)
     {
-        <p class="selo-ok" role="status">@Model.Mensagem</p>
+        <p class="selo-ok seguranca-feedback" role="status">@Model.Mensagem</p>
     }
 
     @if (Model.CodigosNovos.Count > 0)
     {
-        <section class="card" aria-labelledby="titulo-recuperacao">
-            <h2 id="titulo-recuperacao">Seus códigos de recuperação</h2>
-            <p><strong>Anote ou imprima agora: eles NÃO serão mostrados de novo.</strong> Cada um vale uma vez e serve para entrar
-                se você ficar sem o celular. Guarde longe do computador.</p>
+        <section class="card seguranca-cartao" aria-labelledby="titulo-recuperacao">
+            <h2 id="titulo-recuperacao">Guarde seus códigos de recuperação</h2>
+            <p><strong>Eles aparecem apenas uma vez.</strong> Cada código permite um acesso se você ficar sem o celular. Anote ou imprima e guarde em um lugar seguro, longe do computador.</p>
             <ul class="codigos-recuperacao">
                 @foreach (var c in Model.CodigosNovos)
                 {
                     <li><code>@c</code></li>
                 }
             </ul>
-            <p><a class="botao" href="/">Já guardei, continuar</a></p>
+            <a class="botao seguranca-continuar" href="/">Já guardei, continuar</a>
         </section>
     }
 
     @if (!u.Tem2fa)
     {
-        <section class="card">
-            <h2>1. Instale um app de autenticação</h2>
-            <p>No celular: <strong>Google Authenticator</strong> ou <strong>Microsoft Authenticator</strong> (gratuitos, na loja do celular).</p>
-            <h2>2. Leia o QR code com o app</h2>
-            <p class="meta">No app: "+" ou "Adicionar conta" → "Ler QR code".</p>
-            <div class="qr">@Html.Raw(Model.QrSvg)</div>
-            <p class="meta">Não consegue ler? Escolha "Inserir chave de configuração" no app e digite esta chave (tipo: baseado em tempo):</p>
-            <p><code class="chave-2fa">@Model.Chave</code></p>
-            <h2>3. Digite o código que aparece no app</h2>
-            <form method="post" asp-page="/DoisFatores" asp-page-handler="Confirmar" class="formulario">
-                <label for="codigo">Código de 6 dígitos</label>
-                <input id="codigo" name="Codigo" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9 ]{6,7}" required maxlength="7">
-                <button type="submit">Ativar</button>
-            </form>
+        <section class="card seguranca-cartao seguranca-configurar" aria-label="Configurar verificação em duas etapas">
+            <section class="seguranca-preparo" aria-labelledby="titulo-app">
+                <h2 id="titulo-app"><span class="seguranca-passo" aria-hidden="true">1</span> Prepare o aplicativo</h2>
+                <p>Instale o <strong>Google Authenticator</strong> ou o <strong>Microsoft Authenticator</strong> no celular. Ambos são gratuitos.</p>
+            </section>
+            <div class="seguranca-leitura">
+                <h2><span class="seguranca-passo" aria-hidden="true">2</span> Leia o QR code</h2>
+                <p class="meta">No app, toque em “+” ou “Adicionar conta” e escolha “Ler QR code”.</p>
+                <div class="qr">@Html.Raw(Model.QrSvg)</div>
+                <details class="seguranca-chave">
+                    <summary>Não consigo ler o QR code</summary>
+                    <p class="meta">Escolha “Inserir chave de configuração” no app, selecione “Baseado em tempo” e digite esta chave:</p>
+                    <code class="chave-2fa">@Model.Chave</code>
+                </details>
+            </div>
+            <section class="seguranca-confirmacao" aria-labelledby="titulo-confirmar">
+                <h2 id="titulo-confirmar"><span class="seguranca-passo" aria-hidden="true">3</span> Confirme a ativação</h2>
+                <p class="meta" id="ajuda-codigo">Digite os 6 dígitos exibidos no aplicativo. O código muda a cada 30 segundos.</p>
+                <form method="post" asp-page="/DoisFatores" asp-page-handler="Confirmar" class="formulario">
+                    <label for="codigo">Código de verificação</label>
+                    <input id="codigo" name="Codigo" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9 ]{6,7}" required maxlength="7" placeholder="000000" aria-describedby="ajuda-codigo">
+                    <button type="submit">Ativar verificação em duas etapas</button>
+                </form>
+            </section>
+            <p class="seguranca-nota"><svg class="icone" aria-hidden="true"><use href="#i-escudo"/></svg> Depois da configuração, os códigos funcionam mesmo sem internet.</p>
         </section>
     }
-    else
+    else if (Model.CodigosNovos.Count == 0)
     {
-        <section class="card">
-            <p class="selo-ok">✔ Ativada.</p>
-            <p>Códigos de recuperação ainda não usados: <strong>@u.CodigosRecuperacao.Count de @ServicoAutenticacao.QuantidadeCodigosRecuperacao</strong>.</p>
+        <section class="card seguranca-cartao" aria-labelledby="titulo-protegida">
+            <h2 id="titulo-protegida">Sua conta está protegida</h2>
+            <p class="selo-ok">✔ Verificação em duas etapas ativada</p>
+            <p>Códigos de recuperação disponíveis: <strong>@u.CodigosRecuperacao.Count de @ServicoAutenticacao.QuantidadeCodigosRecuperacao</strong>.</p>
 
-            <h2>Gerar códigos de recuperação novos</h2>
-            <p class="meta">Os antigos deixam de valer. Confirme com o código do app.</p>
-            <form method="post" asp-page="/DoisFatores" asp-page-handler="NovosCodigos" class="formulario">
-                <label for="codigo-novos">Código do app</label>
-                <input id="codigo-novos" name="Codigo" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9 ]{6,7}" required maxlength="7">
-                <button type="submit">Gerar códigos novos</button>
-            </form>
-
+            <section class="seguranca-gerenciar" aria-labelledby="titulo-novos">
+                <h2 id="titulo-novos">Gerar novos códigos de recuperação</h2>
+                <p class="meta">Os códigos antigos deixarão de valer. Confirme com o código atual do aplicativo.</p>
+                <form method="post" asp-page="/DoisFatores" asp-page-handler="NovosCodigos" class="formulario">
+                    <label for="codigo-novos">Código do aplicativo</label>
+                    <input id="codigo-novos" name="Codigo" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9 ]{6,7}" required maxlength="7" placeholder="000000">
+                    <button type="submit">Gerar códigos novos</button>
+                </form>
+            </section>
             @if (Model.Obrigatorio)
             {
-                <p class="meta">Para administradores a verificação em duas etapas é obrigatória e não pode ser desligada.
-                    Celular perdido e sem códigos de recuperação: no computador da plataforma, dê dois cliques em "Esqueci a senha do admin.cmd".</p>
+                <p class="meta seguranca-gerenciar">Para administradores, a verificação em duas etapas é obrigatória. Se perder o celular e os códigos de recuperação, use “Esqueci a senha do admin.cmd” no computador da plataforma.</p>
             }
             else
             {
-                <h2>Desligar</h2>
-                <form method="post" asp-page="/DoisFatores" asp-page-handler="Desativar" class="formulario">
-                    <label for="codigo-desligar">Código do app</label>
-                    <input id="codigo-desligar" name="Codigo" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9 ]{6,7}" required maxlength="7">
-                    <button type="submit" class="botao-perigo">Desligar a verificação em duas etapas</button>
-                </form>
+                <details class="seguranca-gerenciar">
+                    <summary>Desligar a verificação em duas etapas</summary>
+                    <p class="meta">Sua conta ficará protegida apenas pela senha.</p>
+                    <form method="post" asp-page="/DoisFatores" asp-page-handler="Desativar" class="formulario">
+                        <label for="codigo-desligar">Código do aplicativo</label>
+                        <input id="codigo-desligar" name="Codigo" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9 ]{6,7}" required maxlength="7">
+                        <button type="submit" class="botao-perigo">Desligar verificação em duas etapas</button>
+                    </form>
+                </details>
             }
         </section>
     }
