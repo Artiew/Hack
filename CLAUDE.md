@@ -96,7 +96,11 @@ está funcionando a pretexto de embelezar.
 - **Nunca leia o conteúdo dos CSVs do desafio** (`dados/`, `var/`, arquivos `Eventos SIEM-*.csv`) nem os relatórios gerados a partir deles.
   Para entender os dados, escreva um script local que imprima **só contagens e "moldes" de formato** (dígito → 9, letra → A),
   mostre o script ao Vitor antes e rode. Testes usam só dados fictícios (`exemplos/` e os criados nos testes).
-- **Nada de nuvem:** sem `git push`, sem GitHub, sem OneDrive/Drive. O projeto viaja por pen drive (ver abaixo).
+- **Nada de nuvem para os dados:** CSVs do desafio, `var/` e relatórios nunca vão para GitHub, OneDrive ou Drive.
+  **Código no GitHub (decisão do Vitor, 08/10/2026):** o grupo usa https://github.com/Artiew/Hack (`origin`).
+  Rotina: `git pull`, testes, `git push` — push só quando o Vitor pedir; antes, conferir com `git ls-files`
+  que nenhum CSV real/`var/` entrou. A pasta local veio de um clone limpo; `var/` e `dados/` foram copiados da
+  pasta antiga (`piersec-antigo`, guardada até confirmar que está tudo certo).
 - Sem credenciais/senhas/tokens no código, nos logs ou no relatório. Ações de "resposta" são sempre simuladas.
 - Nunca maquiar resultado: o relatório declara limites e incertezas reais.
 - Na dúvida se algo é permitido, trate como **não permitido** e pergunte ao Vitor (que consulta um mentor).
