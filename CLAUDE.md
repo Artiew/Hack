@@ -388,4 +388,5 @@ está funcionando a pretexto de embelezar.
   no troubleshooting; quando for registrado, será P-025 (P-022 título da página 1, P-023 números do plano, P-024 PDF).
 - **Identidade do git neste clone:** estava vazia; configurada SÓ no repositório (`git config` local) como
   `Ruan <tavaresdasilvaruan@gmail.com>`, igual aos commits anteriores. Remote: `github.com/Artiew/Hack` (privado).
-  Nesta sessão houve só commit local, sem push.
+  Push feito a pedido do Ruan (08/10/2026): `ccb85bf..071622c` na `main` do GitHub, conferido com `git ls-remote`.
+  `var/` e CSVs continuam fora do git (`.gitignore`).
