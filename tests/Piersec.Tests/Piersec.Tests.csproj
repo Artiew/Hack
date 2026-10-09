@@ -25,10 +25,9 @@
     <ProjectReference Include="..\..\src\Piersec.Web\Piersec.Web.csproj" />
   </ItemGroup>
 
-  <!-- Os testes usam as MESMAS regras e os mesmos exemplos fictícios da plataforma. -->
+  <!-- Os testes usam as MESMAS regras da plataforma. Os CSVs fictícios ficam no código (DadosFicticios.cs), sem arquivos. -->
   <ItemGroup>
     <None Include="..\..\regras\*.json" Link="regras\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
-    <None Include="..\..\exemplos\*.csv" Link="exemplos\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

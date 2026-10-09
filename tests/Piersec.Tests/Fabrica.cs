@@ -18,7 +18,6 @@ internal static class Fabrica
     public const string CabecalhoExemplo = "id_evento,data_hora,ativo,usuario,severidade,tipo,descricao";
 
     public static string PastaRegras => Path.Combine(AppContext.BaseDirectory, "regras");
-    public static string PastaExemplos => Path.Combine(AppContext.BaseDirectory, "exemplos");
 
     /// <summary>As regras reais da plataforma (regras/*.json).</summary>
     public static ConjuntoRegras Regras { get; } = ConjuntoRegras.Carregar(PastaRegras);
@@ -47,8 +46,9 @@ internal static class Fabrica
     public static ArquivoEnviado CsvExemplo(string nome, params string[] linhasDeDados) =>
         Csv(nome, [CabecalhoExemplo, .. linhasDeDados]);
 
+    /// <summary>Um dos CSVs fictícios de <see cref="DadosFicticios"/>, com o mesmo nome e os mesmos bytes do arquivo de antes.</summary>
     public static ArquivoEnviado Exemplo(string nome) =>
-        ArquivoEnviado.De(nome, File.ReadAllBytes(Path.Combine(PastaExemplos, nome)));
+        ArquivoEnviado.De(nome, Encoding.UTF8.GetBytes(DadosFicticios.Arquivos[nome]));
 
     public static ContextoConversao Contexto()
     {
