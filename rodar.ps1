@@ -8,7 +8,7 @@
     .\rodar.ps1 -RedefinirSenhaAdmin  esqueceu a senha: gera uma senha temporaria nova para o admin
 
   Atalhos de dois cliques na pasta: "Abrir Plataforma.cmd" e "Esqueci a senha do admin.cmd".
-  Se o PowerShell bloquear scripts, use o rodar.cmd (mesmos parametros).
+  Se o PowerShell bloquear scripts: powershell -ExecutionPolicy Bypass -File .\rodar.ps1 (mesmos parametros).
 #>
 param(
     [switch]$DoZero,

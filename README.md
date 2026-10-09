@@ -17,14 +17,16 @@ Requisitos: Windows, [SDK do .NET 10](https://dot.net) e Microsoft Edge ou Googl
 Dois cliques em **`Esqueci a senha do admin.cmd`** (gera uma senha temporária, mostrada uma vez, com troca obrigatória).
 Dica: deixe o navegador salvar a senha ao entrar; ele guarda cifrada e preenche sozinho.
 
-Pelo terminal:
+Pelo terminal (PowerShell, na pasta do projeto):
 ```powershell
-.\rodar.cmd                        # compila, roda os testes, sobe o site e abre o navegador
-.\rodar.cmd -DoZero                # o mesmo, apagando antes tudo de var\ (lotes, relatórios, usuários, auditoria, chaves)
-.\rodar.cmd -RedefinirSenhaAdmin   # esqueceu a senha do admin
+.\rodar.ps1                        # compila, roda os testes, sobe o site e abre o navegador
+.\rodar.ps1 -DoZero                # o mesmo, apagando antes tudo de var\ (lotes, relatórios, usuários, auditoria, chaves)
+.\rodar.ps1 -RedefinirSenhaAdmin   # esqueceu a senha do admin
 ```
+Se o PowerShell bloquear scripts, use `powershell -ExecutionPolicy Bypass -File .\rodar.ps1` com os mesmos parâmetros.
 
-O site fica em **https://localhost:5001**. Se algum teste falhar, o site não sobe.
+O site fica em **https://localhost:5001**. Pelo terminal, se algum teste falhar, o site não sobe; os atalhos de dois cliques
+pulam os testes e abrem direto.
 
 **Primeiro acesso:** na primeira execução (ou depois de `-DoZero`) é criado o usuário `admin`. A senha inicial, de
 8 caracteres, aparece **uma única vez** no terminal (ou vem da variável `ADMIN_SENHA_INICIAL`, se tiver exatamente

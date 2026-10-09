@@ -1,7 +1,7 @@
 # Matriz de requisitos
 
 Regra: ✅ só para o que foi **executado e provado**. ⚠️ parcial · ❌ não feito · ❓ depende de informação que ainda não temos.
-Atualizado em **09/10/2026**: resumo da diretoria, terceira fonte e correlação executados com exemplos fictícios. As seções antigas abaixo preservam o histórico; consultar também o estado atual em CLAUDE.md. Números dos dados reais vêm de contagens (`docs/FONTES.md`).
+Atualizado em **09/10/2026**: resumo da diretoria, terceira fonte e correlação executados com exemplos fictícios. As seções antigas abaixo preservam o histórico; Números dos dados reais vêm de contagens (`docs/FONTES.md`).
 
 ## Requisitos funcionais (manual 4.1)
 

@@ -1,6 +1,6 @@
 # Troubleshooting
 
-Um problema por vez, no formato do `docs/PROMPT.md` (seção 6).
+Um problema por vez, sempre no mesmo formato (sintoma, reprodução, causa, correção e verificação).
 
 ## P-001 · `dotnet test` recusa o xUnit v3 no .NET 10
 Requisito afetado: base de testes (todos) · Impacto: bloqueia demo (o `rodar` não sobe o site sem testes)

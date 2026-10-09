@@ -306,7 +306,7 @@ public sealed class ServicoAutenticacao(RepositorioUsuarios repositorio, TimePro
 
     /// <summary>
     /// "Esqueci a senha": gera uma senha temporária nova (mostrada UMA vez), desbloqueia e obriga a troca no próximo
-    /// acesso. Só é chamado por quem tem acesso à máquina (rodar.cmd -RedefinirSenhaAdmin), nunca pelo site.
+    /// acesso. Só é chamado por quem tem acesso à máquina (rodar.ps1 -RedefinirSenhaAdmin ou o atalho "Esqueci a senha do admin.cmd"), nunca pelo site.
     /// Também desliga o 2FA (celular perdido): o admin é obrigado a cadastrar de novo logo depois de trocar a senha.
     /// </summary>
     public string RedefinirSenha(string login)
