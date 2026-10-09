@@ -66,6 +66,21 @@
             <button type="button" class="botao-discreto apresentar" data-apresentar hidden>Apresentar <span aria-hidden="true">⤢</span></button>
         </nav>
         <div class="exec-etapa" id="panorama" data-etapa hidden="@Oculta("panorama")" aria-labelledby="aba-panorama">
+            @{ var gruposDados = OrigemDosDados.Grupos(lote); var avisosDados = OrigemDosDados.Avisos(lote); }
+            @if (gruposDados.Count > 1 || avisosDados.Count > 0)
+            {
+                @* O que é cada arquivo e o que não dá para ligar entre eles, antes de qualquer número. *@
+                <section class="exec-origem" aria-label="De onde vêm os dados" data-origem-dados>
+                    <div class="origem-grupos">
+                        <span class="exec-eyebrow">De onde vêm os dados</span>
+                        @foreach (var g in gruposDados)
+                        {
+                            <span class="tag" title="@string.Join(", ", g.Arquivos)"><strong>@(char.ToUpper(g.Descricao[0]) + g.Descricao[1..])</strong> · @Formatar.Qtd(g.Arquivos.Count, "arquivo", "arquivos") · @(g.TipoEvento == Piersec.Core.Modelo.TiposEvento.Alerta ? Formatar.Qtd(g.Maquinas, "equipamento", "equipamentos") : Formatar.Qtd(g.Maquinas, "máquina", "máquinas"))</span>
+                        }
+                    </div>
+                    @foreach (var aviso in avisosDados) { <p class="exec-limite"><svg class="icone" aria-hidden="true"><use href="#i-sev-alta"/></svg>@aviso</p> }
+                </section>
+            }
             <div class="dash">
                 @* ---- Linha 1: quatro números para decidir. O cartão inteiro é o link para o detalhe. ---- *@
                 <a class="dash-kpi @(lote.Impacto is { ServicosEmRisco: > 0 } ? "kpi-financeiro kpi-prejuizo" : null)" data-resumo-prejuizo href="@Url.Page("/Lote",new {id=lote.Id,secao="servicos"})#servicos">
@@ -400,7 +415,7 @@
         <div class="exec-etapa" id="fontes" data-etapa hidden="@Oculta("fontes")" aria-labelledby="aba-fontes">
         <section class="exec-painel exec-fontes" aria-labelledby="titulo-fontes"><div class="exec-titulo"><div><p class="exec-eyebrow">Qualidade da informação</p><h2 id="titulo-fontes">Saúde das fontes</h2></div><span class="exec-contagem">@Formatar.Qtd(lote.Arquivos.Count(a => a.Fonte is not null),"arquivo reconhecido","arquivos reconhecidos") de @lote.Arquivos.Count</span></div>
             <div class="fontes-grade">@foreach (var arquivo in lote.Arquivos) { <div class="fonte-item"><strong>@(arquivo.Fonte ?? "Fonte não reconhecida")</strong><span class="meta fonte-nome">@arquivo.Nome</span><span class="@(arquivo.Fonte is null ? "erro" : arquivo.RegistrosLidos == 0 || arquivo.RegistrosRejeitados > 0 || arquivo.Lacunas > 0 ? "fonte-atencao" : "fonte-ok")">@(arquivo.Fonte is null ? "Não processado" : arquivo.RegistrosLidos == 0 ? "Sem registros" : arquivo.RegistrosRejeitados > 0 || arquivo.Lacunas > 0 ? "Lido com ressalvas" : "Leitura concluída")</span><p class="meta">@Formatar.Qtd(arquivo.RegistrosLidos,"registro lido","registros lidos") · @Formatar.Qtd(arquivo.RegistrosRejeitados,"rejeitado","rejeitados")</p>@if(arquivo.MotivoNaoProcessado is not null){<p>@arquivo.MotivoNaoProcessado</p>}</div> }</div>
-            @foreach (var aviso in lote.FontesAusentes.Concat(lote.AvisosAmbiente)) { <p class="exec-limite">⚠ @aviso</p> }
+            @foreach (var aviso in OrigemDosDados.Avisos(lote)) { <p class="exec-limite">⚠ @aviso</p> }
             <p class="meta exec-nota">Confiança @s.Confianca: @s.PercentualMedido.ToString("0")% do peso previsto foi medido. Informações ausentes continuam fora da avaliação.</p>
         </section>
         <details class="exec-painel exec-glossario"><summary>Entenda os termos do painel</summary><dl><dt>Score de risco</dt><dd>Indicador de 0 a 100. Quanto maior, maior o risco identificado nas fontes analisadas.</dd><dt>Confiança</dt><dd>Quanto da avaliação pôde ser sustentado pelos dados disponíveis. Não é a probabilidade de um ataque acontecer.</dd><dt>Prejuízo potencial</dt><dd>Faixa de referência para o impacto de um incidente. Não é uma perda confirmada ou um valor contábil da empresa.</dd><dt>Simulação</dt><dd>Recalcula um cenário supondo que as correções escolhidas foram concluídas. Não altera máquinas, chamados ou análises salvas.</dd></dl></details>

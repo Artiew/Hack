@@ -1,3 +1,5 @@
+using Piersec.Core.Analise;
+using Piersec.Core.Modelo;
 using Piersec.Core.Pipeline;
 
 namespace Piersec.Tests;
@@ -99,5 +101,39 @@ public class AvisosTests
         var lote = Fabrica.ProcessadorReal().Processar([Fabrica.Exemplo("vulnerabilidades-ficticio.csv")]);
 
         Assert.Contains("Por que o score pode mudar quando chegam mais fontes", Fabrica.Gerador().Gerar(lote));
+    }
+
+    // ---------- de onde vêm os dados (faixa do Panorama) ----------
+
+    private const string CabecalhoAlertas = "\"timestamp,agent.name,rule.description,data.devname,rule.level,rule.id\"";
+
+    [Fact]
+    public void Origem_separa_falhas_de_alertas_e_avisa_que_nao_se_ligam()
+    {
+        var lote = Fabrica.ProcessadorReal().Processar([
+            Vuln("empresa-a.csv", "A1", "A2", "A3"),
+            Vuln("empresa-b.csv", "B1", "B2", "B3"),
+            Fabrica.Csv("firewall.csv", CabecalhoAlertas, "\"Oct 7,2026 @ 08:00:00.000,coletor,desc,FW-01,12,100\"")]);
+
+        var grupos = OrigemDosDados.Grupos(lote);
+        var falhas = Assert.Single(grupos, g => g.TipoEvento == TiposEvento.Vulnerabilidade);
+        Assert.Equal(["empresa-a.csv", "empresa-b.csv"], falhas.Arquivos);
+        Assert.Equal(6, falhas.Maquinas);
+        Assert.Equal(["firewall.csv"], Assert.Single(grupos, g => g.TipoEvento == TiposEvento.Alerta).Arquivos);
+
+        var avisos = OrigemDosDados.Avisos(lote);
+        Assert.Contains(avisos, a => a.Contains("nenhuma máquina em comum"));
+        Assert.Equal(1, avisos.Count(a => a == OrigemDosDados.AlertasSemLigacao));   // uma vez só, mesmo com várias regras
+        Assert.Contains(OrigemDosDados.AlertasSemLigacao, Fabrica.Gerador().Gerar(lote));
+    }
+
+    [Fact]
+    public void Origem_sem_divergencia_nao_tem_avisos()
+    {
+        var lote = Fabrica.ProcessadorReal().Processar([Vuln("a.csv", "PC1", "PC2", "PC3"), Vuln("b.csv", "PC1", "PC4", "PC5")]);
+
+        Assert.Single(OrigemDosDados.Grupos(lote));
+        Assert.Contains(OrigemDosDados.Avisos(lote), a => a.Contains("Faltou o arquivo"));   // só a fonte ausente
+        Assert.DoesNotContain(OrigemDosDados.Avisos(lote), a => a.Contains("em comum") || a == OrigemDosDados.AlertasSemLigacao);
     }
 }

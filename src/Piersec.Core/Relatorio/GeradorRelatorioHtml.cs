@@ -575,12 +575,10 @@ public sealed partial class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, Conj
 
     private void SecaoLimites(StringBuilder sb, Lote lote)
     {
-        var itens = new List<string>(lote.FontesAusentes.Concat(lote.AvisosAmbiente));
+        var itens = new List<string>(OrigemDosDados.Avisos(lote));
         if (lote.Avaliacao is { } a)
             foreach (var f in a.Score.Fatores.Where(f => f.Valor is null))
                 itens.Add($"\"{f.Nome}\" não foi medido: {f.Explicacao.Replace("Não medido: ", "")}");
-        foreach (var r in lote.RegrasAvaliadas.Where(r => r.MotivoSemOcorrencia?.Contains("0 em comum") == true))
-            itens.Add("Não foi possível ligar os alertas do firewall às máquinas com falhas: os arquivos não têm uma informação em comum (como o nome da máquina atacada).");
         if (lote.Lacunas.Any(l => l.Motivo.Contains("cortada")))
             itens.Add("Alguns arquivos têm exatamente 10.000 linhas, o que pode indicar que a exportação foi cortada: pode haver mais problemas do que os mostrados.");
         itens.Add(regras.Ativos.Premissa);

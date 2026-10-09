@@ -625,6 +625,12 @@ body[data-apresentacao] .exec-tecnico:not([hidden]) { display: block; }
 .cabecalho-painel .acoes .botao { font-size: 14px; }
 .cabecalho-painel .selo-ok { font-size: 14px; }
 
+/* Faixa "De onde vêm os dados" no topo do Panorama: tipo de cada arquivo e avisos de que eles não se ligam. */
+.exec-origem { background: var(--superficie); border: 1px solid var(--linha); border-radius: 12px; padding: 10px 16px; margin: 0 0 16px; }
+.origem-grupos { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.origem-grupos .exec-eyebrow { margin: 0 4px 0 0; }
+.exec-origem .exec-limite { margin: 8px 0 0 !important; }
+
 .dash {
     display: grid; gap: 16px;
     grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(310px, 1.15fr);
