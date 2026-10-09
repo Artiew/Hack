@@ -24,6 +24,10 @@ public sealed class LoteModel(RepositorioLotes repositorio, LotesEmMemoria lotes
     public SimulacaoRemediacao? Simulacao { get; private set; }
     public string? ErroSimulacao { get; private set; }
     public IReadOnlySet<int> Selecionadas { get; private set; } = new HashSet<int>();
+    /// <summary>Mapa de calor serviço × gravidade, já descontando as correções marcadas no simulador.</summary>
+    public IReadOnlyList<LinhaCalor> Mapa { get; private set; } = [];
+    /// <summary>Faixas do score (regras/score.json): as cores do velocímetro vêm daqui, não de números escritos na tela.</summary>
+    public IReadOnlyList<FaixaScore> Faixas => regras.Score.Faixas;
     [BindProperty(SupportsGet = true)] public string? Sev { get; set; }
     [BindProperty(SupportsGet = true)] public string? Secao { get; set; }
     public string SecaoAtual => Secao switch
@@ -40,7 +44,8 @@ public sealed class LoteModel(RepositorioLotes repositorio, LotesEmMemoria lotes
         var lote = lotes.Obter(id);
         if (lote is null) return NotFound();
         Lote = lote;
-        if (Secao is null && simular) Secao = "simulacao";
+        // O simulador mora no painel (Panorama): sem JavaScript, o "Recalcular" volta para ele.
+        if (Secao is null && simular) Secao = "panorama";
         PdfDisponivel = repositorio.ExisteRelatorio(id, "pdf");
         DiretoriaDisponivel = repositorio.ExisteRelatorio(id, "html", VersaoRelatorio.Diretoria);
         PdfDiretoriaDisponivel = repositorio.ExisteRelatorio(id, "pdf", VersaoRelatorio.Diretoria);
@@ -61,6 +66,7 @@ public sealed class LoteModel(RepositorioLotes repositorio, LotesEmMemoria lotes
             }
             catch (ArgumentException ex) { ErroSimulacao = ex.Message; }
         }
+        Mapa = MapaCalor.Montar(lote, ErroSimulacao is null ? Simulacao?.EventosResolvidos : null);
         return Page();
     }
 
@@ -73,8 +79,11 @@ public sealed class LoteModel(RepositorioLotes repositorio, LotesEmMemoria lotes
         try
         {
             var simulacao = new SimuladorRemediacao(regras).Simular(lote, acoesSelecionadas ?? []);
+            // "mapa": o que sobra em cada quadrado do mapa de calor, para ele esfriar junto com o ponteiro.
+            var mapa = MapaCalor.Montar(lote, simulacao.EventosResolvidos)
+                .SelectMany(l => l.Celulas.Select(c => new { servico = l.ServicoId, gravidade = c.Severidade.ToString(), restantes = c.Restantes }));
             return new JsonResult(new { score = simulacao.Score.Valor, faixa = simulacao.Score.Faixa,
-                resumo = ResumoSimulacao(simulacao), acoes = simulacao.Acoes });
+                resumo = ResumoSimulacao(simulacao), acoes = simulacao.Acoes, mapa });
         }
         catch (ArgumentException ex) { return BadRequest(new { erro = ex.Message }); }
     }
@@ -82,9 +91,8 @@ public sealed class LoteModel(RepositorioLotes repositorio, LotesEmMemoria lotes
     public static string ResumoSimulacao(SimulacaoRemediacao s)
     {
         if (s.Acoes == 0) return "Selecione as correções para comparar o cenário.";
-        var esforcos = string.Join(" · ", s.Esforcos.OrderBy(e => e.Key).Select(e =>
-            $"{Formatar.Qtd(e.Value, "ação", "ações")} de esforço {NomeEsforco(e.Key)}"));
-        return $"{Formatar.Qtd(s.Falhas, "falha corrigida", "falhas corrigidas")} em {Formatar.Qtd(s.Maquinas, "máquina", "máquinas")} · {esforcos}. Maior prazo individual: {Formatar.Qtd(s.PrazoDias, "dia", "dias")}.";
+        // Uma linha, para caber no painel: o esforço e o custo de cada correção já aparecem ao lado da caixa.
+        return $"Corrige {Formatar.Qtd(s.Falhas, "falha", "falhas")} em {Formatar.Qtd(s.Maquinas, "máquina", "máquinas")} · até {Formatar.Qtd(s.PrazoDias, "dia", "dias")}.";
     }
 
     public static string NomeEsforco(Nivel nivel) => nivel switch { Nivel.Alto => "alto", Nivel.Medio => "médio", _ => "baixo" };
@@ -94,6 +102,7 @@ public sealed class LoteModel(RepositorioLotes repositorio, LotesEmMemoria lotes
         var pontos = Math.Round(Math.Abs(c.Diferenca));
         var quem = Lote.RevisaoDe is not null ? "o lote original" : "a análise anterior";
         return c.Diferenca >= 0.5 ? $"pior que {quem} (+{pontos:0})"
-            : c.Diferenca <= -0.5 ? $"melhor que {quem} (−{pontos:0})" : $"igual a {quem}";
+            : c.Diferenca <= -0.5 ? $"melhor que {quem} (−{pontos:0})"
+            : Lote.RevisaoDe is not null ? "igual ao lote original" : "igual à análise anterior";
     }
 }

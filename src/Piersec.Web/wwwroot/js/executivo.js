@@ -93,7 +93,8 @@
             e.preventDefault();
             mostrar(etapa.id, true, true, true, url.hash.substring(1));
             if (alvo !== etapa) {
-                for (var pai = alvo.parentElement; pai && pai !== etapa; pai = pai.parentElement) {
+                // Começa no próprio alvo: o mapa de calor aponta para o <details> do serviço, que precisa abrir.
+                for (var pai = alvo; pai && pai !== etapa; pai = pai.parentElement) {
                     if (pai.tagName === "DETAILS") pai.open = true;
                 }
                 alvo.scrollIntoView({ block: "start" });
@@ -123,27 +124,71 @@
         var mostrado = parseFloat((alvoNumero.textContent || "0").replace(",", ".")) || 0;
         var semMovimento = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
         var animacao = null;
+        // Velocímetro: o ponteiro gira pelo atributo transform do SVG (a CSP bloqueia style="..." vindo do HTML).
+        var ponteiro = resultado.querySelector("[data-ponteiro]");
+        var centro = ponteiro ? (ponteiro.dataset.centro || "120 114") : "";
+        var graus = ponteiro ? (parseFloat(ponteiro.dataset.graus) || 2.4) : 0; // graus por ponto do score (arco de 240°)
+        function girar(valor) {
+            // O "balanço" pode passar um pouco de 0 ou 100 no meio da animação; o limite fica um pouco além do arco.
+            if (ponteiro) ponteiro.setAttribute("transform", "rotate(" + (Math.max(-2, Math.min(valor, 102)) * graus).toFixed(2) + " " + centro + ")");
+        }
+        var recalcular = form.querySelector("[data-recalcular]");
+        if (recalcular) recalcular.hidden = true; // com JavaScript, recalcula sozinho ao marcar
 
-        // O número desce contando, em vez de pular: o executivo VÊ o risco caindo ao marcar a correção.
+        // O número desce contando e o ponteiro desce junto, com um leve balanço no fim, como num painel de carro.
         function animarPara(destino) {
             if (animacao) cancelAnimationFrame(animacao);
-            var partida = mostrado, inicio = null, duracao = 550;
+            var partida = mostrado, inicio = null, duracao = 900;
             if (semMovimento || !window.requestAnimationFrame) {
                 mostrado = destino;
                 alvoNumero.textContent = Math.round(destino).toLocaleString("pt-BR");
+                girar(destino);
                 return;
             }
             function passo(agora) {
                 if (inicio === null) inicio = agora;
                 var t = Math.min((agora - inicio) / duracao, 1);
                 var suave = 1 - Math.pow(1 - t, 3);
+                var balanco = 1 + 2.4 * Math.pow(t - 1, 3) + 1.4 * Math.pow(t - 1, 2); // passa um pouco e volta
                 var valor = partida + (destino - partida) * suave;
                 mostrado = valor; // guarda o que está NA TELA: se outra animação começar, ela parte daqui
                 alvoNumero.textContent = Math.round(valor).toLocaleString("pt-BR");
+                girar(partida + (destino - partida) * balanco);
                 if (t < 1) animacao = requestAnimationFrame(passo);
-                else { mostrado = destino; animacao = null; }
+                else { mostrado = destino; girar(destino); animacao = null; }
             }
             animacao = requestAnimationFrame(passo);
+        }
+
+        // Faixa com a cor certa ("Crítico" → faixa-critico), igual a Texto.NormalizarChave no servidor.
+        function chave(texto) {
+            return (texto || "").trim().normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[\s-]/g, "_");
+        }
+        function mostrarFaixa(nome) {
+            alvoFaixa.textContent = nome;
+            alvoFaixa.className = "faixa-risco faixa-" + chave(nome);
+        }
+
+        // Mapa de calor esfriando: mesma escala logarítmica do servidor (MapaCalor.Intensidade), sempre sobre o máximo de HOJE.
+        var tabelaCalor = document.querySelector("[data-calor-max]");
+        var maximoHoje = tabelaCalor ? parseInt(tabelaCalor.dataset.calorMax, 10) || 0 : 0;
+        function nivelCalor(valor) {
+            if (valor <= 0 || maximoHoje <= 0) return 0;
+            return Math.round(Math.min(1, Math.log(1 + valor) / Math.log(1 + maximoHoje)) * 10);
+        }
+        function atualizarMapa(mapa) {
+            if (!tabelaCalor || !mapa) return;
+            mapa.forEach(function (item) {
+                var celula = tabelaCalor.querySelector('[data-calor="' + (window.CSS && CSS.escape ? CSS.escape(item.servico + "|" + item.gravidade) : item.servico + "|" + item.gravidade) + '"]');
+                if (!celula) return;
+                var hoje = parseInt(celula.dataset.hoje, 10) || 0;
+                celula.textContent = item.restantes.toLocaleString("pt-BR");
+                celula.className = celula.className.replace(/\bcalor-\d+\b/, "calor-" + nivelCalor(item.restantes));
+                var dica = celula.dataset.rotulo + ": " + hoje.toLocaleString("pt-BR") + (hoje === 1 ? " problema hoje" : " problemas hoje") +
+                    (item.restantes !== hoje ? "; sobram " + item.restantes.toLocaleString("pt-BR") + " com as correções marcadas" : "");
+                celula.title = dica;
+                celula.setAttribute("aria-label", dica);
+            });
         }
 
         // Para a contagem no meio do caminho (erro, ou score que voltou nulo): senão ela sobrescreve o "—".
@@ -158,7 +203,7 @@
                     alvoDelta.textContent = "−" + Math.round(queda) + "% do risco";
                     alvoDelta.removeAttribute("data-sem-mudanca");
                 } else {
-                    alvoDelta.textContent = "nada marcado ainda";
+                    alvoDelta.textContent = "hoje · nada marcado";
                     alvoDelta.setAttribute("data-sem-mudanca", "");
                 }
             }
@@ -178,14 +223,16 @@
                     if (atual !== versao) return;
                     if (corpo.score === null) { pararAnimacao(); alvoNumero.textContent = "—"; atualizarQueda(scoreAtual); }
                     else { animarPara(corpo.score); atualizarQueda(corpo.score); }
-                    alvoFaixa.textContent = corpo.faixa;
-                    resultado.querySelector("[data-resumo-simulado]").textContent = corpo.resumo;
+                    mostrarFaixa(corpo.faixa);
+                    atualizarMapa(corpo.mapa);
+                    resultado.querySelector("[data-resumo-simulado]").textContent = corpo.acoes > 0 ? corpo.resumo
+                        : "O ponteiro desce na hora. Nada é executado: é só uma simulação.";
                 })
                 .catch(function (ex) {
                     if (atual !== versao || ex.name === "AbortError") return;
                     pararAnimacao();
                     alvoNumero.textContent = "—";
-                    alvoFaixa.textContent = "Não atualizado";
+                    mostrarFaixa("Não atualizado");
                     resultado.querySelector("[data-resumo-simulado]").textContent = "";
                     erro.textContent = "Não foi possível atualizar o cenário. Use Recalcular cenário para tentar novamente.";
                     erro.hidden = false;

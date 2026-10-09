@@ -13,12 +13,14 @@
     var achados = Agrupamentos.CorrelacoesMaisGraves(lote.Correlacoes).Where(c => escolhida is null || c.Severidade == escolhida).Take(20).ToList();
 }
 
-<div class="cabecalho-pagina">
-    <p><a href="/">← Visão geral</a></p>
-    <p class="exec-eyebrow">Panorama de segurança · lote @(lote.Id[..8])</p><h1>Visão executiva</h1>
-    <p class="meta">Processado em @Formatar.DataHora(lote.CriadoEmUtc, fuso) (horário de Brasília) ·
-        @Formatar.Qtd(lote.Arquivos.Count(a => a.Fonte is not null), "arquivo analisado", "arquivos analisados") ·
-        @Formatar.Qtd(lote.Eventos.Count, "evento", "eventos")</p>
+<div class="cabecalho-pagina cabecalho-painel">
+    <div class="cabecalho-titulo">
+        <p class="exec-eyebrow">@if (tecnico) { <a href="/">← Visão geral</a><span aria-hidden="true"> · </span> }Lote @(lote.Id[..8]) · @Formatar.DataHora(lote.CriadoEmUtc, fuso) (Brasília) ·
+            @Formatar.Qtd(lote.Arquivos.Count(a => a.Fonte is not null), "arquivo", "arquivos") ·
+            @Formatar.Qtd(lote.Eventos.Count, "evento", "eventos")</p>
+        <h1>Visão executiva</h1>
+    </div>
+    @if (lote.Avaliacao is { } avaliacaoTopo) { <p class="cabecalho-frase">@avaliacaoTopo.FraseSituacao</p> }
     @if (GeradorRelatorioHtml.AvisoRevisao(lote, diretoria: !tecnico) is { } avisoRevisao)
     {
         <p class="aviso-forte" role="note">⚠ @avisoRevisao <a href="/Lote/@lote.RevisaoDe">Abrir o lote original →</a></p>

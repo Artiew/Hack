@@ -390,3 +390,30 @@ está funcionando a pretexto de embelezar.
   `Ruan <tavaresdasilvaruan@gmail.com>`, igual aos commits anteriores. Remote: `github.com/Artiew/Hack` (privado).
   Push feito a pedido do Ruan (08/10/2026): `ccb85bf..071622c` na `main` do GitHub, conferido com `git ls-remote`.
   `var/` e CSVs continuam fora do git (`.gitignore`).
+
+## Continuidade — 08/10/2026 (painel em uma tela: velocímetro + mapa de calor)
+- **Pedido do Ruan:** dashboard numa tela só, com a estrutura de um painel de mercado que ele mandou (linha de números,
+  gráfico grande, coluna com medidor e lista), mapa de calor, letra legível, botões que levam a outro lugar e decisão
+  que faz o score descer "como velocímetro de carro". A imagem foi usada SÓ como estrutura (regra do leiame/PROMPT 5.3).
+- **Panorama (`_PainelExecutivo.cshtml`) virou a dashboard:** 4 cartões-link (prejuízo em faixa → Serviços; custo →
+  Plano; tendência → evolução; confiança → Fontes); **mapa de calor serviço × gravidade** (`Core/Analise/MapaCalor`,
+  escala logarítmica em 11 classes `calor-0..10`; analista vai aos eventos filtrados, executivo ao serviço aberto na aba
+  Serviços); **velocímetro de 240°** com as decisões simuláveis ao lado (marcar → ponteiro gira com leve balanço,
+  número desce contando, faixa troca de cor, mapa esfria); "O que mais pesa" (fatores) e "Evolução do risco".
+  Cabeçalho da página numa faixa só, com a "situação em uma frase".
+- **Aba Plano de ação:** leitura completa, SEM segundo simulador (evita dois formulários iguais); botão "Simular no
+  velocímetro →". "Peso de cada problema" e "O que exige uma decisão" mudaram para lá.
+- **Simulador:** `SimulacaoRemediacao.EventosResolvidos`; o JSON do `?handler=Simular` traz `mapa`; sem JavaScript o
+  GET volta para o Panorama. Resumo encurtado ("Corrige N falhas em M máquinas · até X dias.").
+- **CSP:** o site bloqueia `style="..."` no HTML. Por isso a cor do mapa vai por classe e o ponteiro pelo atributo
+  `transform` do SVG (o JS anima o atributo). A antiga barra `data-barra-simulada` usava `style` e já era bloqueada.
+- Também: favicon próprio (`wwwroot/favicon.svg`; o 404 do favicon era o único erro do console), "igual à análise
+  anterior" (antes "igual a a"), 71 linhas de CSS morto removidas, nada abaixo de 14px nas abas do painel.
+- **Verificação:** 313 testes (5 novos em `MapaCalorTests`), build sem avisos. Edge pilotado pelo DevTools (CDP) numa
+  instância temporária com usuários e exemplos fictícios: 1920×950 cabe sem rolagem (950/950 px); marcar 1 decisão
+  50 → 10, giro 119° → 24°, "−80% do risco", células críticas 10 → 0 e 8 → 0; todas → 6; Limpar → 50; executivo clica
+  no mapa → aba Serviços com o serviço aberto, sem seção técnica; GET sem JS simula; 500 px sem rolagem lateral;
+  **0 erros de console**. Prints claro/escuro conferidos.
+- **Limites:** em 1366×768 (janela ~650 px) a linha de baixo exige rolar. O roteiro `tests/verificar-executivo.cjs`
+  (Node) NÃO rodou aqui (sem Node) e pode precisar de ajuste: a simulação saiu da aba Plano e foi para o Panorama.
+  O roteiro de CDP usado está no scratchpad da sessão, não no repositório.

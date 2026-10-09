@@ -5,7 +5,11 @@ using Piersec.Core.Padronizacao;
 namespace Piersec.Core.Analise;
 
 public sealed record SimulacaoRemediacao(ScoreRisco Score, int Acoes, int Falhas, int Maquinas, int PrazoDias,
-    IReadOnlyDictionary<Nivel, int> Esforcos);
+    IReadOnlyDictionary<Nivel, int> Esforcos)
+{
+    /// <summary>Eventos que as correções marcadas resolveriam: o mapa de calor do painel esfria com eles.</summary>
+    public IReadOnlySet<string> EventosResolvidos { get; init; } = new HashSet<string>(StringComparer.Ordinal);
+}
 
 /// <summary>Projeção somente em memória: união das falhas corrigidas, sem gravar lote nem executar ações.</summary>
 public sealed class SimuladorRemediacao(ConjuntoRegras regras)
@@ -31,6 +35,9 @@ public sealed class SimuladorRemediacao(ConjuntoRegras regras)
         var score = acoes.Count == 0 ? avaliacao.Score
             : new CalculadoraScore(regras.Score, regras.Ativos).Calcular(restantes, tiposMedidos, populacao);
         return new(score, acoes.Count, removidas.Count, removidas.Select(e => e.Ativo).Distinct(StringComparer.Ordinal).Count(),
-            acoes.Count == 0 ? 0 : acoes.Max(a => a.PrazoDias), acoes.GroupBy(a => a.Esforco).ToDictionary(g => g.Key, g => g.Count()));
+            acoes.Count == 0 ? 0 : acoes.Max(a => a.PrazoDias), acoes.GroupBy(a => a.Esforco).ToDictionary(g => g.Key, g => g.Count()))
+        {
+            EventosResolvidos = idsRemovidos,
+        };
     }
 }
