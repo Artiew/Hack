@@ -260,7 +260,7 @@ public sealed class PlanejadorAvaliacao(ConjuntoRegras regras, CalculadoraScore 
         var encadeadas = Correlacoes(correlacoes, "ativo_exposto_com_vulnerabilidade_e_alerta");
         if (encadeadas.Count > 0 && picos.Count == 0)
             acoes.Add(Nova(AcaoInvestigarPicos, "Verificar os alertas ligados a máquinas expostas", "verificar alertas em máquinas expostas",
-                "Pedir à equipe que confira os alertas direcionados, o acesso externo e as falhas do mesmo ativo. As evidências estão nas correlações do relatório completo; não presumir invasão.",
+                "Pedir à equipe que confira os alertas direcionados, o acesso externo e as falhas do mesmo ativo. As evidências estão nas correlações do relatório técnico; não presumir invasão.",
                 "Confere a relação entre três fontes e orienta a resposta; preparar o plano não reduz o score.",
                 null, Nivel.Alto, Nivel.Baixo, Plano.PrazoInvestigacaoDias, encadeadas.Count, []));
 

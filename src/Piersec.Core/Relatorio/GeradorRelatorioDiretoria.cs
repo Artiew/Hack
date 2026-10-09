@@ -15,9 +15,9 @@ public sealed partial class GeradorRelatorioHtml
             <!doctype html><html lang="pt-BR"><head><meta charset="utf-8">
             <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'">
             <meta name="viewport" content="width=device-width, initial-scale=1">
-            <title>Relatório de segurança — versão para a diretoria</title><style>{EstiloResumoDiretoria}</style></head><body>
+            <title>Relatório executivo de segurança</title><style>{EstiloResumoDiretoria}</style></head><body>
             <section class='folha'><header><p class='selo'>{H(SeloConfidencialidade)}</p>
-            <p class='marca'>ARV Security · decisão executiva</p><h1>Resumo para a diretoria</h1>
+            <p class='marca'>ARV Security · Relatório executivo</p><h1>Resumo para a diretoria</h1>
             <p class='meta'>{H(Formatar.DataHora(lote.CriadoEmUtc, fusoExibicao))} (Brasília) · referência {H(lote.Id[..8])}</p></header>
             """);
         var validado = lote.Validacao?.TudoCerto == true;
@@ -73,7 +73,7 @@ public sealed partial class GeradorRelatorioHtml
             sb.Append("<li>Há fontes não recebidas ou arquivos não reconhecidos. A equipe deve completar a coleta.</li>");
         if (lote.Ajustes.Count > 0)
             sb.Append($"<li>Esta análise contém {Formatar.Qtd(lote.Ajustes.Count, "classificação revisada", "classificações revisadas")} por pessoas, com motivos registrados.</li>");
-        sb.Append($"<li>As ações são simuladas. Planos preparados não significam correções aplicadas.</li></ul><p class='meta'>A origem dos números, os critérios e as instruções de execução estão na {H(ReferenciaVersaoCompleta)}.</p><footer>2 de 3 · Consulte os termos na próxima página. {H(SeloConfidencialidade)}</footer></section>");
+        sb.Append($"<li>As ações são simuladas. Planos preparados não significam correções aplicadas.</li></ul><p class='meta'>A origem dos números, os critérios e as instruções de execução estão no {H(ReferenciaRelatorioTecnico)}.</p><footer>2 de 3 · Consulte os termos na próxima página. {H(SeloConfidencialidade)}</footer></section>");
         sb.Append($"""
             <section class='folha'><header><p class='marca'>ARV Security · consulta rápida</p><h1>Glossário rápido</h1>
             <p>Os termos do relatório, em linguagem simples, para apoiar sua decisão.</p></header>

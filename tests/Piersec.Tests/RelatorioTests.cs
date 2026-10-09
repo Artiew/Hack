@@ -51,7 +51,7 @@ public class RelatorioTests
                             "3. Entendendo o score", "4. Plano de ação completo"];
         Assert.All(mantidas, s => Assert.Contains(s, diretoria));
         Assert.All(tiradas, s => Assert.DoesNotContain(s, diretoria));
-        Assert.Contains("versão para a diretoria", diretoria);
+        Assert.Contains("Relatório executivo", diretoria);
         Assert.Contains(GeradorRelatorioHtml.SeloConfidencialidade, diretoria);
         // Nenhuma referência a um anexo que o executivo não recebe.
         Assert.DoesNotMatch(@"anexo [A-I]\b", diretoria);

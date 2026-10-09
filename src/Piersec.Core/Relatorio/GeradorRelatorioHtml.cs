@@ -9,8 +9,9 @@ using Piersec.Core.Operacao;
 namespace Piersec.Core.Relatorio;
 
 /// <summary>
-/// Completo: tudo, para admin e analista. Diretoria: só o que o executivo usa para decidir (resumo, serviços e prejuízo,
-/// impacto financeiro e prioridades); metodologia, tabelas detalhadas e anexos ficam na versão completa.
+/// Completo ("relatório técnico"): tudo, para admin e analista. Diretoria ("relatório executivo"): só o que o executivo usa
+/// para decidir (resumo, serviços e prejuízo, impacto financeiro e prioridades); metodologia, tabelas detalhadas e anexos
+/// ficam no relatório técnico. Os nomes internos (Completo/Diretoria, relatorio-diretoria.*) não mudam: lotes já salvos continuam abrindo.
 /// </summary>
 public enum VersaoRelatorio { Completo, Diretoria }
 
@@ -31,8 +32,8 @@ public sealed partial class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, Conj
 
     private readonly CalculadoraScore _calculadora = new(regras.Score, regras.Ativos);
 
-    /// <summary>Na versão da diretoria, as referências a anexos apontam para a versão completa (que o executivo não recebe).</summary>
-    public const string ReferenciaVersaoCompleta = "versão completa do relatório, com a equipe técnica";
+    /// <summary>No relatório executivo, as referências a anexos apontam para o relatório técnico (que o executivo não recebe).</summary>
+    public const string ReferenciaRelatorioTecnico = "relatório técnico, com a equipe técnica";
 
     public string Gerar(Lote lote, VersaoRelatorio versao = VersaoRelatorio.Completo)
     {
@@ -48,18 +49,18 @@ public sealed partial class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, Conj
             <meta charset="utf-8">
             <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'">
             <meta name="viewport" content="width=device-width, initial-scale=1">
-            <title>Relatório de segurança{(diretoria ? " para a diretoria" : "")} — lote {H(lote.Id[..8])}</title>
+            <title>Relatório {(diretoria ? "executivo" : "técnico")} de segurança — lote {H(lote.Id[..8])}</title>
             <style>{Estilo}</style>
             </head>
             <body>
             {Sprite}
             <header class="capa">
               <p class="selo">{H(SeloConfidencialidade)}</p>
-              <h1>Relatório de segurança{(diretoria ? " — versão para a diretoria" : "")}</h1>
+              <h1>Relatório {(diretoria ? "executivo" : "técnico")} de segurança</h1>
               <p class="meta">Gerado automaticamente pela plataforma em {H(Formatar.DataHora(lote.CriadoEmUtc, fusoExibicao))} (horário de Brasília)
               · lote {H(lote.Id[..8])} · {lote.Arquivos.Count(a => a.Fonte is not null)} de {lote.Arquivos.Count} arquivo(s) analisado(s).
               {(diretoria
-                  ? $"O detalhe técnico (operação automática, limites da análise e anexos) está na {ReferenciaVersaoCompleta}."
+                  ? $"O detalhe técnico (operação automática, limites da análise e anexos) está no {ReferenciaRelatorioTecnico}."
                   : "A primeira página é para a diretoria; o detalhe técnico está nos anexos.")}</p>
               {SeloValidacao(lote.Validacao, diretoria)}
             </header>
@@ -139,7 +140,7 @@ public sealed partial class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, Conj
         var falhas = v.Total - v.Aprovadas;
         return $"<div class=\"nao-validado\">✖ RELATÓRIO NÃO VALIDADO: {falhas} de {v.Total} verificações de consistência falharam " +
                $"({H(string.Join("; ", v.Verificacoes.Where(x => !x.Aprovada).Select(x => $"{x.Id}: {x.Descricao}")))}). " +
-               $"Os números abaixo NÃO devem ser usados para decisão até a correção. Detalhes {(diretoria ? "na " + ReferenciaVersaoCompleta : "no anexo H")}.</div>";
+               $"Os números abaixo NÃO devem ser usados para decisão até a correção. Detalhes {(diretoria ? "no " + ReferenciaRelatorioTecnico : "no anexo H")}.</div>";
     }
 
     /// <summary>
@@ -153,7 +154,7 @@ public sealed partial class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, Conj
         var antes = lote.Comparacao is { } c ? $" Antes dos ajustes, o score era {Inteiro(c.ScoreAnterior)}." : "";
         return $"Esta é uma REVISÃO do lote {lote.RevisaoDe[..8]}: " +
                $"{Formatar.Qtd(lote.Ajustes.Count, "severidade foi ajustada", "severidades foram ajustadas")} por pessoas que discordaram da plataforma, " +
-               $"cada uma com motivo registrado ({(diretoria ? ReferenciaVersaoCompleta : "anexo J")}).{antes}";
+               $"cada uma com motivo registrado ({(diretoria ? ReferenciaRelatorioTecnico : "anexo J")}).{antes}";
     }
 
     private void AnexoAjustes(StringBuilder sb, Lote lote)
@@ -451,13 +452,13 @@ public sealed partial class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, Conj
             <h2>{Ic("plano")}4. Plano de ação completo</h2>
             <p>O resultado de cada ação é <strong>calculado</strong> contando as falhas que ela elimina. A melhora no score segue a ordem do plano:
             cada ação conta as anteriores como já feitas, e por isso as melhoras somadas dão a queda do plano inteiro.
-            Prazos e esforço seguem as premissas {(diretoria ? "da " + ReferenciaVersaoCompleta : "do anexo F")}.</p>
+            Prazos e esforço seguem as premissas {(diretoria ? "do " + ReferenciaRelatorioTecnico : "do anexo F")}.</p>
             <table><thead><tr><th>#</th><th>Ação e como fazer</th><th>Resultado esperado</th><th>Melhora no score</th><th>Custo estimado</th><th>Impacto</th><th>Esforço</th><th>Prazo</th></tr></thead><tbody>
             """);
         foreach (var acao in a.Acoes)
         {
-            // A lista de máquinas (anexo B) só existe na versão completa.
-            var comoFazer = diretoria ? acao.ComoFazer.Replace("A lista está no anexo B.", $"A lista está na {ReferenciaVersaoCompleta}.") : acao.ComoFazer;
+            // A lista de máquinas (anexo B) só existe no relatório técnico.
+            var comoFazer = diretoria ? acao.ComoFazer.Replace("A lista está no anexo B.", $"A lista está no {ReferenciaRelatorioTecnico}.") : acao.ComoFazer;
             // Ou a ação derruba o score (e dizemos quanto), ou não derruba. "Não calculado" deixaria o leitor em dúvida.
             var melhora = acao.QuedaScore is { } q && acao.PercentualScore is { } pct && q > 0
                 ? $"<strong>−{H(Pct(pct))}</strong><br><span class=\"pequeno\">{H(Pontos(q))} a menos</span>"

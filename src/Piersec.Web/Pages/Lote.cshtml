@@ -38,27 +38,36 @@
         }
         @if (tecnico)
         {
-            <a class="botao" href="/lotes/@lote.Id/relatorio.html" target="_blank" rel="noopener">Abrir relatório (HTML)</a>
+            @* Admin e analista: os dois relatórios, cada um em HTML e PDF. *@
+            <a class="botao" href="/lotes/@lote.Id/relatorio.html" target="_blank" rel="noopener">Relatório técnico (HTML)</a>
             @if (Model.PdfDisponivel)
             {
-                <a class="botao botao-secundario" href="/lotes/@lote.Id/relatorio.pdf" download="relatorio-@(lote.Id[..8]).pdf">Baixar PDF</a>
+                <a class="botao botao-secundario" href="/lotes/@lote.Id/relatorio.pdf" download="relatorio-tecnico-@(lote.Id[..8]).pdf">Baixar PDF técnico</a>
             }
             else
             {
-                <span class="erro">O PDF não foi gerado (veja a mensagem no terminal). Abra o HTML e use Imprimir → Salvar como PDF.</span>
+                <span class="erro">O PDF técnico não foi gerado (veja a mensagem no terminal). Abra o HTML e use Imprimir → Salvar como PDF.</span>
             }
             @if (Model.DiretoriaDisponivel)
             {
-                <a class="botao botao-secundario" href="/lotes/@lote.Id/relatorio.html?versao=diretoria" target="_blank" rel="noopener">Versão da diretoria</a>
+                <a class="botao" href="/lotes/@lote.Id/relatorio.html?versao=diretoria" target="_blank" rel="noopener">Relatório executivo (HTML)</a>
+                @if (Model.PdfDiretoriaDisponivel)
+                {
+                    <a class="botao botao-secundario" href="/lotes/@lote.Id/relatorio.pdf?versao=diretoria" download="relatorio-executivo-@(lote.Id[..8]).pdf">Baixar PDF executivo</a>
+                }
+                else
+                {
+                    <span class="erro">O PDF executivo não foi gerado. Abra o HTML executivo e use Imprimir → Salvar como PDF.</span>
+                }
             }
         }
         else if (Model.DiretoriaDisponivel)
         {
-            @* O servidor entrega ao executivo sempre a versão da diretoria, mesmo sem ?versao. *@
-            <a class="botao" href="/lotes/@lote.Id/relatorio.html" target="_blank" rel="noopener">Abrir relatório (HTML)</a>
+            @* O servidor entrega ao executivo sempre o relatório executivo, mesmo sem ?versao. *@
+            <a class="botao" href="/lotes/@lote.Id/relatorio.html" target="_blank" rel="noopener">Relatório executivo (HTML)</a>
             @if (Model.PdfDiretoriaDisponivel)
             {
-                <a class="botao botao-secundario" href="/lotes/@lote.Id/relatorio.pdf" download="relatorio-diretoria-@(lote.Id[..8]).pdf">Baixar PDF</a>
+                <a class="botao botao-secundario" href="/lotes/@lote.Id/relatorio.pdf" download="relatorio-executivo-@(lote.Id[..8]).pdf">Baixar PDF executivo</a>
             }
             else
             {
@@ -67,7 +76,7 @@
         }
         else
         {
-            <span class="meta">O relatório para a diretoria não existe para este lote (ele foi analisado antes dessa versão existir). Peça à equipe técnica para enviar os arquivos de novo.</span>
+            <span class="meta">O relatório executivo não existe para este lote (ele foi analisado antes dessa versão existir). Peça à equipe técnica para enviar os arquivos de novo.</span>
         }
     </div>
     @if (lote.Validacao is { } v && !v.TudoCerto)

@@ -174,8 +174,8 @@ app.UseAuthorization();
 app.UseMiddleware<ExigirTrocaDeSenha>();
 
 app.MapRazorPages();
-// Executivo recebe SEMPRE a versão da diretoria (não adianta pedir a completa). Admin e analista recebem a completa,
-// ou a da diretoria com ?versao=diretoria (para conferir o que a diretoria vai ler).
+// Executivo recebe SEMPRE o relatório executivo (não adianta pedir o técnico). Admin e analista recebem o técnico,
+// ou o executivo com ?versao=diretoria (HTML e PDF), para conferir e baixar o que a diretoria vai ler.
 app.MapGet("/lotes/{id}/relatorio.html", (string id, string? versao, HttpContext ctx, RepositorioLotes repo, Auditoria auditoria) =>
     ArquivoRelatorio(ctx, repo, auditoria, id, versao, "html", "text/html; charset=utf-8"));
 app.MapGet("/lotes/{id}/relatorio.pdf", (string id, string? versao, HttpContext ctx, RepositorioLotes repo, Auditoria auditoria) =>
@@ -212,7 +212,7 @@ static IResult ArquivoRelatorio(HttpContext ctx, RepositorioLotes repo, Auditori
     if (!RepositorioLotes.IdValido(id) || repo.LerRelatorio(id, extensao, versao) is not { } conteudo)
         return Results.NotFound();
     auditoria.Registrar(ctx.User.Identity?.Name, "relatorio_aberto",
-        $"lote {id[..8]} · {extensao}{(versao == VersaoRelatorio.Diretoria ? " · versão da diretoria" : "")}");
+        $"lote {id[..8]} · {extensao} · {(versao == VersaoRelatorio.Diretoria ? "relatório executivo" : "relatório técnico")}");
     ctx.Response.Headers.ContentSecurityPolicy = CabecalhosSeguranca.CspRelatorio;
     return Results.Bytes(conteudo, tipo); // decifrado só na memória, na hora de enviar
 }

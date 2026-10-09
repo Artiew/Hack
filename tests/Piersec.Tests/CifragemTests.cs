@@ -131,7 +131,7 @@ public class CifragemTests : IDisposable
         // A versão da diretoria também é gerada (HTML e PDF) e também fica cifrada.
         Assert.StartsWith("%PDF-", Encoding.ASCII.GetString(repositorio.LerRelatorio(resultado.Lote.Id, "pdf", VersaoRelatorio.Diretoria)!, 0, 5));
         var diretoria = Encoding.UTF8.GetString(repositorio.LerRelatorio(resultado.Lote.Id, "html", VersaoRelatorio.Diretoria)!);
-        Assert.Contains("versão para a diretoria", diretoria);
+        Assert.Contains("Relatório executivo", diretoria);
         Assert.DoesNotContain("Anexos para a equipe técnica", diretoria);
         Assert.All(TextoDeTodosOsArquivos(), t => Assert.DoesNotContain("FICT-SRV", t));
         var temporarias = Path.Combine(_pasta, "tmp");
