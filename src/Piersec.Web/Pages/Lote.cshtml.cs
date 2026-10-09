@@ -4,6 +4,7 @@ using Piersec.Core.Analise;
 using Piersec.Core.Armazenamento;
 using Piersec.Core.Modelo;
 using Piersec.Core.Operacao;
+using Piersec.Core.Pipeline;
 using Piersec.Core.Relatorio;
 using Piersec.Web.Seguranca;
 
@@ -32,7 +33,8 @@ public sealed class LoteModel(RepositorioLotes repositorio, LotesEmMemoria lotes
     [BindProperty(SupportsGet = true)] public string? Secao { get; set; }
     public string SecaoAtual => Secao switch
     {
-        "panorama" or "servicos" or "simulacao" or "fontes" => Secao,
+        "panorama" or "servicos" or "simulacao" => Secao,
+        "fontes" when Sessao.PodeEnviar(User) => "fontes",
         "visao-tecnica" when Sessao.PodeEnviar(User) => "visao-tecnica",
         null when Sev is not null && Sessao.PodeEnviar(User) => "visao-tecnica",
         _ => "panorama"
@@ -52,6 +54,16 @@ public sealed class LoteModel(RepositorioLotes repositorio, LotesEmMemoria lotes
         AvisoConfianca = lote.Avaliacao is { } a ? gerador.AvisoConfianca(a.Score) : null;
         FraseAchados = lote.Avaliacao is { } av ? gerador.FraseAchados(av) : null;
         var resumos = repositorio.Listar();
+        // Lotes antigos não gravavam a cobertura da comparação. Confere em memória, sem regravar o histórico.
+        if (lote.Comparacao is { MesmosFatoresMedidos: null } comparacao)
+        {
+            var anterior = resumos.FirstOrDefault(r => r.Id == comparacao.LoteAnteriorId);
+            if (anterior is not null)
+            {
+                lote = lote with { Comparacao = CicloAnalise.Comparar(lote, anterior) ?? comparacao };
+                Lote = lote;
+            }
+        }
         Revisoes = resumos.Where(r => r.RevisaoDe == lote.Id).ToList();
         Historico = resumos.Where(r => r.CriadoEmUtc < lote.CriadoEmUtc && r.RevisaoDe is null && r.Id != lote.Id)
             .OrderByDescending(r => r.CriadoEmUtc).Take(5).Append(ResumoLote.De(lote)).OrderBy(r => r.CriadoEmUtc).ToList();
@@ -99,6 +111,7 @@ public sealed class LoteModel(RepositorioLotes repositorio, LotesEmMemoria lotes
     public string ContextoScore()
     {
         if (Lote.Comparacao is not { } c) return "primeira análise";
+        if (c.MesmosFatoresMedidos is not true) return "A cobertura não permite afirmar melhora ou piora.";
         var pontos = Math.Round(Math.Abs(c.Diferenca));
         var quem = Lote.RevisaoDe is not null ? "o lote original" : "a análise anterior";
         return c.Diferenca >= 0.5 ? $"pior que {quem} (+{pontos:0})"

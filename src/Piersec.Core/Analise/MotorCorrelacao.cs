@@ -15,6 +15,8 @@ public sealed class MotorCorrelacao
     /// <summary>Tipos suportados e os campos que cada um oferece para título e justificativa.</summary>
     public static readonly IReadOnlyDictionary<string, IReadOnlySet<string>> CamposPorTipo = new Dictionary<string, IReadOnlySet<string>>
     {
+        ["ativo_exposto_com_vulnerabilidade"] = new HashSet<string> { "ativo", "ambiente", "quantidade", "alertas", "janela" },
+        ["ativo_exposto_com_vulnerabilidade_e_alerta"] = new HashSet<string> { "ativo", "ambiente", "quantidade", "alertas", "janela" },
         ["mesma_vulnerabilidade_em_varios_ativos"] = new HashSet<string> { "cve", "cvss", "ativos" },
         ["pacote_concentra_vulnerabilidades"] = new HashSet<string> { "pacote", "cves", "ativos", "cvss" },
         ["ativo_acumula_vulnerabilidades"] = new HashSet<string> { "ativo", "quantidade" },
@@ -28,6 +30,13 @@ public sealed class MotorCorrelacao
     {
         switch (regra.Tipo)
         {
+            case "ativo_exposto_com_vulnerabilidade": regra.SeveridadeParametro("severidadeMinima"); break;
+            case "ativo_exposto_com_vulnerabilidade_e_alerta":
+                regra.SeveridadeParametro("severidadeMinima");
+                regra.SeveridadeParametro("severidadeMinimaAlerta");
+                var horas = regra.Numero("janelaHoras");
+                if (horas <= 0 || horas > 720) throw new InvalidOperationException("janelaHoras precisa estar entre 0 (exclusivo) e 720 horas");
+                break;
             case "mesma_vulnerabilidade_em_varios_ativos": regra.Numero("minimoAtivos"); regra.SeveridadeParametro("severidadeMinima"); break;
             case "pacote_concentra_vulnerabilidades": regra.Numero("minimoCves"); regra.SeveridadeParametro("severidadeMinima"); break;
             case "ativo_acumula_vulnerabilidades": regra.Numero("minimoFalhas"); regra.SeveridadeParametro("severidadeMinima"); break;
@@ -46,6 +55,8 @@ public sealed class MotorCorrelacao
         {
             var (achados, motivoVazio) = regra.Tipo switch
             {
+                "ativo_exposto_com_vulnerabilidade" => ExposicaoEFalha(eventos, regra, false),
+                "ativo_exposto_com_vulnerabilidade_e_alerta" => ExposicaoEFalha(eventos, regra, true),
                 "mesma_vulnerabilidade_em_varios_ativos" => VulnerabilidadeEspalhada(eventos, regra),
                 "pacote_concentra_vulnerabilidades" => PacoteConcentra(eventos, regra),
                 "ativo_acumula_vulnerabilidades" => AtivoAcumula(eventos, regra),
@@ -210,6 +221,56 @@ public sealed class MotorCorrelacao
                 ? $"nenhuma máquina aparece nas duas fontes: {alertasPorAtivo.Count} equipamento(s) nos alertas e {ativosComFalha.Count} máquina(s) nas vulnerabilidades, 0 em comum. Os dados não têm uma chave que ligue o alerta à máquina vulnerável"
                 : $"as {emComum} máquina(s) em comum não têm falhas de severidade {severidadeMinima.Nome()} ou maior";
         return (achados, motivo);
+    }
+
+    /// <summary>Vínculo explícito por ambiente e ativo. Não infere destino por IP, coletor ou nome do arquivo.</summary>
+    private static (List<Achado>, string) ExposicaoEFalha(IReadOnlyList<EventoSeguranca> eventos, RegraCorrelacao regra, bool exigirAlerta)
+    {
+        var minima = regra.SeveridadeParametro("severidadeMinima");
+        var minimoAlerta = exigirAlerta ? regra.SeveridadeParametro("severidadeMinimaAlerta") : Severidade.Baixa;
+        var horas = exigirAlerta ? regra.Numero("janelaHoras") : 0;
+        var falhas = Vulnerabilidades(eventos, minima).Where(e => !string.IsNullOrWhiteSpace(e.AmbienteDeclarado))
+            .ToLookup(e => (e.AmbienteDeclarado, e.Ativo));
+        var alertas = eventos.Where(e => e.Tipo == TiposEvento.Alerta && e.Severidade >= minimoAlerta && e.DataUtc is not null &&
+            !string.IsNullOrWhiteSpace(e.AmbienteDeclarado) && !string.IsNullOrWhiteSpace(e.AtivoAlvo))
+            .ToLookup(e => (e.AmbienteDeclarado, Ativo: e.AtivoAlvo!));
+        var inventarios = eventos.Where(e => e.Tipo == TiposEvento.Exposicao && e.Ativo != ContextoConversao.NaoInformado)
+            .GroupBy(e => e.Ativo, StringComparer.Ordinal)
+            .Where(g => g.All(e => e.ExpostoInternet == true && e.DataUtc is not null && !string.IsNullOrWhiteSpace(e.AmbienteDeclarado)) &&
+                g.Select(e => e.AmbienteDeclarado).Distinct().Count() == 1)
+            .OrderBy(g => g.Key, StringComparer.Ordinal);
+        var achados = new List<Achado>();
+        foreach (var inventario in inventarios)
+        {
+            var ambiente = inventario.First().AmbienteDeclarado!;
+            var vulnerabilidades = falhas[(ambiente, inventario.Key)].ToList();
+            if (vulnerabilidades.Count == 0) continue;
+            var instantesInventario = inventario.Select(e => e.DataUtc!.Value).Order().ToArray();
+            var ligados = exigirAlerta ? alertas[(ambiente, inventario.Key)]
+                .Where(a => DentroDaJanela(a.DataUtc!.Value, instantesInventario, horas)).ToList() : [];
+            if (exigirAlerta && ligados.Count == 0) continue;
+            var instantesAlertas = ligados.Select(e => e.DataUtc!.Value).Order().ToArray();
+            var evidencias = inventario.Where(i => !exigirAlerta || DentroDaJanela(i.DataUtc!.Value, instantesAlertas, horas));
+            achados.Add(new Achado($"{ambiente}|{inventario.Key}", new Dictionary<string, string>
+            {
+                ["ativo"] = inventario.Key, ["ambiente"] = ambiente,
+                ["quantidade"] = Formatar.Qtd(vulnerabilidades.Select(e => e.Cve ?? e.Id).Distinct().Count(), "falha grave", "falhas graves"),
+                ["alertas"] = Formatar.Qtd(ligados.Count, "alerta direcionado", "alertas direcionados"),
+                ["janela"] = horas.ToString("0.#", Formatar.PtBr),
+            }, [.. evidencias, .. vulnerabilidades, .. ligados]));
+        }
+        return (achados, exigirAlerta
+            ? "não houve vínculo completo: exige exposição válida, falha grave e alerta com alvo explícito, no mesmo ativo e environment.id, dentro da janela. Coletor sem alvo, ambiente ausente/divergente, datas inválidas ou exposição contraditória não são correlacionados"
+            : "não houve vínculo explícito entre inventário exposto válido e falha grave no mesmo ativo e environment.id. Ambiente ausente/divergente ou exposição contraditória não são correlacionados");
+    }
+
+    private static bool DentroDaJanela(DateTimeOffset instante, DateTimeOffset[] ordenados, double horas)
+    {
+        var indice = Array.BinarySearch(ordenados, instante);
+        if (indice >= 0) return true;
+        indice = ~indice;
+        return indice < ordenados.Length && Math.Abs((ordenados[indice] - instante).TotalHours) <= horas ||
+               indice > 0 && Math.Abs((ordenados[indice - 1] - instante).TotalHours) <= horas;
     }
 
     // ---------- apoio ----------

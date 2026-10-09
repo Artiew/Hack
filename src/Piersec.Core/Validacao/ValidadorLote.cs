@@ -142,10 +142,25 @@ public sealed class ValidadorLote(ConjuntoRegras regras, TimeProvider relogio)
         }
         double? ameacas = medidos.Contains(TiposEvento.Alerta) ? (totalAlertas == 0 ? 0 : 100 * pesoAlertas / totalAlertas) : null;
 
+        var inventario = new Dictionary<string, HashSet<bool?>>();
+        var ambientesInventario = new Dictionary<string, HashSet<string>>();
+        var inventarioValido = true;
+        foreach (var e in lote.Eventos)
+        {
+            if (e.Tipo != TiposEvento.Exposicao) continue;
+            if (e.Ativo == ContextoConversao.NaoInformado || e.ExpostoInternet is null || e.DataUtc is null) inventarioValido = false;
+            if (!inventario.ContainsKey(e.Ativo)) { inventario[e.Ativo] = []; ambientesInventario[e.Ativo] = []; }
+            inventario[e.Ativo].Add(e.ExpostoInternet);
+            if (e.AmbienteDeclarado is not null) ambientesInventario[e.Ativo].Add(e.AmbienteDeclarado);
+        }
+        double? exposicao = null;
+        if (medidos.Contains(TiposEvento.Exposicao) && inventarioValido && inventario.Count > 0 && inventario.Values.All(v => v.Count == 1) && ambientesInventario.Values.All(v => v.Count <= 1))
+            exposicao = 100.0 * inventario.Values.Count(v => v.Contains(true)) / inventario.Count;
+
         double numerador = 0, denominador = 0;
         foreach (var f in sc.Fatores)
         {
-            var valor = f.Id switch { "vulnerabilidades" => falhas, "ameacas" => ameacas, _ => null };
+            var valor = f.Id switch { "vulnerabilidades" => falhas, "ameacas" => ameacas, "exposicao" => exposicao, _ => null };
             if (valor is null)
                 continue;
             numerador += f.Peso * Math.Round(valor.Value, 1);
@@ -238,7 +253,7 @@ public sealed class ValidadorLote(ConjuntoRegras regras, TimeProvider relogio)
 
     private static Verificacao SemCredenciais(Lote lote)
     {
-        var textos = lote.Eventos.SelectMany(e => new[] { e.Descricao, e.Detalhe, e.Ativo, e.Pacote, e.Referencia })
+        var textos = lote.Eventos.SelectMany(e => new[] { e.Descricao, e.Detalhe, e.Ativo, e.Pacote, e.Referencia, e.AmbienteDeclarado, e.AtivoAlvo })
             .Concat(lote.Correlacoes.SelectMany(c => new[] { c.Titulo, c.Justificativa }));
         var encontradas = textos.Sum(FiltroCredenciais.Contar);
         // Informativa: o relatório mascara tudo o que o filtro encontra. A prova de que nada vazou é a V12,

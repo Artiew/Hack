@@ -5,6 +5,21 @@ correlaciona, calcula score 0–100, monta plano de ação e gera sozinha o rela
 O briefing completo está em **`docs/PROMPT.md`** — leia antes de qualquer tarefa, junto com `docs/REQUISITOS.md`,
 `docs/FONTES.md` e `docs/TROUBLESHOOTING.md`.
 
+## Estado verificado — 09/10/2026 (sessão atual, C:\Users\pop\Hack)
+
+**Estado atual da entrega Git:** usuário autorizou commit e push em `main`, no repositório `Artiew/Hack`, e escolheu manter a exclusão da pasta `exemplos/`. Na conferência após essa exclusão, a suíte teve **288 aprovados, 65 falhas e 0 ignorados** (353 no total): testes dependem de arquivos fictícios agora ausentes. As evidências de 353/353 e do PDF abaixo foram obtidas antes da remoção. Nenhum teste foi desativado. A reprodução dos roteiros fictícios também depende dos exemplos removidos.
+
+- Pedido executado sequencialmente: PDF da diretoria, terceira fonte, correlação.
+- Diretoria: documento próprio com duas páginas de decisão e uma terceira de glossário curto (dez termos em linguagem simples), conforme o pedido seguinte do usuário. Sem tabelas técnicas, identificadores de falhas ou metodologia. Mantém confidencialidade, confiança/cobertura, reprovação de validação, prejuízo/custo em faixas, prioridades/prazos e limites. Relatório completo preservado. O pedido atual substitui a antiga restrição contra resumo curto.
+- Nova fonte `AdaptadorExposicaoInternet`: inventário exportado, sem varredura; ativo, data e exposição declarada. Dados inválidos/vazios/contraditórios não viram zero. Score e recálculo independente incorporam o terceiro fator (75% de cobertura com as três fontes válidas).
+- Duas regras novas: exposição + falha grave; exposição + falha grave + alerta direcionado. Exigem ativo e ambiente declarados em comum; a cadeia exige alvo explícito e janela de 24 horas configurável. Não inferem destino pelo coletor, não comprovam invasão e não inventam relações nos arquivos antigos.
+- Demonstração própria: `exemplos/LEIA-ME-tres-fontes.md` lista os três CSVs fictícios. Não derivados dos dados oficiais. Uso de uma terceira fonte na banca depende de dados/autorização da organização; não completar campos oficiais por suposição.
+- Evidência: 353 testes aprovados, zero falhas/ignorados; build sem avisos/erros; QA isolado em HTTPS/5448, três evidências navegáveis, 15 validações, simulação preservada, temas claro/escuro e três larguras. PDFs fictícios da diretoria inicialmente em duas páginas nas etapas 1, 2 e 3; após o pedido de glossário, nova exportação conferida com três páginas e paginação 1/3, 2/3 e 3/3. Os 353 testes continuam aprovados. Artefato fictício: `C:\Users\pop\.codex\visualizations\2026\10\08\01a11c0f-8d27-7951-804e-31a55e93a400\relatorio-diretoria-glossario\relatorio-ficticio-diretoria.pdf`.
+- Arquivos alterados estão no clone Hack. O usuário autorizou sua publicação no Git em 09/10/2026, mantendo excluídos dados do desafio, relatórios gerados e segredos. Instalação de uso e seus dados não foram reiniciados ou alterados. Relatórios existentes não são reescritos: gerar novo lote para obter a nova versão.
+- Pendências: autorização/disponibilidade da terceira fonte oficial; dados oficiais sem ambiente/alvo explícitos continuam sem a nova correlação; ensaio cronometrado e auditoria completa de segurança ainda pendentes.
+
+As notas de sessões anteriores abaixo são histórico; números e pendências antigos podem ter sido superados pelo estado verificado acima.
+
 > ## ⚠ LEIA ANTES DE CONTINUAR — código NÃO VERIFICADO na máquina do Ruan (08/10/2026)
 >
 > As alterações do commit **"Relatório em duas colunas…"** e seguintes foram **escritas e compiladas, mas NÃO
@@ -417,3 +432,82 @@ está funcionando a pretexto de embelezar.
 - **Limites:** em 1366×768 (janela ~650 px) a linha de baixo exige rolar. O roteiro `tests/verificar-executivo.cjs`
   (Node) NÃO rodou aqui (sem Node) e pode precisar de ajuste: a simulação saiu da aba Plano e foi para o Panorama.
   O roteiro de CDP usado está no scratchpad da sessão, não no repositório.
+
+## Continuidade — tela de duas etapas centralizada (08/10/2026, cópia C:\Users\pop\Hack)
+
+- Pedido: centralizar e melhorar a apresentação da página `/DoisFatores`.
+- A página usa agora o layout de acesso centralizado (`ViewData["Entrada"]`), com largura máxima de 920 px, cabeçalho de segurança, etapas numeradas e cartão com as cores dos temas existentes. QR code e confirmação ficam lado a lado em telas largas e em sequência no celular. A chave manual fica disponível em um detalhe expansível; os códigos de recuperação têm uma tela própria após a ativação.
+- Os destinos explícitos dos formulários, a proteção anti-CSRF, os campos e as regras de autenticação foram preservados. Nenhuma alteração no serviço de autenticação.
+- Verificação executada: `dotnet test --solution Piersec.slnx`: **313 passaram, 0 falharam, 0 ignorados**; build Web sem avisos/erros. QA local com contas fictícias e armazenamento temporário isolado: admin e executivo ativam o 2FA; oito códigos de recuperação aparecem após a ativação; administrador não tem opção de desligar; executivo tem. Centralização exata e nenhuma rolagem horizontal em 320, 390, 1440 e 1920 px, nos dois temas; nenhum erro de JavaScript. Prévias com QR code e chave ocultados.
+- Nenhum CSV ou relatório real foi aberto. Para ver no servidor Release que já estava aberto, encerrar com Ctrl+C e executar `rodar.cmd` novamente; apenas recarregar o navegador não recompila o Razor.
+
+## Continuidade — ARV Security e recuperação no login (08/10/2026, C:\Users\pop\Hack)
+
+- Nome visível atualizado de “Plataforma de risco” para **ARV Security** no login, código de verificação, troca de senha, menu lateral, título das páginas e identificação dos chamados simulados. Nomes internos do projeto e o emissor 2FA Piersec permanecem, preservando a configuração dos aplicativos já cadastrados.
+- Link “Esqueci minha senha” acima de Entrar, alinhado à direita. Abre `/RecuperarSenha`, página pública de orientações no mesmo estilo do login, com retorno para entrar. Não é uma redefinição automática nem envio de e-mail: orienta os demais usuários a procurar o responsável e explica o procedimento local já existente exclusivamente para o usuário admin, incluindo a necessidade de recadastrar o 2FA.
+- Verificação: **313 testes passaram, 0 falharam, 0 ignorados**; build Web com 0 avisos e 0 erros. Navegador com conta fictícia e armazenamento temporário: nome no login/menu/título, link acima de Entrar, ordem do teclado senha → recuperar → Entrar, acesso anônimo à orientação, retorno ao login, login válido e bloqueio das páginas protegidas preservados. Sem rolagem horizontal em 320/390/1440 px nos dois temas; nenhum erro de JavaScript.
+- Nenhuma senha real foi redefinida; nenhum CSV ou relatório real foi lido. Alterações locais, sem commit ou push. Para exibir no servidor Release já em execução, parar com Ctrl+C e rodar `rodar.cmd` novamente.
+
+## Continuidade — navegação executiva simplificada (08/10/2026, C:\Users\pop\Hack)
+
+- Perfil executivo: retirada a aba e o conteúdo “Saúde das fontes”. Restam Panorama, Serviços em risco e Plano de ação. A confiança e o percentual medido continuam no panorama, sem link para a seção retirada; fatores não medidos continuam explícitos. Admin/analista mantêm os detalhes técnicos das fontes.
+- `LoteModel.SecaoAtual` aceita fontes apenas para perfil técnico. Links antigos `?secao=fontes#fontes` abrem Panorama para o executivo, inclusive sem JavaScript. A navegação por setas e teclado se adapta às três abas.
+- Retirada a etiqueta “Protótipo · dados sintéticos · tudo local” do rodapé do menu lateral; menu da conta mantido. Rodapés das telas de acesso não foram alterados neste pedido.
+- Verificação: 313 testes passaram, 0 falharam, 0 ignorados; build Web sem avisos/erros. QA isolado com contas e exemplos fictícios confirmou 3 abas para executivo, 5 para analista, contador 1 de 3 até 3 de 3, limites das setas, teclado, links antigos, navegação sem JavaScript, confiança visível, ausência da etiqueta e menu da conta acessível, sem transbordamento a 390 px e sem erros de JavaScript. A primeira execução do QA falhou por aguardar `/` após o login executivo, que redireciona ao lote; corrigida a espera do roteiro temporário e repetido com sucesso.
+- Nenhum CSV ou relatório real foi lido. Alterações locais, sem commit/push. Próximo passo: reiniciar o servidor Release com `rodar.cmd` para exibir o layout atualizado.
+
+## Continuidade — destaque financeiro com tons de calor (08/10/2026, C:\Users\pop\Hack)
+
+- Pedido: usar a referência apenas como inspiração e dar destaque visual a prejuízo e custo no panorama executivo.
+- Cartão de prejuízo potencial com gradiente coral/vermelho; custo para corrigir em âmbar. Ondas concêntricas discretas em CSS, estáticas, com cores específicas para tema claro/escuro. Os demais cartões permanecem neutros. Links e números preservados.
+- Destaque somente quando existe exposição financeira ou custo estimado maior que zero. Valores desconhecidos/sem estimativa permanecem neutros. As cores sinalizam o assunto, não uma classificação por valor, um prejuízo confirmado nem um retorno financeiro garantido. Nenhuma regra JSON ou cálculo financeiro foi alterado.
+- Validação desta mudança: build Web com 0 avisos/erros; navegador em armazenamento temporário, contas e exemplos fictícios: 320/390/1440/1920 px nos dois temas, textos dentro dos cartões, sem transbordamento horizontal, links de prejuízo/custo abrindo Serviços/Plano, números preservados, nenhum erro de JavaScript. Contraste mínimo texto/fundo nos extremos dos gradientes: 9,06 e 8,36 no escuro; 8,50 e 7,25 no claro. Prévias conferidas visualmente. A suíte geral anteriormente passou 313/313 nesta sessão; não foi repetida para esta alteração visual. O primeiro QA usava scrollWidth do cartão e incluía o desenho decorativo recortado; corrigida a medição para os limites do texto e repetida com sucesso.
+- Ideia para próximo ajuste, não implementada: destacar o prazo da ação prioritária junto do custo. Também avaliar distinguir quantidade e gravidade no mapa, para muitos eventos baixos não receberem aparência de urgência maior que poucos críticos.
+- Nenhum CSV ou relatório real foi lido. Alterações locais, sem commit/push. Para mostrar no servidor Release já aberto: Ctrl+C, `rodar.cmd` e recarregar o navegador.
+
+## Continuidade — prazo prioritário junto do custo (08/10/2026, C:\Users\pop\Hack)
+
+- Sugestão aprovada: cartão “Custo para corrigir” agora inclui “Prazo da 1ª ação — Até N dias”, usando a primeira ação pela ordem do plano e `Formatar.Qtd` para o plural. O valor financeiro continua identificado como plano inteiro; o prazo é explicitamente só da primeira ação. O título do detalhe informa a ação correspondente e que o prazo é recomendado. Sem ação ou prazo positivo, o destaque não aparece.
+- Nenhuma regra, data de vencimento ou número foi inventado; nenhum cálculo ou JSON foi alterado.
+- Verificado: build Web sem avisos/erros; QA em instância temporária com contas/exemplos fictícios confirmou prazo e título idênticos aos da primeira ação do plano, números e links preservados, 320/390/1440/1920 px nos dois temas sem transbordamento, contraste e ausência de erros JavaScript. Prévias dos cartões conferidas. A suíte geral passou 313/313 antes das últimas alterações visuais; nesta mudança foram executados build e QA visual.
+- Nenhum CSV ou relatório real foi lido. Alterações locais sem commit/push. Reiniciar o servidor Release com `rodar.cmd` para exibir a atualização.
+
+## Continuidade — CSV fictício de operação normal (08/10/2026, C:\Users\pop\Hack)
+
+- Criado `exemplos/operacao-normal-ficticio.csv`: 12 eventos SIEM informativos (níveis 0/1), com datas ISO e fuso explícito, todos identificados como fictícios. Sem defeitos propositais de formatação, campos obrigatórios ausentes, duplicatas ou alertas graves. Instruções em `exemplos/LEIA-ME-operacao-normal.md`.
+- Verificação executada por envio no navegador a uma instância temporária: 12 eventos, 0 rejeitados, score 0/100 no fator disponível, 15/15 verificações aprovadas, PDF disponível e 0 erros JavaScript. Confiança baixa (20% do peso medido), prejuízo “Não estimado” e fonte “Lido com ressalvas”, explicados no LEIA-ME: são limites da cobertura e do adaptador, não erros nas linhas.
+- Nenhum código de análise ou regra foi alterado para obter esse resultado. Nenhum CSV ou relatório real foi lido; somente o arquivo fictício recém-criado foi enviado à instância isolada. O usuário pode enviá-lo sozinho pela Visão geral, sem recompilar.
+
+## Continuidade — operação normal sem indicações enganosas (09/10/2026, C:\Users\pop\Hack)
+
+- A captura enviada pelo usuário mostrou score 0 e 12 eventos baixos, mas o mapa ficava vermelho; o custo de coletar fontes ausentes parecia correção; a troca de fatores medidos parecia melhora de 92 pontos.
+- Mapa: cor por gravidade (baixa verde, média âmbar, alta laranja, crítica vermelha), intensidade por quantidade. Título e legenda usam eventos, sem chamar eventos informativos de problemas. A simulação mantém a classe de gravidade.
+- Quando todas as ações são apenas medir fatores, painel e relatórios novos dizem custo/prazo para ampliar a análise. Valores e regras financeiras preservados.
+- Comparação: novo campo opcional `ComparacaoLote.MesmosFatoresMedidos` compara os IDs dos fatores com valor disponível nos dois lotes. Diferentes ou desconhecidos mostram Não comparável, sem atribuir melhora/piora à troca de cobertura. Mesmo conjunto permite mostrar a variação; isso não comprova igualdade de ativos ou de condições. Diferença numérica original preservada.
+- Histórico antigo: a página confere a comparação em memória quando o resumo anterior está disponível; sem informação suficiente, permanece neutra. Nenhum lote ou relatório antigo foi regravado. Relatórios novos seguem a mesma regra.
+- Evidência: build Web com 0 avisos e 0 erros; suíte final **318 passaram, 0 falharam, 0 ignorados**, incluindo cinco regressões de cobertura/relatório. A primeira compilação apontou um using ausente; corrigido. Um teste novo falhou porque o título da seção de custo ainda dizia corrigir; corrigido no gerador, sem enfraquecer o teste.
+- QA local isolado, contas e exemplos fictícios: cenário com risco e cenário normal, 12 eventos baixos verdes, score 0, custo de coleta identificado, comparação diferente neutra e mesma cobertura comparável. Relatório HTML fictício consistente, simulador preservando a gravidade, 320/390/1440/1920 px nos dois temas sem transbordamento e nenhum erro JavaScript. Contraste da célula baixa: 6,07 no escuro e 8,92 no claro. Prévias conferidas.
+- Nenhum CSV ou relatório real foi aberto. Alterações em C:\Users\pop\Hack, locais, sem commit/push. Para exibir na plataforma já aberta: Ctrl+C, `rodar.cmd`, depois Ctrl+F5. Score 0 com confiança de 20% continua sendo apenas ausência de risco nos fatores medidos, sem concluir segurança do ambiente inteiro.
+
+## Continuidade — plano de coleta mais claro (09/10/2026, C:\Users\pop\Hack)
+
+- Sugestão aprovada pelo usuário: ação de medição renomeada para Completar a análise de segurança. O planejador usa o novo título para novas análises/relatórios; a tela também aplica o rótulo por tipo para lotes já existentes, sem regravar o histórico.
+- Custo dessa ação identificado como Estimativa para coletar as fontes ausentes. Valores, prazos e regras preservados.
+- Botão Simular no velocímetro exibido somente se houver ações simuláveis. Plano só de medição explica a coleta e não orienta marcar correções inexistentes; planos com correções mantêm a navegação para o simulador.
+- Evidência: build Web sem avisos/erros; 318 testes passaram, 0 falharam, 0 ignorados. Navegador isolado com contas/exemplos fictícios confirmou rótulos e botão ausente na medição, presente com correções, sem transbordamento em 320/390/1440/1920 px nos dois temas e nenhum erro JavaScript. Prévia escura conferida.
+- Nenhum CSV/relatório real foi lido. Alterações locais em C:\Users\pop\Hack, sem commit/push. Reiniciar com Ctrl+C e rodar.cmd, depois Ctrl+F5, para atualizar a plataforma já em execução.
+
+## Continuidade — Automação em linguagem executiva (09/10/2026, C:\Users\pop\Hack)
+
+- Pedido: tornar a aba Automação direta e compreensível para o executivo. Nova parcial `_AutomacaoExecutiva`, exibida apenas para quem não pode decidir; administradores e analistas mantêm a tela operacional e seus controles.
+- Resumo com Aguardando a equipe, Planos preparados, Melhorias sugeridas e Resolvidos nos dados. Cancelados/recusados ficam em Não seguiram adiante e nunca contam como resolvidos. Planos preparados são registros da simulação, não correções aplicadas.
+- Ações traduzidas pelo tipo de recomendação: atualizar programas, corrigir equipamentos, avaliar uma possível pausa, verificar atividade suspeita e completar a análise. Cada item explica por que importa e o próximo passo, sem listar pacotes, versões, níveis de autonomia, regras, evidências técnicas ou arquivos de chamados. Recomendações de coleta identificam o assunto que falta. Não foram inventados custos, prazos, serviços de negócio ou retorno financeiro.
+- Filas expansíveis, primeira fila com itens aberta inicialmente; cartões do resumo abrem a fila escolhida e recolhem as demais. Detalhes nativos continuam funcionando sem JavaScript. Acompanhamento com data e link para a análise relacionada; indicação de simulação, prévia e dados que precisam de revisão preservada.
+- Evidência: build Web sem avisos/erros; suíte 318 passou, 0 falhas/ignorados. QA em HTTPS local isolado, usuários e arquivos fictícios: estado vazio, contagens reais do cenário, aprovação/rejeição/desfazer pelo analista, recusa desses três POSTs pelo executivo, cancelados separados dos resolvidos, fechamento por uma nova fonte fictícia válida, links, teclado, atalhos e navegação sem JavaScript. Sem transbordamento em 320/390/1440/1920 px nos temas claro e escuro, nenhum erro JavaScript. Prévias conferidas. Uma execução do roteiro sem JavaScript encontrou vários summary no seletor de teste; corrigido para o summary direto da fila e repetido com sucesso.
+- Nenhuma mudança nas regras, decisões, permissões ou armazenamento. Nenhum CSV/relatório real foi lido. Alterações locais em C:\Users\pop\Hack, sem commit/push. Reiniciar servidor Release com Ctrl+C e rodar.cmd, depois Ctrl+F5, para mostrar a atualização.
+
+## Continuidade — Automação inicia recolhida (09/10/2026, C:\Users\pop\Hack)
+
+- Pedido: ao entrar na Automação do executivo, todos os tópicos devem vir fechados para ele escolher qual abrir. Retirada a abertura automática da primeira fila com itens; cartões de resumo, títulos e teclado continuam abrindo as filas por escolha do usuário.
+- Verificação desta alteração: build Web com 0 avisos/erros; navegador em instância temporária com dados e contas fictícios confirmou todos os tópicos fechados na entrada, retorno pelo menu, recarga e sem JavaScript. Cartões/títulos, permissões, contagens e detalhes continuam funcionando; quatro larguras e dois temas sem transbordamento ou erros JavaScript. A suíte geral passou 318/318 na alteração anterior; nesta mudança de estado inicial foram executados build e QA no navegador.
+- Nenhum CSV/relatório real foi lido. Alteração local em C:\Users\pop\Hack, sem commit/push. Reiniciar com Ctrl+C e rodar.cmd, depois Ctrl+F5, para atualizar o servidor já aberto.

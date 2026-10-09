@@ -17,7 +17,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>@ViewData["Title"] · Plataforma de risco</title>
+    <title>@ViewData["Title"] · ARV Security</title>
     <script src="~/js/tema.js" asp-append-version="true"></script>
     <link rel="icon" href="~/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true">
@@ -53,7 +53,7 @@
         @if (logado)
         {
             <aside class="lateral" aria-label="Menu principal">
-                <a class="marca" href="/"><svg class="icone marca-icone"><use href="#i-escudo"/></svg><span>Plataforma de risco</span></a>
+                <a class="marca" href="/"><svg class="icone marca-icone"><use href="#i-escudo"/></svg><span>ARV Security</span></a>
                 @if (tecnico)
                 {
                     <form class="busca" method="get" action="/Buscar" role="search">
@@ -86,7 +86,6 @@
                             <form method="post" asp-page="/Sair"><button type="submit"><svg class="icone" aria-hidden="true"><use href="#i-sair"/></svg>Sair</button></form>
                         </nav>
                     </details>
-                    <p class="etiqueta">Protótipo · dados sintéticos · tudo local</p>
                 </div>
             </aside>
         }

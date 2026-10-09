@@ -230,3 +230,28 @@ Requisito afetado: RG6 / regra do corredor (resumo em 1 página) · Impacto: deg
 - **Verificação:** versão da diretoria 8 → 7 páginas, completa 22 → 21; página 1 com os 3 cartões; suíte 306/306 ✔.
 - **Limite:** com dados reais, avisos extras na página 1 (confiança baixa, ambientes diferentes, fonte ausente) ainda podem empurrar o 3º cartão. Conferir com os 3 CSVs reais.
 - **Aprendizado:** layout de impressão só se confere imprimindo; compilar e passar nos testes não mostra página em branco.
+
+## P-025 · Operação normal parecia problema e troca de cobertura parecia melhora
+- **Sintoma:** exemplo fictício com 12 eventos baixos e score 0 exibido com célula vermelha, custo de corrigir e melhora de 92 pontos em relação a lote com outros fatores medidos.
+- **Causa:** intensidade do mapa usava sempre a cor crítica; custo não distinguia medição de correção; tendência comparava scores sem verificar quais fatores tinham valor disponível.
+- **Correção:** cor por gravidade e intensidade por quantidade; custo/prazo de ampliar análise quando todas as ações são medir fatores; comparação neutra quando os conjuntos de fatores medidos diferem ou são desconhecidos. Campo opcional compatível com JSON antigo, conferência em memória para histórico existente, sem regravar lotes ou relatórios antigos.
+- **Reprodução segura:** enviar exemplos fictícios de alertas/vulnerabilidades e depois apenas `exemplos/operacao-normal-ficticio.csv`, numa instalação temporária. Não usar dados reais para reproduzir.
+- **Verificação:** cinco novos testes de regressão; suíte final 318/318, nenhum ignorado; build sem avisos/erros. QA isolado em dois temas e quatro larguras: eventos baixos verdes, custo de coleta identificado, comparação neutra com cobertura diferente, comparação permitida com mesmos fatores, HTML fictício consistente, simulação preservada, sem transbordamento ou erros JavaScript.
+- **Limites:** mesmos fatores não comprovam mesmos ativos ou condições. Score 0 com cobertura de 20% não prova segurança completa. Relatórios já gerados permanecem como estavam.
+
+## P-026 · Relatório da diretoria longo e cobertura limitada a duas fontes
+
+- Pedido: resumir o PDF, acrescentar terceira fonte e correlação, uma etapa por vez.
+- Etapa 1: template próprio de decisão; cenário fictício caiu de 7 para 2 páginas. Avisos de validação/estimativa e relatório completo preservados. Primeiras compilações apontaram aspas no template e nome de propriedade de validação; corrigidos, sem esconder testes.
+- Etapa 2: inventário de exposição, validação independente do score, recomendações, custos declarados e exemplo próprio. Corrigido conflito de nome local na classificação. Fonte vazia/inválida/contraditória não vira fator zero.
+- Etapa 3: vínculo por ativo/ambiente declarados, alvo explícito e janela temporal. Confirmados casos negativos e navegação às três evidências. Identificadores inválidos são descartados como chaves, com lacuna.
+- Revisão: tipo e serviço unificados por ativo, sem depender da ordem das fontes ou de cache anterior. Teste de regressão confirma consistência. Busca temporal usa índices ordenados, evitando comparação de todos os pares.
+- Evidência: 353/353 testes, 0 ignorados, build sem avisos/erros; QA local isolado com dados fictícios, 15 validações e PDFs de 2 páginas; simulador e permissões preservados.
+- Limites: não lê nem altera dados oficiais; não comprova invasão; não garante disponibilidade de fonte autorizada para a banca; novos relatórios exigem novo lote. Não reiniciada a instalação de uso.
+
+
+## P-027 · Testes sem os exemplos fictícios
+
+- Na preparação do commit/push de 09/10/2026, a pasta `exemplos/` já estava ausente. O usuário escolheu manter a exclusão.
+- Resultado atual: 353 testes executados, 288 aprovados, 65 falhas, 0 ignorados. As falhas são de arquivos fictícios não encontrados (`FileNotFoundException`), incluindo os exemplos antigos, de operação normal e de três fontes.
+- Os testes foram mantidos ativos. O resultado anterior de 353/353 foi obtido antes da exclusão. Para voltar a reproduzir a suíte completa e os roteiros fictícios, será necessário disponibilizar novamente os arquivos de teste esperados, sem usar dados do desafio.

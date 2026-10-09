@@ -62,6 +62,22 @@ public sealed class ProcessadorLote(
                 lacunas.Add(lacuna);
         }
 
+        var tiposPorAtivo = eventos.Where(e => e.Ativo != ContextoConversao.NaoInformado)
+            .GroupBy(e => e.Ativo, StringComparer.Ordinal).ToDictionary(g => g.Key, g =>
+            {
+                var informados = g.Where(e => e.Tipo != TiposEvento.Alerta && e.TipoAtivo != RegrasAtivos.Desconhecido)
+                    .Select(e => e.TipoAtivo).Distinct().ToList();
+                if (informados.Count > 1)
+                {
+                    lacunas.Add(new Lacuna(ArquivoDoLote, null, "ativo", "fontes discordam sobre o tipo de um mesmo ativo; tratado como desconhecido"));
+                    return RegrasAtivos.Desconhecido;
+                }
+                return informados.Count == 1 ? informados[0] : g.Select(e => e.TipoAtivo)
+                    .Where(t => t is not null && t != RegrasAtivos.Desconhecido).Order(StringComparer.Ordinal).FirstOrDefault() ?? RegrasAtivos.Desconhecido;
+            });
+        var servicosUnificados = new ClassificadorServicos(regras.Servicos);
+        eventos = eventos.Select(e => tiposPorAtivo.TryGetValue(e.Ativo, out var tipo)
+            ? e with { TipoAtivo = tipo, Servico = servicosUnificados.Classificar(e.Ativo, tipo) } : e).ToList();
         return Analisar(coletado.Arquivos, eventos, lacunas);
     }
 

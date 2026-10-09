@@ -15,6 +15,12 @@
     var log = chamados.SelectMany(c => c.Historico.Select(h => (c.Numero, h))).OrderByDescending(x => x.h.QuandoUtc).ThenByDescending(x => x.Numero).Take(60).ToList();
 }
 
+@if (!Model.PodeDecidir)
+{
+    <partial name="_AutomacaoExecutiva" model="Model" />
+}
+else
+{
 <header class="cabecalho-pagina">
     <p class="card-meta">OPERAÇÃO · RESPOSTA SIMULADA</p>
     <h1>Automação</h1>
@@ -175,4 +181,13 @@ else
             }
         </tbody>
     </table>
+}
+
+}
+
+@section Scripts {
+    @if (!Model.PodeDecidir)
+    {
+        <script src="~/js/automacao-executiva.js" asp-append-version="true"></script>
+    }
 }

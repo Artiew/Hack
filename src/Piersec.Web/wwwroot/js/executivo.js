@@ -184,7 +184,7 @@
                 var hoje = parseInt(celula.dataset.hoje, 10) || 0;
                 celula.textContent = item.restantes.toLocaleString("pt-BR");
                 celula.className = celula.className.replace(/\bcalor-\d+\b/, "calor-" + nivelCalor(item.restantes));
-                var dica = celula.dataset.rotulo + ": " + hoje.toLocaleString("pt-BR") + (hoje === 1 ? " problema hoje" : " problemas hoje") +
+                var dica = celula.dataset.rotulo + ": " + hoje.toLocaleString("pt-BR") + (hoje === 1 ? " evento hoje" : " eventos hoje") +
                     (item.restantes !== hoje ? "; sobram " + item.restantes.toLocaleString("pt-BR") + " com as correções marcadas" : "");
                 celula.title = dica;
                 celula.setAttribute("aria-label", dica);

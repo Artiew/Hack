@@ -23,6 +23,11 @@
       "porMaquinaMinimo": 0, "porMaquinaMaximo": 0,
       "premissa": "Trabalho de análise de quem olha os registros; não cresce com o número de máquinas."
     },
+    "revisar_exposicao": {
+      "fixoMinimo": 2, "fixoMaximo": 4,
+      "porMaquinaMinimo": 0.5, "porMaquinaMaximo": 1.5,
+      "premissa": "Premissa do exercício: revisar necessidade dos acessos, solicitar aprovação e conferir restrições por máquina. Não inclui compra de ferramentas nem garante que toda exposição possa ser removida."
+    },
     "medir_fatores": {
       "fixoMinimo": 8, "fixoMaximo": 20,
       "porMaquinaMinimo": 0, "porMaquinaMaximo": 0,

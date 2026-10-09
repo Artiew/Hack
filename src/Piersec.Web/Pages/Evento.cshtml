@@ -89,6 +89,9 @@ else
         <tr><th>Ambiente</th><td>@e.Ambiente <span class="meta">(premissa: o nome do arquivo)</span></td></tr>
         <tr><th>Máquina</th><td><a href="@Links.Eventos(lote.Id, new FiltroEventos { Ativo = e.Ativo })">@e.Ativo</a> <span class="meta">(@Model.Regras.Ativos.Tipo(e.TipoAtivo).Singular)</span></td></tr>
         <tr><th>Serviço</th><td>@if (Model.Servico is { } s) { <a href="@Links.Eventos(lote.Id, new FiltroEventos { Servico = s.Id })">@s.Nome</a> <span class="meta">(situação @s.Faixa.ToLowerInvariant(); premissa da equipe)</span> } else { <span>—</span> }</td></tr>
+        @if (e.AmbienteDeclarado is not null) { <tr><th>Ambiente declarado na fonte</th><td>@e.AmbienteDeclarado</td></tr> }
+        @if (e.AtivoAlvo is not null) { <tr><th>Alvo declarado do alerta</th><td>@e.AtivoAlvo <span class="meta">(distinto do coletor)</span></td></tr> }
+        @if (e.Tipo == TiposEvento.Exposicao) { <tr><th>Exposição à internet</th><td>@(e.ExpostoInternet is true ? "Acesso externo declarado" : e.ExpostoInternet is false ? "Sem acesso externo declarado" : "Desconhecida")</td></tr> }
         <tr><th>Quando</th><td>@if (e.DataUtc is null) { <span>não informada pela fonte</span> } else { @Formatar.DataHora(e.DataUtc, fuso) <span class="meta">(horário de Brasília)</span> }</td></tr>
         @if (e.Cve is not null) { <tr><th>Falha (CVE)</th><td>@e.Cve</td></tr> }
         @if (e.Pacote is not null) { <tr><th>Programa</th><td><a href="@Links.Eventos(lote.Id, new FiltroEventos { Texto = e.Pacote })">@e.Pacote</a> @e.VersaoPacote</td></tr> }

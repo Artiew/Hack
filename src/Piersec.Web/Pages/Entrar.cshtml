@@ -9,7 +9,7 @@
     <div class="entrada-marca">
         <svg aria-hidden="true"><use href="#i-escudo"/></svg>
         <span>
-            <strong>Plataforma de risco</strong>
+            <strong>ARV Security</strong>
             <span>Piersec · Semana de TI 2026</span>
         </span>
     </div>
@@ -33,6 +33,7 @@
             <input id="login" name="Login" value="@Model.Login" autocomplete="username" required maxlength="64" autofocus>
             <label for="senha">Senha</label>
             <input id="senha" name="Senha" type="password" autocomplete="current-password" required maxlength="128">
+            <a class="entrada-recuperar" asp-page="/RecuperarSenha">Esqueci minha senha</a>
             <button type="submit">Entrar</button>
         </form>
     </div>

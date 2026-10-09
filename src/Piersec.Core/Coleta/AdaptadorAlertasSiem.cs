@@ -23,7 +23,7 @@ public sealed partial class AdaptadorAlertasSiem : IAdaptadorFonte
     public IReadOnlyList<string> LimitacoesDaFonte =>
     [
         "a fonte não informa usuário",
-        "a fonte não informa qual máquina interna foi alvo de cada alerta (só o equipamento que gerou o alerta)",
+        "quando destination.asset não é informado, o coletor não identifica o alvo; a plataforma não presume a máquina interna atingida",
     ];
 
     public string DescricaoReparo =>
@@ -63,6 +63,8 @@ public sealed partial class AdaptadorAlertasSiem : IAdaptadorFonte
                 Fonte = Nome,
                 Tipo = TiposEvento.Alerta,
                 Ambiente = contexto.Ambiente,
+                AmbienteDeclarado = contexto.ConverterIdentificadorDeclarado(tabela.Valor(linha, "environment.id"), linha.Numero, "environment.id"),
+                AtivoAlvo = contexto.ConverterIdentificadorDeclarado(tabela.Valor(linha, "destination.asset"), linha.Numero, "destination.asset"),
                 // O ativo é o equipamento que gerou o alerta (ex.: o firewall); sem ele, o agente coletor.
                 Ativo = contexto.ConverterAtivo(equipamento ?? coletor, n),
                 SeveridadeOrigem = nivel is null ? null : $"nível {nivel}",

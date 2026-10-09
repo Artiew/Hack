@@ -37,7 +37,7 @@ public class RelatorioTests
     }
 
     [Fact]
-    public void Versao_da_diretoria_tem_so_resumo_servicos_score_plano_e_glossario()
+    public void Versao_da_diretoria_resume_decisoes_sem_tabelas_tecnicas()
     {
         var lote = Fabrica.ProcessadorReal().Processar([Fabrica.Exemplo("vulnerabilidades-ficticio.csv"), Fabrica.Exemplo("alertas-ficticio.csv")]);
         lote = lote with { Validacao = Fabrica.Validador().Validar(lote) };
@@ -45,9 +45,10 @@ public class RelatorioTests
         var diretoria = Fabrica.Gerador().Gerar(lote, VersaoRelatorio.Diretoria);
         var completo = Fabrica.Gerador().Gerar(lote);
 
-        string[] mantidas = ["Resumo para a diretoria", "2. Serviços da empresa e prejuízo potencial", "3. Entendendo o score", "4. Plano de ação completo", "Glossário"];
+        string[] mantidas = ["Resumo para a diretoria", "Prejuízo potencial", "Custo do plano", "Principal causa", "O que fazer agora, em ordem", "O que considerar antes de decidir", "Glossário rápido"];
         string[] tiradas = ["5. O que a plataforma fez sozinha", "6. O que esta análise não consegue dizer", "Anexos para a equipe técnica",
-                            "A. Correlações", "C. Como a severidade", "F. Metodologia", "H. Verificações de consistência"];
+                            "A. Correlações", "C. Como a severidade", "F. Metodologia", "H. Verificações de consistência",
+                            "3. Entendendo o score", "4. Plano de ação completo"];
         Assert.All(mantidas, s => Assert.Contains(s, diretoria));
         Assert.All(tiradas, s => Assert.DoesNotContain(s, diretoria));
         Assert.Contains("versão para a diretoria", diretoria);
@@ -56,7 +57,15 @@ public class RelatorioTests
         Assert.DoesNotMatch(@"anexo [A-I]\b", diretoria);
 
         // A versão completa (admin e analista) continua com tudo.
-        Assert.All(mantidas.Concat(tiradas), s => Assert.Contains(s, completo));
+        Assert.All(tiradas, s => Assert.Contains(s, completo));
+        Assert.Contains("Glossário", completo);
+        Assert.DoesNotContain("CVE-", diretoria);
+        Assert.DoesNotContain("pacote-alfa", diretoria);
+        Assert.DoesNotContain("<table", diretoria);
+        Assert.Contains("Falhas nos programas", diretoria);
+        Assert.Contains("55%", diretoria);
+        Assert.Contains("economia garantida", diretoria);
+        Assert.Contains("nenhuma alteração foi executada", diretoria);
     }
 
     [Fact]

@@ -48,6 +48,7 @@ public sealed class AdaptadorVulnerabilidades : IAdaptadorFonte
                 Fonte = Nome,
                 Tipo = TiposEvento.Vulnerabilidade,
                 Ambiente = contexto.Ambiente,
+                AmbienteDeclarado = contexto.ConverterIdentificadorDeclarado(tabela.Valor(linha, "environment.id"), linha.Numero, "environment.id"),
                 Ativo = contexto.ConverterAtivo(tabela.Valor(linha, "agent.name"), n),
                 SeveridadeOrigem = tabela.Valor(linha, "vulnerability.severity"),
                 Cvss = contexto.ConverterCvss(tabela.Valor(linha, "vulnerability.score.base"), n),

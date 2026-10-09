@@ -59,6 +59,7 @@ builder.Services.AddSingleton(sp => new Anonimizador(ChaveAnonimizacao.Obter(pas
 builder.Services.AddSingleton(new NormalizadorDatas(fuso));
 builder.Services.AddSingleton<IAdaptadorFonte, AdaptadorVulnerabilidades>();
 builder.Services.AddSingleton<IAdaptadorFonte, AdaptadorAlertasSiem>();
+builder.Services.AddSingleton<IAdaptadorFonte, AdaptadorExposicaoInternet>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<ProcessadorLote>();
 builder.Services.AddSingleton<ValidadorLote>();

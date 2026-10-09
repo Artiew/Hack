@@ -10,7 +10,7 @@ namespace Piersec.Core.Relatorio;
 
 /// <summary>
 /// Completo: tudo, para admin e analista. Diretoria: só o que o executivo usa para decidir (resumo, serviços e prejuízo,
-/// score, plano completo e glossário); automação, limites e anexos ficam na versão completa.
+/// impacto financeiro e prioridades); metodologia, tabelas detalhadas e anexos ficam na versão completa.
 /// </summary>
 public enum VersaoRelatorio { Completo, Diretoria }
 
@@ -20,7 +20,7 @@ public enum VersaoRelatorio { Completo, Diretoria }
 /// O detalhe técnico fica nos anexos. Todo texto vindo dos dados passa por <see cref="H"/> (escape de HTML);
 /// o HTML não carrega nada externo (sem CDN, sem script).
 /// </summary>
-public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegras regras)
+public sealed partial class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegras regras)
 {
     public const string SeloConfidencialidade = "CONFIDENCIAL — uso restrito à diretoria e à equipe de segurança";
     public const int MaximoEventosListados = 25;
@@ -36,7 +36,10 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
 
     public string Gerar(Lote lote, VersaoRelatorio versao = VersaoRelatorio.Completo)
     {
-        var diretoria = versao == VersaoRelatorio.Diretoria;
+        if (versao == VersaoRelatorio.Diretoria)
+            return GerarDiretoria(lote);
+
+        var diretoria = false;
         var sb = new StringBuilder();
         sb.Append($"""
             <!doctype html>
@@ -192,7 +195,9 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
     {
         var s = a.Score;
         var numero = s.Valor is { } v ? Inteiro(v) : "—";
-        var comparacao = lote.Comparacao is { } c
+        var comparacao = lote.Comparacao is { MesmosFatoresMedidos: not true } indisponivel
+            ? $"Comparação direta indisponível: a cobertura mudou ou não pôde ser confirmada. {indisponivel.Motivo}."
+            : lote.Comparacao is { } c
             ? $"{(c.Diferenca > 0 ? "Piorou" : c.Diferenca < 0 ? "Melhorou" : "Igual")}: {Inteiro(Math.Abs(c.Diferenca))} ponto(s) em relação à análise de " +
               $"{Formatar.DataHora(c.DataAnterior, fusoExibicao)} ({Inteiro(c.ScoreAnterior)} de 100) — principal motivo: {c.Motivo}."
             : "Primeira análise: ainda não há uma anterior para comparar.";
@@ -315,7 +320,9 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
             ? ($"{Inteiro(atual)} → {Inteiro(previsto)}", $"de {regras.Score.FaixaDe(atual).Nome.ToLowerInvariant()} para {regras.Score.FaixaDe(previsto).Nome.ToLowerInvariant()}")
             : (s.Valor is { } so ? Inteiro(so) : "—", "sem ação que derrube o score");
 
-        var (tendencia, notaTendencia) = lote.Comparacao is { } c
+        var (tendencia, notaTendencia) = lote.Comparacao is { MesmosFatoresMedidos: not true }
+            ? ("não comparável", "a cobertura mudou ou não pôde ser confirmada")
+            : lote.Comparacao is { } c
             ? (c.Diferenca > 0 ? $"▲ +{Inteiro(c.Diferenca)}" : c.Diferenca < 0 ? $"▼ −{Inteiro(Math.Abs(c.Diferenca))}" : "igual",
                $"em relação à análise anterior ({Inteiro(c.ScoreAnterior)})")
             : ("primeira análise", "ainda não há com o que comparar");
@@ -325,7 +332,7 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
 
         return "<div class=\"kpis\">" +
                Cartao("Quanto podemos perder", prejuizo, notaPrejuizo, "kpi-perda") +
-               Cartao("Quanto custa corrigir", custo, notaCusto, "kpi-custo") +
+               Cartao(a.Acoes.Count > 0 && a.Acoes.All(acao => acao.Tipo == PlanejadorAvaliacao.AcaoMedirFatores) ? "Quanto custa ampliar a análise" : "Quanto custa corrigir", custo, notaCusto, "kpi-custo") +
                Cartao("Score se o plano for feito", depois, notaDepois, "kpi-score") +
                Cartao("Para onde o risco vai", tendencia, notaTendencia, "kpi-tendencia") +
                "</div>";
@@ -355,6 +362,8 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
                       $"<td class=\"num\">{Formatar.Numero(s.AlertasRelevantes)}</td><td>{prejuizo}</td></tr>");
         }
         sb.Append("</tbody></table>");
+        if (lote.Eventos.Any(e => e.Tipo == TiposEvento.Exposicao))
+            sb.Append("<p>O risco por serviço também considera a proporção de máquinas expostas no inventário válido. Acesso externo declarado não comprova invasão. O detalhamento do fator está na seção de score.</p>");
         sb.Append($"<p class=\"meta\"><strong>Premissas.</strong> {H(regras.Servicos.Premissa)} {H(regras.Servicos.PremissaImpacto)} " +
                   $"Um serviço conta como \"em risco\" a partir da nota {Inteiro(regras.Servicos.FaixaEmRiscoAPartirDe)} (mesma escala do score).</p></section>");
     }
@@ -466,7 +475,9 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
         if (a.CustoTotalMinimo is { } totalMin && a.CustoTotalMaximo is { } totalMax)
         {
             var prejuizo = lote.Impacto;
-            sb.Append("<h3>Quanto custa corrigir, e quanto está em jogo</h3>");
+            sb.Append(a.Acoes.Count > 0 && a.Acoes.All(acao => acao.Tipo == PlanejadorAvaliacao.AcaoMedirFatores)
+                ? "<h3>Quanto custa ampliar a análise</h3>"
+                : "<h3>Quanto custa corrigir, e quanto está em jogo</h3>");
             sb.Append($"<p class=\"frase\"><strong>Executar o plano inteiro custa {H(Formatar.FaixaDinheiro((decimal)totalMin, (decimal)totalMax))}</strong>");
             if (a.Score.Valor is { } atual && a.ScorePrevisto is { } depois)
                 sb.Append($" e leva o score de {Inteiro(atual)} para {Inteiro(depois)}");
@@ -648,7 +659,7 @@ public sealed class GeradorRelatorioHtml(TimeZoneInfo fusoExibicao, ConjuntoRegr
         sb.Append("""
             <section>
             <h2>C. Como a severidade de cada evento foi decidida</h2>
-            <p>A plataforma não copia a severidade da fonte: usa a nota técnica (CVSS das vulnerabilidades ou nível dos alertas).</p>
+            <p>A plataforma usa a nota técnica das vulnerabilidades e o nível dos alertas. No inventário, acesso externo declarado é Média e acesso fechado declarado é Baixa; exposição desconhecida não recebe classificação. Isso não prova exploração nem ausência de risco.</p>
             """);
         if (transicoes.Count == 0)
         {

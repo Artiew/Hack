@@ -1,4 +1,0 @@
-"timestamp,agent.name,rule.description,data.devname,rule.level,rule.id"
-"Oct 7,2026 @ 08:00:00.000,coletor-fict,Fortigate: acesso bloqueado (ficticio),FW-FICT-01,5,99001"
-"Oct 7,2099 @ 08:00:00.000,coletor-fict,Fortigate: data propositalmente no futuro (ficticio),FW-FICT-01,12,99002"
-"Oct 7,2026 @ 08:05:00.000,coletor-fict,Fortigate: credencial vazada senha=Ficticia123 (ficticio),FW-FICT-01,7,99003"

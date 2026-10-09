@@ -164,6 +164,10 @@ public sealed class CicloAnalise(
                 _ => motivo,
             };
         }
-        return new ComparacaoLote(anterior.Id, anterior.CriadoEmUtc, scoreAnterior, Math.Round(scoreAtual - scoreAnterior, 1), motivo);
+        var medidosAgora = atual.Avaliacao.Score.Fatores.Where(f => f.Valor is not null).Select(f => f.Id).ToHashSet(StringComparer.Ordinal);
+        bool? mesmaCobertura = anterior.Fatores is null ? null
+            : medidosAgora.SetEquals(anterior.Fatores.Where(f => f.Value is not null).Select(f => f.Key));
+        return new ComparacaoLote(anterior.Id, anterior.CriadoEmUtc, scoreAnterior, Math.Round(scoreAtual - scoreAnterior, 1), motivo)
+        { MesmosFatoresMedidos = mesmaCobertura };
     }
 }
